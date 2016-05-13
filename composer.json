@@ -1,0 +1,36 @@
+{
+  "name": "hrzg/yii2-filemanager-widgets",
+  "description": "A very smart filemanager to manage your files in the browser developed in AngularJS with Material-Design",
+  "type": "yii2-extension",
+  "keywords": [
+    "yii2",
+    "filemanager",
+    "angular-filemanager"
+  ],
+  "license": "BSD-3-Clause",
+  "authors": [
+    {
+      "name": "Christopher Stebe",
+      "email": "c.stebe@herzogkommunikation.de"
+    }
+  ],
+  "require": {
+    "yiisoft/yii2": "*",
+    "bower-asset/angular": "~1.5.0",
+    "bower-asset/angular-translate": "~2.9.1",
+    "bower-asset/bootstrap": "~3.3.2",
+    "bower-asset/jquery": "~2.2.0",
+    "bower-asset/bootswatch": "^3.3.6",
+    "bower-asset/ng-file-upload": "^12.0.1"
+  },
+  "extra": {
+    "asset-installer-paths": {
+      "bower-asset-library": "vendor/bower"
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "hrzg\\filemanager\\": "src/"
+    }
+  }
+}
