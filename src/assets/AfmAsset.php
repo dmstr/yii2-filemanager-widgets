@@ -21,6 +21,8 @@ class AfmAsset extends AssetBundle
 {
     public $sourcePath = '@vendor/hrzg/yii2-filemanager-widgets/src/assets/dist';
 
+    public static $assetSourcePath = null;
+
     public $css = [
         'angular-filemanager.min.css',
     ];
@@ -43,6 +45,8 @@ class AfmAsset extends AssetBundle
     {
         parent::init();
 
+        self::$assetSourcePath = $this->sourcePath;
+
         // /!\ CSS/LESS development only setting /!\
         // Touch the asset folder with the highest mtime of all contained files
         // This will create a new folder in web/assets for every change and request
@@ -56,5 +60,13 @@ class AfmAsset extends AssetBundle
             }
             touch($path, max($mtimes));
         }
+    }
+
+    /**
+     * @return false|string
+     */
+    public static function getPublishedUrl()
+    {
+        return \Yii::$app->assetManager->getPublishedUrl(self::$assetSourcePath);
     }
 }

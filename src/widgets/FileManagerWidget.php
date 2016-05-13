@@ -17,8 +17,11 @@ use hrzg\filemanager\widgets\base\BaseFileManagerWidget;
  */
 class FileManagerWidget extends BaseFileManagerWidget
 {
+    /**
+     * @return string
+     */
     public function run()
     {
-        return "Filemanager widget";
+        return $this->template;
     }
 }
