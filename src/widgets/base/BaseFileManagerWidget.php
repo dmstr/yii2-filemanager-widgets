@@ -54,10 +54,9 @@ class BaseFileManagerWidget extends \yii\base\Widget
      */
     protected function setFilemanagerConfig()
     {
-
         // Set handler Url
         if ($this->handlerUrl === null) {
-            $this->handlerUrl = AfmAsset::getPublishedUrl() . '/bridges/php-local/index.php';
+            $this->handlerUrl = getenv('AFM_HANDLER_URL');
         }
 
         $title             = getenv('AFM_TITLE') ? getenv('AFM_TITLE') : 'Angular-Filemanager';
