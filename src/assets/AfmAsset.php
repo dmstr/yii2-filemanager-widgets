@@ -1,7 +1,4 @@
 <?php
-
-namespace hrzg\filemanager\assets;
-
 /**
  * @link http://www.diemeisterei.de/
  * @copyright Copyright (c) 2016 diemeisterei GmbH, Stuttgart
@@ -9,13 +6,16 @@ namespace hrzg\filemanager\assets;
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+namespace hrzg\filemanager\assets;
 
 use yii\helpers\FileHelper;
 use yii\web\AssetBundle;
 use yii\web\View;
 
 /**
- * Configuration for `AfmBowerAsset` client script files.
+ * Class AfmAsset
+ * @package hrzg\filemanager\assets
+ * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
 class AfmAsset extends AssetBundle
 {

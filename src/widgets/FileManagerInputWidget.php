@@ -13,7 +13,9 @@ use hrzg\filemanager\widgets\base\BaseFileManagerWidget;
 
 
 /**
- * File manager input widget
+ * Class FileManagerInputWidget
+ * @package hrzg\filemanager\widgets
+ * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
 class FileManagerInputWidget extends BaseFileManagerWidget
 {

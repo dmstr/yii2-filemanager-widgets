@@ -13,7 +13,10 @@ use hrzg\filemanager\widgets\base\BaseFileManagerWidget;
 
 
 /**
+ * CLass FileManagerWidget
  * File manager widget
+ *
+ * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
 class FileManagerWidget extends BaseFileManagerWidget
 {

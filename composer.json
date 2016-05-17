@@ -19,10 +19,10 @@
     "bower-asset/angular": "~1.5.0",
     "bower-asset/angular-translate": "~2.9.1",
     "bower-asset/bootstrap": "^3.3.0",
-    "bower-asset/bootswatch": "3.3.*",
     "bower-asset/ng-file-upload": "^12.0.1"
   },
   "extra": {
+    "bootstrap": "hrzg\\filemanager\\Bootstrap",
     "asset-installer-paths": {
       "bower-asset-library": "vendor/bower"
     }

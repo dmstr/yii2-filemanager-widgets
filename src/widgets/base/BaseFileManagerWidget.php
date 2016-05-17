@@ -13,7 +13,11 @@ use hrzg\filemanager\assets\AfmAsset;
 use yii\web\View;
 
 /**
+ * Class BaseFileManagerWidget
  * File manager base widget
+ *
+ * @package hrzg\filemanager\widgets\base
+ * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
 class BaseFileManagerWidget extends \yii\base\Widget
 {
@@ -40,7 +44,6 @@ class BaseFileManagerWidget extends \yii\base\Widget
     {
         // register assets
         AfmAsset::register(\Yii::$app->view);
-
 
         // Config filemanager
         $this->setFilemanagerConfig();
