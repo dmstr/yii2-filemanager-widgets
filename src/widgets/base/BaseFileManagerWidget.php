@@ -35,7 +35,7 @@ class BaseFileManagerWidget extends \yii\base\Widget
     /**
      * @var string
      */
-    public $template = "<div data-ng-app=\"FileManagerApp\"><angular-filemanager></angular-filemanager></div>";
+    public $template = "<div data-ng-app=\"FileManagerApp\"><div class=\"ng-cloak\"><angular-filemanager></angular-filemanager></div></div>";
 
     /**
      * @inheritdoc
@@ -48,7 +48,7 @@ class BaseFileManagerWidget extends \yii\base\Widget
         // Config filemanager
         $this->setFilemanagerConfig();
     }
-    
+
     /**
      * Set handler url and init angular module config
      */
@@ -60,6 +60,7 @@ class BaseFileManagerWidget extends \yii\base\Widget
         }
 
         $title             = getenv('AFM_TITLE') ? getenv('AFM_TITLE') : 'Angular-Filemanager';
+        $lang              = \Yii::$app->language;
         $initFilemanagerJs = <<<JS
 angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (config) {
     var defaults = config.\$get();
@@ -68,7 +69,7 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
 
         // Application
         appName: '$title',
-        defaultLang: 'en',
+        defaultLang: '$lang',
         searchForm: true,
         sidebar: true,
         breadcrumb: true,
