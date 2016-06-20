@@ -10,6 +10,7 @@
 namespace hrzg\filemanager\widgets\base;
 
 use hrzg\filemanager\assets\AfmAsset;
+use yii\helpers\Url;
 use yii\web\View;
 
 /**
@@ -56,7 +57,7 @@ class BaseFileManagerWidget extends \yii\base\Widget
     {
         // Set handler Url
         if ($this->handlerUrl === null) {
-            $this->handlerUrl = getenv('AFM_HANDLER_URL');
+            $this->handlerUrl = Url::to([getenv('AFM_HANDLER_URL')]);
         }
 
         $title             = getenv('AFM_TITLE') ? getenv('AFM_TITLE') : 'Angular-Filemanager';
@@ -82,7 +83,7 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
             rename: true,
             copy: true,
             edit: true,
-            changePermissions: false, // TODO not implemented in filefly module
+            changePermissions: true, // TODO WIP
             compress: false, // TODO not implemented in filefly module
             compressChooseName: false, // TODO not implemented in filefly module
             extract: false,
