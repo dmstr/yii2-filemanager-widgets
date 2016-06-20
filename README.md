@@ -5,27 +5,10 @@ A very smart filemanager to manage your files in the browser developed in Angula
 Installation
 ------------
 
-The preferred way to install this extension is through [composer](http://getcomposer.org/download/).
+#### ENV variables
 
-Either run
-
-```
-php composer.phar require --prefer-dist hrzg/yii2-filemanager-widgets "*"
-```
-
-or add
-
-```
-"hrzg/yii2-filemanager-widgets": "*"
-```
-
-to the require section of your `composer.json` file.
-
-
-Usage
------
-
-Once the extension is installed, simply use it in your code by  :
-
-```php
-<?= \hrzg\filemanager\widgets\FileManagerWidget::widget(); ?>```
+Variable | Value
+------------- | -------------
+AFM_TITLE | 'My Filemanager'
+AFM_HANDLER_URL | '/filefly/api'
+AFM_FILESYSTEM_BASE_PATH | '/app/src/_storage'
