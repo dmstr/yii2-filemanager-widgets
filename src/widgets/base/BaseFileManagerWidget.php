@@ -74,6 +74,7 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
         searchForm: true,
         sidebar: true,
         breadcrumb: true,
+        hidePermissions: true,
 
         // Allowed actions
         allowedActions: angular.extend(defaults.allowedActions, {
@@ -112,7 +113,7 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
         useBinarySizePrefixes: false,
         downloadFilesByAjax: true,
         previewImagesInModal: true,
-        enablePermissionsRecursive: true,
+        enablePermissionsRecursive: false,
         compressAsync: false,
         extractAsync: false,
 
