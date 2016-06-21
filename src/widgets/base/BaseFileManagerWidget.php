@@ -84,6 +84,9 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
             rename: true,
             copy: true,
             edit: true,
+            download: true,
+            downloadMultiple: true,
+            downloadLink: true,
             changePermissions: true, // TODO WIP
             compress: false, // TODO not implemented in filefly module
             compressChooseName: false, // TODO not implemented in filefly module
