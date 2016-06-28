@@ -117,8 +117,6 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
         downloadFilesByAjax: true,
         previewImagesInModal: true,
         enablePermissionsRecursive: false,
-        compressAsync: false,
-        extractAsync: false,
 
         // File patterns
         isEditableFilePattern: /\.(txt|diff?|patch|svg|asc|cnf|cfg|conf|html?|.html|cfm|cgi|aspx?|ini|pl|py|md|css|cs|js|jsp|log|htaccess|htpasswd|gitignore|gitattributes|env|json|atom|eml|rss|markdown|sql|xml|xslt?|sh|rb|as|bat|cmd|cob|for|ftn|frm|frx|inc|lisp|scm|coffee|php[3-6]?|java|c|cbl|go|h|scala|vb|tmpl|lock|go|yml|yaml|tsv|lst)$/i,
