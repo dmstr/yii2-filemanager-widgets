@@ -60,6 +60,13 @@ class BaseFileManagerWidget extends \yii\base\Widget
             $this->handlerUrl = Url::to([getenv('AFM_HANDLER_URL')]);
         }
 
+        // check if user is alloed to change permissions
+        if (!\Yii::$app->user->isGuest && \Yii::$app->user->can('FileflyPermissions')) {
+            $allowPermissions = true;
+        } else {
+            $allowPermissions = false;
+        }
+
         $title             = getenv('AFM_TITLE') ? getenv('AFM_TITLE') : 'Angular-Filemanager';
         $lang              = \Yii::$app->language;
         $initFilemanagerJs = <<<JS
@@ -87,9 +94,9 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
             download: true,
             downloadMultiple: true,
             downloadLink: true,
-            changePermissions: true, // TODO WIP
-            compress: false, // TODO not implemented in filefly module
-            compressChooseName: false, // TODO not implemented in filefly module
+            changePermissions: '$allowPermissions',
+            compress: false,
+            compressChooseName: false,
             extract: false,
             upload: true
         }),
