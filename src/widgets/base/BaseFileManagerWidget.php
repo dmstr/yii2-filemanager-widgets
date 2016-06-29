@@ -31,7 +31,7 @@ class BaseFileManagerWidget extends \yii\base\Widget
     /**
      * @var string
      */
-    public $title = 'Angular-Filemanager';
+    public $title = 'My Filemanager';
 
     /**
      * @var string
