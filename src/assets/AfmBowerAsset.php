@@ -25,6 +25,7 @@ class AfmBowerAsset extends AssetBundle
 
     public $js = [
         'angular/angular.min.js',
+        'angular-sanitize/angular-sanitize.min.js',
         'angular-translate/angular-translate.min.js',
         'ng-file-upload/ng-file-upload.min.js',
     ];
