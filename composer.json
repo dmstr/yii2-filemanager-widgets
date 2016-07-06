@@ -16,7 +16,7 @@
   ],
   "require": {
     "yiisoft/yii2": "*",
-    "hrzg/yii2-filefly-module" : "dev-master",
+    "hrzg/yii2-filefly-module" : "0.4.*",
     "bower-asset/angular": "~1.5.0",
     "bower-asset/angular-sanitize": "~1.5.0",
     "bower-asset/angular-translate": "~2.9.1",
