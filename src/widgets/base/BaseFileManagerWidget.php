@@ -60,11 +60,10 @@ class BaseFileManagerWidget extends \yii\base\Widget
             $this->handlerUrl = Url::to([getenv('AFM_HANDLER_URL')]);
         }
 
-        // check if user is alloed to change permissions
+        // check if user is allowed to change permissions
+        $allowPermissions = false;
         if (!\Yii::$app->user->isGuest && \Yii::$app->user->can('FileflyPermissions')) {
             $allowPermissions = true;
-        } else {
-            $allowPermissions = false;
         }
 
         $title             = getenv('AFM_TITLE') ? getenv('AFM_TITLE') : 'Angular-Filemanager';
@@ -90,7 +89,6 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
             move: true,
             rename: true,
             copy: true,
-            edit: true,
             download: true,
             downloadMultiple: true,
             downloadLink: true,
@@ -108,7 +106,6 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
         copyUrl: handler,
         moveUrl: handler,
         removeUrl: handler,
-        editUrl: handler,
         getContentUrl: handler,
         createFolderUrl: handler,
         downloadFileUrl: handler,
@@ -126,7 +123,7 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
         enablePermissionsRecursive: false,
 
         // File patterns
-        isEditableFilePattern: /\.(txt|diff?|patch|svg|asc|cnf|cfg|conf|html?|.html|cfm|cgi|aspx?|ini|pl|py|md|css|cs|js|jsp|log|htaccess|htpasswd|gitignore|gitattributes|env|json|atom|eml|rss|markdown|sql|xml|xslt?|sh|rb|as|bat|cmd|cob|for|ftn|frm|frx|inc|lisp|scm|coffee|php[3-6]?|java|c|cbl|go|h|scala|vb|tmpl|lock|go|yml|yaml|tsv|lst)$/i,
+        isEditableFilePattern: '',
         isImageFilePattern: /\.(jpe?g|gif|bmp|png|svg|tiff?)$/i,
         isExtractableFilePattern: /\.(gz|tar|rar|g?zip)$/i
         //tplPath: 'src/templates'

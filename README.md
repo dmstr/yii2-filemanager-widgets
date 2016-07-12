@@ -5,7 +5,7 @@ A very smart filemanager to manage your files in the browser developed in Angula
 Installation
 ------------
 
-#### ENV variables
+#### Global ENV variables
 
 Variable | Value
 ------------- | -------------
