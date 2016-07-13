@@ -123,7 +123,7 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
         enablePermissionsRecursive: false,
 
         // File patterns
-        isEditableFilePattern: '',
+        isEditableFilePattern: /\.(!)/i,
         isImageFilePattern: /\.(jpe?g|gif|bmp|png|svg|tiff?)$/i,
         isExtractableFilePattern: /\.(gz|tar|rar|g?zip)$/i
         //tplPath: 'src/templates'
