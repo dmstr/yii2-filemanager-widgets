@@ -90,7 +90,7 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
             rename: true,
             copy: true,
             download: true,
-            downloadMultiple: true,
+            downloadMultiple: false,
             downloadLink: true,
             changePermissions: '$allowPermissions',
             compress: false,
