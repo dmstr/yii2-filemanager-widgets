@@ -30,6 +30,15 @@ class AfmBowerAsset extends AssetBundle
         'ng-file-upload/ng-file-upload.min.js',
     ];
 
+    public $publishOptions = [
+        'only' => [
+            'angular/*',
+            'angular-sanitize/*',
+            'angular-translate/*',
+            'ng-file-upload/*',
+        ]
+    ];
+
     public $jsOptions = [
         'position' => View::POS_HEAD,
     ];
