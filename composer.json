@@ -1,5 +1,5 @@
 {
-  "name": "hrzg/yii2-filemanager-widgets",
+  "name": "dmstr/yii2-filemanager-widgets",
   "description": "A very smart filemanager to manage your files in the browser developed in AngularJS with Material-Design",
   "type": "yii2-extension",
   "keywords": [
