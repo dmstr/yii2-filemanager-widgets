@@ -19,7 +19,7 @@ use yii\web\View;
  */
 class AfmAsset extends AssetBundle
 {
-    public $sourcePath = '@vendor/hrzg/yii2-filemanager-widgets/src/assets/dist';
+    public $sourcePath = '@hrzg/filemanager/assets/dist';
 
     public static $assetSourcePath = null;
 
