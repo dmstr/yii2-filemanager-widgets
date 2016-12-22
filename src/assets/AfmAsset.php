@@ -24,7 +24,7 @@ class AfmAsset extends AssetBundle
     public static $assetSourcePath = null;
 
     public $css = [
-        'angular-filemanager.min.css',
+        'angular-filemanager.less',
         'angular-filemanager-custom.less'
     ];
 
