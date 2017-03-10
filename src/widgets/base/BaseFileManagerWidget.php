@@ -10,6 +10,7 @@
 namespace hrzg\filemanager\widgets\base;
 
 use hrzg\filemanager\assets\AfmAsset;
+use yii\base\Widget;
 use yii\helpers\Url;
 use yii\web\View;
 
@@ -20,24 +21,8 @@ use yii\web\View;
  * @package hrzg\filemanager\widgets\base
  * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
-class BaseFileManagerWidget extends \yii\base\Widget
+class BaseFileManagerWidget extends Widget
 {
-    /**
-     * File Handler Url
-     * @var null|string
-     */
-    public $handlerUrl = null;
-
-    /**
-     * @var string
-     */
-    public $title = 'My Filemanager';
-
-    /**
-     * @var string
-     */
-    public $template = "<div data-ng-app=\"FileManagerApp\"><div class=\"ng-cloak\"><angular-filemanager></angular-filemanager></div></div>";
-
     /**
      * @inheritdoc
      */

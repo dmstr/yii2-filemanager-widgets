@@ -22,6 +22,22 @@ use hrzg\filemanager\widgets\base\BaseFileManagerWidget;
 class FileManagerWidget extends BaseFileManagerWidget
 {
     /**
+     * File Handler Url
+     * @var null|string
+     */
+    public $handlerUrl = null;
+
+    /**
+     * @var string
+     */
+    public $title = 'My Filemanager';
+
+    /**
+     * @var string
+     */
+    public $template = "<div data-ng-app=\"FileManagerApp\"><div class=\"ng-cloak\"><angular-filemanager></angular-filemanager></div></div>";
+
+    /**
      * @return string
      */
     public function run()
