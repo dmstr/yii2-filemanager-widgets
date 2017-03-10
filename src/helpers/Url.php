@@ -36,7 +36,9 @@ class Url
     }
 
     /**
-     * Returns the URL prefix to stream a file
+     * Returns the URL to stream a file
+     *
+     * @param $path
      *
      * @return string
      */
@@ -53,5 +55,22 @@ class Url
     public static function downloadFile($path)
     {
         return BaseUrl::to([self::$fileflyApiUrl, 'action' => 'download', 'path' => $path]);
+    }
+
+    /**
+     * Returns the URL prefix for a getHandler action
+     *
+     * @param string $action
+     * @param string $path
+     *
+     * @return string
+     */
+    public static function to($action, $path = null)
+    {
+        $filePath = '';
+        if (!empty($path)) {
+            $filePath = $path;
+        }
+        return BaseUrl::to([self::$fileflyApiUrl, 'action' => $action, 'path' => $filePath]);
     }
 }
