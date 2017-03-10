@@ -9,12 +9,13 @@
 
 namespace hrzg\filemanager\widgets;
 
+use hrzg\filemanager\helpers\Url;
 use kartik\select2\Select2;
-use yii\helpers\Url;
+use rmrevin\yii\fontawesome\FA;
+use yii\helpers\Html;
 use yii\web\JsExpression;
 use yii\web\View;
 use yii\widgets\InputWidget;
-
 
 /**
  * Class FileManagerInputWidget
@@ -24,56 +25,16 @@ use yii\widgets\InputWidget;
 class FileManagerInputWidget extends InputWidget
 {
     /**
-     * render a select2 dropdown list, that do an ajax call to the filefly api to find images
+     * Render a select2 dropdown list, that does an ajax call to the filefly api to find elements
      *
      * @return string
      * @throws \Exception
      */
     public function run()
     {
-        // the filefly api request url to search files
-        $ajaxUrl = Url::to([getenv('AFM_HANDLER_URL'), 'action' => 'search']);
+        $this->registerClientScript();
 
-        // the image preview url prefix
-        $previewUrl = Url::to([getenv('AFM_HANDLER_URL'), 'action' => 'stream', 'path' => '']);
-
-        // format result markup
-        $formatJs = <<<JS
-
-var formatFiles = function (file) {
-        if (file.loading) {
-            return file.text;
-        }
-        var markup =
-'<div class="row">' +
-    '<div class="col-sm-2">' +
-        '<img src="{$previewUrl}' + file.id + '" style="width:64px" />' +
-    '</div>' +
-    '<div class="col-sm-10" style="word-wrap:break-word;">' + file.name + '</div>' +
-'</div>';
-        return '<div style="overflow:hidden;">' + markup + '</div>';
-};
-
-var formatFileSelection = function (file) {
-    return file.name;
-}
-JS;
-
-        // Register the formatting script
-        $this->view->registerJs($formatJs, View::POS_HEAD);
-
-        // script to parse the results into the expected format
-        $resultsJs = <<<JS
-function(data) {
-    var response = [];
-    for (var i=0;i < data.result.length; i++) {
-        var path = data.result[i].path;
-        response.push({id: path, name: path});
-    }
-    return {results: response};
-}
-JS;
-
+        // render select2 input widget
         return Select2::widget(
             [
                 'model' => ($this->model) ? $this->model : null,
@@ -83,8 +44,20 @@ JS;
                     'placeholder' => \Yii::t('afm', 'Search for a file ...'),
                 ],
                 'addon' => [
-                    'prepend' => [
-                        'content' => \Yii::t('afm', 'Browse')
+                    'append' => [
+                        'content'  => Html::button(
+                                FA::i('copy'),
+                                ['class' => 'btn btn-default', 'data-input-id' => 'afm-copy-btn', 'disabled' => '1']
+                            )
+                            . Html::button(
+                                FA::i('link'),
+                                ['class' => 'btn btn-default', 'data-input-id' => 'afm-link-btn', 'disabled' => '1']
+                            )
+                            . Html::button(
+                                FA::i('download'),
+                                ['class' => 'btn btn-default', 'data-input-id' => 'afm-download-btn', 'disabled' => '1']
+                            ),
+                        'asButton' => true
                     ],
                 ],
                 'pluginOptions' => [
@@ -94,18 +67,78 @@ JS;
                         'errorLoading' =>  \Yii::t('afm', 'Waiting for results ...'),
                     ],
                     'ajax' => [
-                        'url' => $ajaxUrl,
+                        'url' => Url::to('search'),
                         'dataType' => 'json',
-                        'delay' => 300,
-                        'data' => new JsExpression('function(params) { return {q:params.term}; }'),
-                        'processResults' => new JsExpression($resultsJs),
+                        'delay' => 220,
+                        'data' => new JsExpression('searchData'),
+                        'processResults' => new JsExpression('resultJs'),
                         'cache' => true
                     ],
-                    'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+                    'escapeMarkup' => new JsExpression('escapeMarkup'),
                     'templateResult' => new JsExpression('formatFiles'),
                     'templateSelection' => new JsExpression('formatFileSelection'),
                 ],
+                'pluginEvents' => [
+                    "select2:select" => new JsExpression('onSelect'),
+                    "select2:unselect" => new JsExpression('onUnSelect'),
+                ]
             ]
         );
+    }
+
+    /**
+     * Register input scripts
+     */
+    protected function registerClientScript()
+    {
+        // the image preview url prefix
+        $previewUrl = Url::to('stream');
+
+        // format result markup and register addon button scripts and events
+        $inputJs = <<<JS
+var searchData = function(params) {
+    return {q:params.term};
+};
+var formatFiles = function (file) {
+        if (file.loading) {
+            return file.text;
+        }
+        var markup =
+            '<div class="row">' +
+                '<div class="col-sm-2">' +
+                    '<img src="{$previewUrl}' + file.id + '" style="width:64px" />' +
+                '</div>' +
+                '<div class="col-sm-10" style="word-wrap:break-word;">' + file.name + '</div>' +
+            '</div>';
+        return '<div style="overflow:hidden;">' + markup + '</div>';
+};
+var formatFileSelection = function (file, test) {
+    if (!file.id && !file.name) {
+        return file.text;
+    }
+    var title = file.id || file.name;
+    return '<img src="{$previewUrl}' + file.id + '" style="width:24px;padding-right:5px;" /> ' + title;
+};
+var resultJs = function(data) {
+    var response = [];
+    for (var i=0;i < data.result.length; i++) {
+        var path = data.result[i].path;
+        response.push({id: path, name: path});
+    }
+    return {results: response};
+};
+var onSelect = function() {
+    console.log("selected");
+};
+var onUnSelect = function() {
+    console.log("unSelected");
+};
+var escapeMarkup = function(markup) {
+    return markup;
+};
+JS;
+
+        // Register the formatting script
+        $this->view->registerJs($inputJs, View::POS_HEAD);
     }
 }
