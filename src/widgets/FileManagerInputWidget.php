@@ -67,7 +67,7 @@ class FileManagerInputWidget extends InputWidget
                         'errorLoading' =>  \Yii::t('afm', 'Waiting for results ...'),
                     ],
                     'ajax' => [
-                        'url' => Url::to('search'),
+                        'url' => Url::to('search', null),
                         'dataType' => 'json',
                         'delay' => 220,
                         'data' => new JsExpression('searchData'),

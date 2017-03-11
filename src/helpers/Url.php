@@ -65,12 +65,8 @@ class Url
      *
      * @return string
      */
-    public static function to($action, $path = null)
+    public static function to($action, $path = '')
     {
-        $filePath = '';
-        if (!empty($path)) {
-            $filePath = $path;
-        }
-        return BaseUrl::to([self::$fileflyApiUrl, 'action' => $action, 'path' => $filePath]);
+        return BaseUrl::to([self::$fileflyApiUrl, 'action' => $action, 'path' => $path]);
     }
 }
