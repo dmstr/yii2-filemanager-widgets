@@ -37,13 +37,13 @@ class FileManagerInputWidget extends InputWidget
         // render select2 input widget
         return Select2::widget(
             [
-                'model' => ($this->model) ? $this->model : null,
-                'attribute' => ($this->attribute) ? $this->attribute : null,
-                'name' => ($this->name) ? $this->name : null,
-                'options' => [
+                'model'         => ($this->model) ? $this->model : null,
+                'attribute'     => ($this->attribute) ? $this->attribute : null,
+                'name'          => ($this->name) ? $this->name : null,
+                'options'       => [
                     'placeholder' => \Yii::t('afm', 'Search for a file ...'),
                 ],
-                'addon' => [
+                'addon'         => [
                     'append' => [
                         'content'  => Html::button(
                                 FA::i('copy'),
@@ -61,25 +61,25 @@ class FileManagerInputWidget extends InputWidget
                     ],
                 ],
                 'pluginOptions' => [
-                    'allowClear' => true,
+                    'allowClear'         => true,
                     'minimumInputLength' => 3,
-                    'language' => [
-                        'errorLoading' =>  \Yii::t('afm', 'Waiting for results ...'),
+                    'language'           => [
+                        'errorLoading' => \Yii::t('afm', 'Waiting for results ...'),
                     ],
-                    'ajax' => [
-                        'url' => Url::to('search', null),
-                        'dataType' => 'json',
-                        'delay' => 220,
-                        'data' => new JsExpression('searchData'),
+                    'ajax'               => [
+                        'cache'          => true,
+                        'url'            => Url::to('search', null),
+                        'dataType'       => 'json',
+                        'delay'          => 220,
+                        'data'           => new JsExpression('searchData'),
                         'processResults' => new JsExpression('resultJs'),
-                        'cache' => true
                     ],
-                    'escapeMarkup' => new JsExpression('escapeMarkup'),
-                    'templateResult' => new JsExpression('formatFiles'),
-                    'templateSelection' => new JsExpression('formatFileSelection'),
+                    'escapeMarkup'       => new JsExpression('escapeMarkup'),
+                    'templateResult'     => new JsExpression('formatFiles'),
+                    'templateSelection'  => new JsExpression('formatFileSelection'),
                 ],
-                'pluginEvents' => [
-                    "select2:select" => new JsExpression('onSelect'),
+                'pluginEvents'  => [
+                    "select2:select"   => new JsExpression('onSelect'),
                     "select2:unselect" => new JsExpression('onUnSelect'),
                 ]
             ]
@@ -100,32 +100,49 @@ var searchData = function(params) {
     return {q:params.term};
 };
 var formatFiles = function (file) {
-        if (file.loading) {
-            return file.text;
-        }
-        var markup =
-            '<div class="row">' +
-                '<div class="col-sm-2">' +
-                    '<img src="{$previewUrl}' + file.id + '" style="width:64px" />' +
-                '</div>' +
-                '<div class="col-sm-10" style="word-wrap:break-word;">' + file.name + '</div>' +
-            '</div>';
-        return '<div style="overflow:hidden;">' + markup + '</div>';
-};
-var formatFileSelection = function (file, test) {
-    if (!file.id && !file.name) {
+
+    // show loading / placeholder
+    if (file.loading) {
         return file.text;
     }
-    var title = file.id || file.name;
-    return '<img src="{$previewUrl}' + file.id + '" style="width:24px;padding-right:5px;" /> ' + title;
+
+    // mime types
+    var preview = '';
+    var text = file.path;
+    if (file.mime.includes("image")) {
+        preview = '<img src="{$previewUrl}' + file.id + '" style="width:38px" />';
+    } else if (file.mime.includes("directory")) {
+        preview = '<span style="width:40px"><i class="fa fa-folder-open"></i></span>';
+    } else if (file.mime.includes("pdf")) {
+        preview = '<span style="width:40px"><i class="fa fa-file-pdf-o fa-3x"></i></span>';
+    } else if (file.mime.includes("zip")) {
+        preview = '<span style="width:40px"><i class="fa fa-file-zip-o fa-3x"></i></span>';
+    } else if (file.mime.includes("doc")) {
+        preview = '<span style="width:40px"><i class="fa fa-file-word-o fa-3x"></i></span>';
+    } else if (file.mime.includes("xls")) {
+        preview = '<span style="width:40px"><i class="fa fa-file-excel-o fa-3x"></i></span>';
+    } else {
+        preview = '<span style="width:40px"><i class="fa fa-file-o fa-3x"></i></span>';
+    }
+
+    // one result line markup
+    var markup =
+        '<div class="row" style="min-height:38px">' +
+            '<div class="col-sm-2">' + preview + '</div>' +
+            '<div class="col-sm-10" style="word-wrap:break-word;">' + text + '</div>' +
+         '</div>';
+
+    return '<div style="overflow:hidden;">' + markup + '</div>';
+};
+
+var formatFileSelection = function (file, test) {
+    if (!file.id && !file.path) {
+        return file.text;
+    }
+    return file.id || file.name;
 };
 var resultJs = function(data) {
-    var response = [];
-    for (var i=0;i < data.result.length; i++) {
-        var path = data.result[i].path;
-        response.push({id: path, name: path});
-    }
-    return {results: response};
+    return {results: data};
 };
 var onSelect = function() {
     console.log("selected");
@@ -137,7 +154,6 @@ var escapeMarkup = function(markup) {
     return markup;
 };
 JS;
-
         // Register the formatting script
         $this->view->registerJs($inputJs, View::POS_HEAD);
     }
