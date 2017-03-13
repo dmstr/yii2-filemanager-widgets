@@ -28,6 +28,8 @@ class AfmBowerAsset extends AssetBundle
         'angular-sanitize/angular-sanitize.min.js',
         'angular-translate/angular-translate.min.js',
         'ng-file-upload/ng-file-upload.min.js',
+        'clipboard/dist/clipboard.min.js',
+        'ngclipboard/dist/ngclipboard.js',
     ];
 
     public $publishOptions = [
@@ -36,6 +38,8 @@ class AfmBowerAsset extends AssetBundle
             'angular-sanitize/*',
             'angular-translate/*',
             'ng-file-upload/*',
+            'clipboard/dist/*',
+            'ngclipboard/dist/*',
         ]
     ];
 
