@@ -123,7 +123,7 @@ var formatFiles = function (file) {
 
     return '<div style="overflow:hidden;">' + markup + '</div>';
 };
-var formatFileSelection = function (file, test) {
+var formatFileSelection = function (file) {
     if (!file.id && !file.path) {
         return file.text;
     }
