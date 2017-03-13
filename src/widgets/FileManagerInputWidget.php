@@ -44,21 +44,7 @@ class FileManagerInputWidget extends InputWidget
                     'placeholder' => \Yii::t('afm', 'Search for a file ...'),
                 ],
                 'addon'         => [
-                    'append' => [
-                        'content'  => Html::button(
-                                FA::i('copy'),
-                                ['class' => 'btn btn-default', 'data-input-id' => 'afm-copy-btn', 'disabled' => '1']
-                            )
-                            . Html::button(
-                                FA::i('link'),
-                                ['class' => 'btn btn-default', 'data-input-id' => 'afm-link-btn', 'disabled' => '1']
-                            )
-                            . Html::button(
-                                FA::i('download'),
-                                ['class' => 'btn btn-default', 'data-input-id' => 'afm-download-btn', 'disabled' => '1']
-                            ),
-                        'asButton' => true
-                    ],
+                    'append' => $this->generateAddonButtons(),
                 ],
                 'pluginOptions' => [
                     'allowClear'         => true,
@@ -94,6 +80,9 @@ class FileManagerInputWidget extends InputWidget
         // the image preview url prefix
         $previewUrl = Url::to('stream');
 
+        // the image download url prefix
+        $downloadUrl = Url::to('download');
+
         // format result markup and register addon button scripts and events
         $inputJs = <<<JS
 var searchData = function(params) {
@@ -112,7 +101,7 @@ var formatFiles = function (file) {
     if (file.mime.includes("image")) {
         preview = '<img src="{$previewUrl}' + file.id + '" style="width:38px" />';
     } else if (file.mime.includes("directory")) {
-        preview = '<span style="width:40px"><i class="fa fa-folder-open"></i></span>';
+        preview = '<span style="width:40px"><i class="fa fa-folder-open fa-3x"></i></span>';
     } else if (file.mime.includes("pdf")) {
         preview = '<span style="width:40px"><i class="fa fa-file-pdf-o fa-3x"></i></span>';
     } else if (file.mime.includes("zip")) {
@@ -134,7 +123,6 @@ var formatFiles = function (file) {
 
     return '<div style="overflow:hidden;">' + markup + '</div>';
 };
-
 var formatFileSelection = function (file, test) {
     if (!file.id && !file.path) {
         return file.text;
@@ -144,17 +132,101 @@ var formatFileSelection = function (file, test) {
 var resultJs = function(data) {
     return {results: data};
 };
-var onSelect = function() {
-    console.log("selected");
+var onSelect = function(elem) {
+    var elementId = elem.currentTarget.id;
+    var path = elem.params.data.id;
+    var mime = elem.params.data.mime;
+
+    // button elements
+    var copyBtn = $('#' + elementId + '-afm-copy-btn');
+    var linkBtn = $('#' + elementId + '-afm-link-btn');
+    var downloadBtn = $('#' + elementId + '-afm-download-btn');
+
+    // enable buttons
+    copyBtn.prop('disabled', false);
+    copyBtn.on('click', function() {
+        copyToClipboard(path);
+    });
+
+    // enable link and download only for files
+    if (! mime.includes("directory")) {
+        linkBtn.prop('disabled', false);
+        linkBtn.on('click', function() {
+            copyToClipboard('{$previewUrl}' + path);
+        });
+        downloadBtn.prop('disabled', false);
+        downloadBtn.on('click', function() {
+            window.location.href = '{$downloadUrl}' + path;
+        });
+    }
 };
-var onUnSelect = function() {
-    console.log("unSelected");
+var onUnSelect = function(elem) {
+    var elementId = elem.currentTarget.id;
+
+    // button elements
+    var copyBtn = $('#' + elementId + '-afm-copy-btn');
+    var linkBtn = $('#' + elementId + '-afm-link-btn');
+    var downloadBtn = $('#' + elementId + '-afm-download-btn');
+
+    // disable buttons
+    copyBtn.prop('disabled', true);
+    linkBtn.prop('disabled', true);
+    downloadBtn.prop('disabled', true);
 };
 var escapeMarkup = function(markup) {
     return markup;
 };
+var copyToClipboard = function (str) {
+  var temp = $("<input>");
+  $("body").append(temp);
+  temp.val(str).select();
+  document.execCommand("copy");
+  temp.remove();
+}
 JS;
         // Register the formatting script
         $this->view->registerJs($inputJs, View::POS_HEAD);
+    }
+
+    /**
+     * Generate the select input field link buttons
+     *  - copy
+     *  - link
+     *  - download
+     *
+     * @return array
+     */
+    protected function generateAddonButtons()
+    {
+        return [
+            'content'  => Html::button(
+                    FA::i('copy'),
+                    [
+                        'class'    => 'btn btn-default',
+                        'id'       => $this->options['id'] . '-afm-copy-btn',
+                        'disabled' => 'disabled',
+                        'title'    => \Yii::t('afm', 'Copy path to clipboard')
+                    ]
+                )
+                . Html::button(
+                    FA::i('link'),
+                    [
+                        'class'    => 'btn btn-default',
+                        'id'       => $this->options['id'] . '-afm-link-btn',
+                        'disabled' => 'disabled',
+                        'title'    => \Yii::t('afm', 'Copy link to clipboard')
+                    ]
+                )
+                . Html::button(
+                    FA::i('download'),
+                    [
+                        'class'    => 'btn btn-default',
+                        'id'       => $this->options['id'] . '-afm-download-btn',
+                        'disabled' => 'disabled',
+                        'title'    => \Yii::t('afm', 'Download file')
+                    ]
+                ),
+            'asButton' => true
+        ];
     }
 }
