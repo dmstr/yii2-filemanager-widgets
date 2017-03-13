@@ -41,6 +41,7 @@ class FileManagerInputWidget extends InputWidget
                 'attribute'     => ($this->attribute) ? $this->attribute : null,
                 'name'          => ($this->name) ? $this->name : null,
                 'options'       => [
+                    'id' => $this->options['id'],
                     'placeholder' => \Yii::t('afm', 'Search for a file ...'),
                 ],
                 'addon'         => [
@@ -77,11 +78,37 @@ class FileManagerInputWidget extends InputWidget
      */
     protected function registerClientScript()
     {
+        // the input id
+        $inputId = $this->options['id'];
+
+        // the filefly api search url prefix
+        $searchUrl = Url::to('search');
+
         // the image preview url prefix
         $previewUrl = Url::to('stream');
 
-        // the image download url prefix
+        // the file download url prefix
         $downloadUrl = Url::to('download');
+
+        // initial handling for input widget
+        $initJs = <<<JS
+// init
+$('#{$inputId}').ready(function(){
+    var selectedPath = $('#{$inputId} option:selected').val();
+    $.ajax({
+        cache:true,
+        url: "{$searchUrl}",
+        dataType:"json",
+        delay:220,
+        data: {q: selectedPath},
+        success: function(result){
+            onSelect(result[0], '{$inputId}');
+        }
+    });
+});
+JS;
+
+        $this->view->registerJs($initJs, View::POS_READY);
 
         // format result markup and register addon button scripts and events
         $inputJs = <<<JS
@@ -132,10 +159,20 @@ var formatFileSelection = function (file) {
 var resultJs = function(data) {
     return {results: data};
 };
-var onSelect = function(elem) {
-    var elementId = elem.currentTarget.id;
-    var path = elem.params.data.id;
-    var mime = elem.params.data.mime;
+var onSelect = function(elem, initId) {
+    var elementId = '';
+    var path = '';
+    var mime = '';
+
+    if (initId) {
+        elementId = initId;
+        path = elem.path;
+        mime = elem.mime;
+    } else {
+        elementId = elem.currentTarget.id;
+        path = elem.params.data.id;
+        mime = elem.params.data.mime;
+    }
 
     // button elements
     var copyBtn = $('#' + elementId + '-afm-copy-btn');
@@ -182,9 +219,9 @@ var copyToClipboard = function (str) {
   temp.val(str).select();
   document.execCommand("copy");
   temp.remove();
-}
+};
 JS;
-        // Register the formatting script
+        // Register the input widget handler script
         $this->view->registerJs($inputJs, View::POS_HEAD);
     }
 
