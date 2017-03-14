@@ -95,16 +95,20 @@ class FileManagerInputWidget extends InputWidget
 // init
 $('#{$inputId}').ready(function(){
     var selectedPath = $('#{$inputId} option:selected').val();
-    $.ajax({
-        cache:true,
-        url: "{$searchUrl}",
-        dataType:"json",
-        delay:220,
-        data: {q: selectedPath},
-        success: function(result){
-            onSelect(result[0], '{$inputId}');
-        }
-    });
+    if (selectedPath) {
+        $.ajax({
+            cache:true,
+            url: "{$searchUrl}",
+            dataType:"json",
+            delay:220,
+            data: {q: selectedPath},
+            success: function(result){
+                if (result.length == 1) {
+                    onSelect(result[0], '{$inputId}');
+                }
+            }
+        });
+    }
 });
 JS;
 
