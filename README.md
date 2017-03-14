@@ -23,6 +23,15 @@ General usage
 echo \hrzg\filemanager\widgets\FileManagerWidget::widget();
 ```
 
+Use in TWIG templates:
+
+```
+{{ use ('hrzg/filemanager/widgets') }}
+
+{{ file_manager_widget_widget() }}
+```
+
+
 Input widget
 ------------
 
@@ -36,4 +45,12 @@ Use it with an ActiveForm
 
 ```
 echo $form->field($model, 'image')->widget('\hrzg\filemanager\widgets\FileManagerInputWidget');
+```
+
+Use in TWIG templates:
+
+```
+{{ use ('hrzg/filemanager/widgets') }}
+
+{{ file_manager_input_widget_widget({"name" : "myInputWidget"}) }}
 ```
