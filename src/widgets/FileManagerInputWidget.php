@@ -158,7 +158,7 @@ var formatFileSelection = function (file) {
     if (!file.id && !file.path) {
         return file.text;
     }
-    return file.id || file.name;
+    return file.id || file.path;
 };
 var resultJs = function(data) {
     return {results: data};
