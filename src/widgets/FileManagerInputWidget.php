@@ -141,6 +141,8 @@ var formatFiles = function (file) {
         preview = '<span style="width:40px"><i class="fa fa-file-word-o fa-3x"></i></span>';
     } else if (file.mime.includes("xls")) {
         preview = '<span style="width:40px"><i class="fa fa-file-excel-o fa-3x"></i></span>';
+    } else if (file.mime.includes("ppt")) {
+        preview = '<span style="width:40px"><i class="fa fa-file-powerpoint-o fa-3x"></i></span>';
     } else {
         preview = '<span style="width:40px"><i class="fa fa-file-o fa-3x"></i></span>';
     }
