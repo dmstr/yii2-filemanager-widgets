@@ -19,48 +19,62 @@ use yii\web\View;
  */
 class AfmAsset extends AssetBundle
 {
+    /**
+     * @var string
+     */
     public $sourcePath = '@hrzg/filemanager/assets/dist';
 
+    /**
+     * @var string|null
+     */
     public static $assetSourcePath = null;
 
+    /**
+     * @var array
+     */
     public $css = [
         'angular-filemanager.less',
         'angular-filemanager-custom.less'
     ];
 
+    /**
+     * @var array
+     */
     public $js = [
         'angular-filemanager.min.js',
     ];
 
+    /**
+     * @var array
+     */
     public $jsOptions = [
         'position' => View::POS_HEAD,
     ];
 
+    /**
+     * @var array $publishOptions
+     */
+    public $publishOptions = [
+        'forceCopy' => false,
+    ];
+
+    /**
+     * @var array
+     */
     public $depends = [
         'yii\bootstrap\BootstrapPluginAsset',
         'yii\web\YiiAsset',
         'hrzg\filemanager\assets\AfmBowerAsset',
     ];
 
+    /**
+     * @inheritdoc
+     */
     public function init()
     {
         parent::init();
 
         self::$assetSourcePath = $this->sourcePath;
-
-        // /!\ CSS/LESS development only setting /!\
-        // Touch the asset folder with the highest mtime of all contained files
-        // This will create a new folder in web/assets for every change and request
-        // made to the app assets.
-        if (getenv('APP_ASSET_FORCE_PUBLISH')) {
-            $path   = \Yii::getAlias($this->sourcePath);
-            $files  = FileHelper::findFiles($path);
-            $mtimes = [];
-            foreach ($files as $file) {
-                $mtimes[] = filemtime($file);
-            }
-            touch($path, max($mtimes));
-        }
     }
 
     /**
