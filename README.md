@@ -1,4 +1,4 @@
-Yii2-filemanager-widgets
+Yii2 Filemanager Widgets
 ========================
 
 [![Latest Stable Version](https://poser.pugx.org/dmstr/yii2-filemanager-widgets/v/stable.svg)](https://packagist.org/packages/dmstr/yii2-filemanager-widgets) 
