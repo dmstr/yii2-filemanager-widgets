@@ -1,5 +1,10 @@
 Yii2-filemanager-widgets
 ========================
+
+[![Latest Stable Version](https://poser.pugx.org/dmstr/yii2-filemanager-widgets/v/stable.svg)](https://packagist.org/packages/dmstr/yii2-filemanager-widgets) 
+[![Total Downloads](https://poser.pugx.org/dmstr/yii2-filemanager-widgets/downloads.svg)](https://packagist.org/packages/dmstr/yii2-filemanager-widgets)
+[![License](https://poser.pugx.org/dmstr/yii2-filemanager-widgets/license.svg)](https://packagist.org/packages/dmstr/yii2-filemanager-widgets)
+
 A very smart filemanager to manage your files in the browser developed in AngularJS with Material-Design
 
 Installation
