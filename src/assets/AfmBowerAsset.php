@@ -52,22 +52,4 @@ class AfmBowerAsset extends AssetBundle
         'yii\web\YiiAsset',
     ];
 
-    public function init()
-    {
-        parent::init();
-
-        // /!\ CSS/LESS development only setting /!\
-        // Touch the asset folder with the highest mtime of all contained files
-        // This will create a new folder in web/assets for every change and request
-        // made to the app assets.
-        if (getenv('APP_ASSET_FORCE_PUBLISH')) {
-            $path   = \Yii::getAlias($this->sourcePath);
-            $files  = FileHelper::findFiles($path);
-            $mtimes = [];
-            foreach ($files as $file) {
-                $mtimes[] = filemtime($file);
-            }
-            touch($path, max($mtimes));
-        }
-    }
 }
