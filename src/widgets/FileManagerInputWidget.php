@@ -9,9 +9,10 @@
 
 namespace hrzg\filemanager\widgets;
 
-use hrzg\filemanager\helpers\Url;
 use kartik\select2\Select2;
 use rmrevin\yii\fontawesome\FA;
+use yii\base\Exception;
+use yii\helpers\BaseUrl;
 use yii\helpers\Html;
 use yii\web\JsExpression;
 use yii\web\View;
@@ -24,6 +25,20 @@ use yii\widgets\InputWidget;
  */
 class FileManagerInputWidget extends InputWidget
 {
+    /**
+     * File Handler Url
+     * @var null|string
+     */
+    public $handlerUrl = null;
+
+    public function init()
+    {
+        if (empty($this->handlerUrl)) {
+            throw new Exception('Missing handlerUrl confiugration');
+        }
+        parent::init();
+    }
+
     /**
      * Render a select2 dropdown list, that does an ajax call to the filefly api to find elements
      *
@@ -55,7 +70,7 @@ class FileManagerInputWidget extends InputWidget
                     ],
                     'ajax'               => [
                         'cache'          => true,
-                        'url'            => Url::to('search', null),
+                        'url'            => $this->to('search', null),
                         'dataType'       => 'json',
                         'delay'          => 220,
                         'data'           => new JsExpression('searchData'),
@@ -82,13 +97,13 @@ class FileManagerInputWidget extends InputWidget
         $inputId = $this->options['id'];
 
         // the filefly api search url prefix
-        $searchUrl = Url::to('search');
+        $searchUrl = $this->to('search');
 
         // the image preview url prefix
-        $previewUrl = Url::to('stream');
+        $previewUrl = $this->to('stream');
 
         // the file download url prefix
-        $downloadUrl = Url::to('download');
+        $downloadUrl = $this->to('download');
 
         // initial handling for input widget
         $initJs = <<<JS
@@ -271,5 +286,19 @@ JS;
                 ),
             'asButton' => true
         ];
+    }
+
+
+    /**
+     * Returns the URL prefix for a getHandler action
+     *
+     * @param string $action
+     * @param string $path
+     *
+     * @return string
+     */
+    private function to($action, $path = '')
+    {
+        return BaseUrl::to([$this->handlerUrl, 'action' => $action, 'path' => $path]);
     }
 }
