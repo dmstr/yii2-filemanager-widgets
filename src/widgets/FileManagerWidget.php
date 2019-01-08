@@ -27,17 +27,17 @@ class FileManagerWidget extends Widget
      * File Handler Url
      * @var null|string
      */
-    public $handlerUrl = null;
+    public $handlerUrl;
 
     /**
      * @var string
      */
-    public $title = '';
+    public $title;
 
     /**
      * @var string
      */
-    public $template = "<div data-ng-app=\"FileManagerApp\"><div class=\"ng-cloak\"><angular-filemanager></angular-filemanager></div></div>";
+    public $template = '<div data-ng-app="FileManagerApp"><div class="ng-cloak"><angular-filemanager></angular-filemanager></div></div>';
 
     /**
      * @inheritdoc
