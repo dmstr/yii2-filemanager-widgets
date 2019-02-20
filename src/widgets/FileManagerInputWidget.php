@@ -144,19 +144,19 @@ var formatFiles = function (file) {
     // mime types
     var preview = '';
     var text = file.path;
-    if (file.mime.includes("image")) {
+    if (file.mime.indexOf("image") > -1) {
         preview = '<img src="{$previewUrl}' + file.id + '" style="width:38px" />';
-    } else if (file.mime.includes("directory")) {
+    } else if (file.mime.indexOf("directory") > -1) {
         preview = '<span style="width:40px"><i class="fa fa-folder-open fa-3x"></i></span>';
-    } else if (file.mime.includes("pdf")) {
+    } else if (file.mime.indexOf("pdf") > -1) {
         preview = '<span style="width:40px"><i class="fa fa-file-pdf-o fa-3x"></i></span>';
-    } else if (file.mime.includes("zip")) {
+    } else if (file.mime.indexOf("zip") > -1) {
         preview = '<span style="width:40px"><i class="fa fa-file-zip-o fa-3x"></i></span>';
-    } else if (file.mime.includes("doc")) {
+    } else if (file.mime.indexOf("doc") > -1) {
         preview = '<span style="width:40px"><i class="fa fa-file-word-o fa-3x"></i></span>';
-    } else if (file.mime.includes("xls")) {
+    } else if (file.mime.indexOf("xls") > -1) {
         preview = '<span style="width:40px"><i class="fa fa-file-excel-o fa-3x"></i></span>';
-    } else if (file.mime.includes("ppt")) {
+    } else if (file.mime.indexOf("ppt") > -1) {
         preview = '<span style="width:40px"><i class="fa fa-file-powerpoint-o fa-3x"></i></span>';
     } else {
         preview = '<span style="width:40px"><i class="fa fa-file-o fa-3x"></i></span>';
@@ -207,7 +207,7 @@ var onSelect = function(elem, initId) {
     });
 
     // enable link and download only for files
-    if (! mime.includes("directory")) {
+    if (! mime.indexOf("directory") > -1) {
         linkBtn.prop('disabled', false);
         linkBtn.on('click', function() {
             copyToClipboard('{$previewUrl}' + path);
