@@ -10,6 +10,7 @@
 namespace hrzg\filemanager\widgets;
 
 use kartik\select2\Select2;
+use rmrevin\yii\fontawesome\AssetBundle;
 use rmrevin\yii\fontawesome\FA;
 use yii\base\Exception;
 use yii\helpers\BaseUrl;
@@ -104,6 +105,19 @@ class FileManagerInputWidget extends InputWidget
 
         // the file download url prefix
         $downloadUrl = $this->to('download');
+
+        // value
+        $value = $this->model->{$this->attribute};
+
+        // set default value if set
+
+        if (!empty($value)) {
+            $this->view->registerJs(<<<JS
+$('#{$inputId}').append(new Option('{$value}', '{$value}', true, true)).trigger('change');
+JS
+, View::POS_READY);
+        }
+
 
         // initial handling for input widget
         $initJs = <<<JS
@@ -244,6 +258,9 @@ var copyToClipboard = function (str) {
 JS;
         // Register the input widget handler script
         $this->view->registerJs($inputJs, View::POS_HEAD);
+
+        AssetBundle::register($this->view);
+        $this->view->registerCss(".field-{$inputId} .input-group-btn > .btn {position: relative;}");
     }
 
     /**
