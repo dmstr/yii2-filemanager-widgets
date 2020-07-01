@@ -40,6 +40,16 @@ class FileManagerWidget extends Widget
     public $template = '<div data-ng-app="FileManagerApp"><div class="ng-cloak"><angular-filemanager></angular-filemanager></div></div>';
 
     /**
+     * @var string
+     */
+    public $thumbnailUrlPrefix;
+
+    /**
+     * @var string
+     */
+    public $thumbnailUrlSuffix;
+
+    /**
      * @inheritdoc
      */
     public function init()
@@ -130,6 +140,8 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
         downloadFilesByAjax: true,
         previewImagesInModal: true,
         enablePermissionsRecursive: false,
+        thumbnailUrlPrefix: '{$this->thumbnailUrlPrefix}',
+        thumbnailUrlSuffix: '{$this->thumbnailUrlSuffix}',
 
         // File patterns
         isEditableFilePattern: /\.(!)/i,
