@@ -32,6 +32,9 @@
       "bower-asset-library": "vendor/bower"
     }
   },
+  "suggest": {
+    "pheme/yii2-settings": "Allows more advanced settings fpr e.g. FileManagerWidget"
+  },
   "autoload": {
     "psr-4": {
       "hrzg\\filemanager\\": "src/"
