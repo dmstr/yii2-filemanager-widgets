@@ -16,7 +16,7 @@
   ],
   "require": {
     "yiisoft/yii2": "*",
-    "dmstr/yii2-filefly-module" : "^1.0.0",
+    "dmstr/yii2-filefly-module" : "^1.1.0",
     "bower-asset/angular": "~1.5.0",
     "bower-asset/angular-sanitize": "~1.5.0",
     "bower-asset/angular-translate": "~2.9.1",
@@ -32,6 +32,9 @@
     "asset-installer-paths": {
       "bower-asset-library": "vendor/bower"
     }
+  },
+  "suggest": {
+    "pheme/yii2-settings": "Allows more advanced settings fpr e.g. FileManagerWidget"
   },
   "autoload": {
     "psr-4": {
