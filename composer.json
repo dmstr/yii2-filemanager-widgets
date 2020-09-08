@@ -24,7 +24,8 @@
     "bower-asset/ng-file-upload": "^12.0.1",
     "bower-asset/ngclipboard": "^1.1.1",
     "kartik-v/yii2-widget-select2": "^2.0.0",
-    "rmrevin/yii2-fontawesome": "~2.9"
+    "rmrevin/yii2-fontawesome": "~2.9",
+    "yii2assets/yii2-fullscreen-modal": "^1.0.2"
   },
   "extra": {
     "bootstrap": "hrzg\\filemanager\\Bootstrap",
