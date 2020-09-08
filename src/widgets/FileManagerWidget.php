@@ -96,6 +96,11 @@ class FileManagerWidget extends Widget
 
         $title             = empty($this->title) ? getenv('AFM_TITLE') : $this->title;
         $lang              = \Yii::$app->language;
+
+        // resolve options for JavaScript
+        $enableThumbnails = $this->enableThumbnails ? 'true' : 'false';
+        $enableIconPreviewView = $this->enableIconPreviewView ? 'true' : 'false';
+
         $initFilemanagerJs = <<<JS
 angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (config) {
     var defaults = config.\$get();
@@ -151,8 +156,8 @@ angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (
         enablePermissionsRecursive: false,
         thumbnailUrlPrefix: '{$this->thumbnailUrlPrefix}',
         thumbnailUrlSuffix: '{$this->thumbnailUrlSuffix}',
-        enableThumbnails: {$this->enableThumbnails},
-        enableIconPreviewView: {$this->enableIconPreviewView},
+        enableThumbnails: {$enableThumbnails},
+        enableIconPreviewView: {$enableIconPreviewView},
 
         // File patterns
         isEditableFilePattern: /\.(!)/i,
