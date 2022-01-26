@@ -20,7 +20,7 @@ use yii\web\View;
  */
 class AfmBowerAsset extends AssetBundle
 {
-    public $sourcePath = __DIR__ . 'bower/angular';
+    public $sourcePath = __DIR__ . '/bower/angular';
 
     public $js = [
         'angular.min.js',
@@ -28,7 +28,7 @@ class AfmBowerAsset extends AssetBundle
         'angular-translate.min.js',
         'ng-file-upload.min.js',
         'clipboard.min.js',
-        'ngclipboard.js',
+        'ngclipboard.min.js',
     ];
 
     public $jsOptions = [
