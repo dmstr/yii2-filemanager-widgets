@@ -14,6 +14,7 @@ use rmrevin\yii\fontawesome\FA;
 use yii\base\Exception;
 use yii\helpers\BaseUrl;
 use yii\helpers\Html;
+use yii\helpers\Url;
 use yii\web\JsExpression;
 use yii\web\View;
 use yii\widgets\InputWidget;
@@ -29,14 +30,60 @@ class FileManagerInputWidget extends InputWidget
      * File Handler Url
      * @var null|string
      */
-    public $handlerUrl = null;
+    public $handlerUrl;
+
+    /**
+     * @var array
+     */
+    public $select2Options = [];
 
     public function init()
     {
+        parent::init();
+
         if (empty($this->handlerUrl)) {
             throw new Exception('Missing handlerUrl confiugration');
         }
-        parent::init();
+
+        if ($this->hasModel()) {
+            $this->select2Options['model'] = $this->model;
+            $this->select2Options['attribute'] = $this->attribute;
+        } else {
+            $this->select2Options['name'] = $this->name;
+        }
+
+        $this->select2Options['options'] = [
+            'id' => $this->options['id'],
+            'placeholder' => \Yii::t('afm', 'Search for a file ...'),
+            'style' => ['width' => '100%']
+        ];
+
+        $this->select2Options['addon'] = $this->generateAddonButtons();
+
+        $this->select2Options['pluginOptions'] = [
+            'allowClear'         => true,
+            'minimumInputLength' => 3,
+            'language'           => [
+                'errorLoading' => \Yii::t('afm', 'Waiting for results ...'),
+            ],
+            'ajax'               => [
+                'cache'          => true,
+                'url'            => $this->to('search', null),
+                'dataType'       => 'json',
+                'delay'          => 220,
+                'data'           => new JsExpression('searchData'),
+                'processResults' => new JsExpression('resultJs'),
+            ],
+            'escapeMarkup'       => new JsExpression('escapeMarkup'),
+            'templateResult'     => new JsExpression('formatFiles'),
+            'templateSelection'  => new JsExpression('formatFileSelection'),
+            'width' => '100%'
+        ];
+
+        $this->select2Options['pluginEvents'] = [
+            "select2:select"   => new JsExpression('onSelect'),
+            "select2:unselect" => new JsExpression('onUnSelect'),
+        ];
     }
 
     /**
@@ -48,44 +95,8 @@ class FileManagerInputWidget extends InputWidget
     public function run()
     {
         $this->registerClientScript();
-
         // render select2 input widget
-        return Select2::widget(
-            [
-                'model'         => ($this->model) ? $this->model : null,
-                'attribute'     => ($this->attribute) ? $this->attribute : null,
-                'name'          => ($this->name) ? $this->name : null,
-                'options'       => [
-                    'id' => $this->options['id'],
-                    'placeholder' => \Yii::t('afm', 'Search for a file ...'),
-                ],
-                'addon'         => [
-                    'append' => $this->generateAddonButtons(),
-                ],
-                'pluginOptions' => [
-                    'allowClear'         => true,
-                    'minimumInputLength' => 3,
-                    'language'           => [
-                        'errorLoading' => \Yii::t('afm', 'Waiting for results ...'),
-                    ],
-                    'ajax'               => [
-                        'cache'          => true,
-                        'url'            => $this->to('search', null),
-                        'dataType'       => 'json',
-                        'delay'          => 220,
-                        'data'           => new JsExpression('searchData'),
-                        'processResults' => new JsExpression('resultJs'),
-                    ],
-                    'escapeMarkup'       => new JsExpression('escapeMarkup'),
-                    'templateResult'     => new JsExpression('formatFiles'),
-                    'templateSelection'  => new JsExpression('formatFileSelection'),
-                ],
-                'pluginEvents'  => [
-                    "select2:select"   => new JsExpression('onSelect'),
-                    "select2:unselect" => new JsExpression('onUnSelect'),
-                ]
-            ]
-        );
+        return Select2::widget($this->select2Options);
     }
 
     /**
@@ -257,34 +268,36 @@ JS;
     protected function generateAddonButtons()
     {
         return [
-            'content'  => Html::button(
-                    FA::i('copy'),
-                    [
-                        'class'    => 'btn btn-default',
-                        'id'       => $this->options['id'] . '-afm-copy-btn',
-                        'disabled' => 'disabled',
-                        'title'    => \Yii::t('afm', 'Copy path to clipboard')
-                    ]
-                )
-                . Html::button(
-                    FA::i('link'),
-                    [
-                        'class'    => 'btn btn-default',
-                        'id'       => $this->options['id'] . '-afm-link-btn',
-                        'disabled' => 'disabled',
-                        'title'    => \Yii::t('afm', 'Copy link to clipboard')
-                    ]
-                )
-                . Html::button(
-                    FA::i('download'),
-                    [
-                        'class'    => 'btn btn-default',
-                        'id'       => $this->options['id'] . '-afm-download-btn',
-                        'disabled' => 'disabled',
-                        'title'    => \Yii::t('afm', 'Download file')
-                    ]
-                ),
-            'asButton' => true
+            'append' => [
+                'content'  => Html::button(
+                        FA::i(FA::_COPY),
+                        [
+                            'class'    => 'btn btn-default',
+                            'id'       => $this->options['id'] . '-afm-copy-btn',
+                            'disabled' => 'disabled',
+                            'title'    => \Yii::t('afm', 'Copy path to clipboard')
+                        ]
+                    )
+                    . Html::button(
+                        FA::i(FA::_LINK),
+                        [
+                            'class'    => 'btn btn-default',
+                            'id'       => $this->options['id'] . '-afm-link-btn',
+                            'disabled' => 'disabled',
+                            'title'    => \Yii::t('afm', 'Copy link to clipboard')
+                        ]
+                    )
+                    . Html::button(
+                        FA::i(FA::_DOWNLOAD),
+                        [
+                            'class'    => 'btn btn-default',
+                            'id'       => $this->options['id'] . '-afm-download-btn',
+                            'disabled' => 'disabled',
+                            'title'    => \Yii::t('afm', 'Download file')
+                        ]
+                    ),
+                'asButton' => true
+            ]
         ];
     }
 
@@ -299,6 +312,6 @@ JS;
      */
     private function to($action, $path = '')
     {
-        return BaseUrl::to([$this->handlerUrl, 'action' => $action, 'path' => $path]);
+        return Url::to([$this->handlerUrl, 'action' => $action, 'path' => $path]);
     }
 }
