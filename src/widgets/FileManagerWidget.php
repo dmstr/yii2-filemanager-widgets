@@ -156,6 +156,8 @@ class FileManagerWidget extends Widget
                 'pickFiles' => false,
                 'pickFolders' => false,
                 'changePermissions' => $allowPermissions,
+                'customFileActions' => false,
+                'customDirActions' => false,
             ]
         ];
 
