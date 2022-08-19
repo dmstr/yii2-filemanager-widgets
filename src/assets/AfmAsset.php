@@ -33,7 +33,7 @@ class AfmAsset extends AssetBundle
      * @var array
      */
     public $css = [
-        'angular-filemanager.less',
+        'angular-filemanager-scoped.less',
         'angular-filemanager-custom.less'
     ];
 
