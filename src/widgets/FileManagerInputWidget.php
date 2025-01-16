@@ -219,7 +219,7 @@ var hasImageExtension = function(path) {
       return false
     }
 
-    var imageExtensions = ['jpg', 'jpeg', 'gif', 'svg', 'png', 'bmp']
+    var imageExtensions = ['jpg', 'jpeg', 'gif', 'svg', 'png', 'bmp', 'tif']
 
     if (window.FILEFLYCONFIG && window.FILEFLYCONFIG['imageExtensions']) {
       imageExtensions = window.FILEFLYCONFIG['imageExtensions']
