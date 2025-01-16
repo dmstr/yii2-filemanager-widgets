@@ -33,16 +33,60 @@ class FileManagerInputWidget extends InputWidget
     public $handlerUrl;
 
     /**
+     * Limit the number of results
+     * if not set, the limit is the one from api::search which is normally way to high
+     * to be bc, we do NOT set a default here.
+     *
+     * @var
+     */
+    public $limit;
+
+    /**
+     * min input that must be typed before we search result from api
+     * if set to 0, the search will be triggered without typing.
+     * so this should not be done without limit and/or basePath defined!
+     *
+     * handle with care!
+     *
+     * @var int
+     */
+    public $minInputLength = 3;
+
+    /**
+     * optional basePath that can be used to "limit" the search within a
+     * subDir of the file-System
+     *
+     * @var string
+     */
+    public $basePath;
+
+    /**
+     * if true thumbnail img tag will be added IF item has thumbnail property
+     * see: JS formatFiles()
+     *
+     * @var bool
+     */
+    public $enableThumbnails = false;
+
+    /**
      * @var array
      */
     public $select2Options = [];
+
+    /**
+     * internal var for the random func name required to init searchData
+     * for every input instance
+     *
+     * @var
+     */
+    protected $jsGetSearchDataFuncName;
 
     public function init()
     {
         parent::init();
 
         if (empty($this->handlerUrl)) {
-            throw new Exception('Missing handlerUrl confiugration');
+            throw new Exception('Missing handlerUrl configuration');
         }
 
         if ($this->hasModel()) {
@@ -60,9 +104,15 @@ class FileManagerInputWidget extends InputWidget
 
         $this->select2Options['addon'] = $this->generateAddonButtons();
 
+        // do NOT use more_entropy here, as this will result in a string that can NOT be used as JS func name!
+        $this->jsGetSearchDataFuncName = uniqid('searchData', false);
+
+        // should format func with enabled thumbnail be used?
+        $formatFilesCallback = $this->enableThumbnails ? 'formatFilesWithThumb' : 'formatFiles';
+
         $this->select2Options['pluginOptions'] = [
             'allowClear'         => true,
-            'minimumInputLength' => 3,
+            'minimumInputLength' => $this->minInputLength,
             'language'           => [
                 'errorLoading' => \Yii::t('afm', 'Waiting for results ...'),
             ],
@@ -71,11 +121,11 @@ class FileManagerInputWidget extends InputWidget
                 'url'            => $this->to('search', null),
                 'dataType'       => 'json',
                 'delay'          => 220,
-                'data'           => new JsExpression('searchData'),
+                'data'           => new JsExpression($this->jsGetSearchDataFuncName),
                 'processResults' => new JsExpression('resultJs'),
             ],
             'escapeMarkup'       => new JsExpression('escapeMarkup'),
-            'templateResult'     => new JsExpression('formatFiles'),
+            'templateResult'     => new JsExpression($formatFilesCallback),
             'templateSelection'  => new JsExpression('formatFileSelection'),
             'width' => '100%'
         ];
@@ -127,7 +177,7 @@ $('#{$inputId}').ready(function(){
             url: "{$searchUrl}",
             dataType:"json",
             delay:220,
-            data: {q: selectedPath},
+            data: {$this->jsGetSearchDataFuncName} ({term: selectedPath}),
             success: function(result){
                 if (result.length == 1) {
                     onSelect(result[0], '{$inputId}');
@@ -138,14 +188,56 @@ $('#{$inputId}').ready(function(){
 });
 JS;
 
-        $this->view->registerJs($initJs, View::POS_READY);
+        $this->view->registerJs($initJs, View::POS_HEAD);
 
         // format result markup and register addon button scripts and events
+        // we need a separate searchData func for EVERY instance to be able to inject search params
+        // (basePath, limit) on instance basis
         $inputJs = <<<JS
-var searchData = function(params) {
-    return {q:params.term};
+
+var {$this->jsGetSearchDataFuncName} = function (params) {
+    var qData = {
+        q:''
+    };
+    var basePath = '{$this->basePath}';
+    var limit = '{$this->limit}';
+    if (basePath != '') {
+        qData.basePath = basePath;
+    }
+    if (limit != '') {
+        qData.limit = limit;
+    }
+    if (params.term) {
+        qData.q = params.term;    
+    }
+    return qData;
 };
-var formatFiles = function (file) {
+
+
+var hasImageExtension = function(path) {
+    if (typeof path !== 'string') {
+      return false
+    }
+
+    var imageExtensions = ['jpg', 'jpeg', 'gif', 'svg', 'png', 'bmp']
+
+    if (window.FILEFLYCONFIG && window.FILEFLYCONFIG['imageExtensions']) {
+      imageExtensions = window.FILEFLYCONFIG['imageExtensions']
+    }
+
+    imageExtensions = imageExtensions.map(extension => {
+      return extension.toLowerCase()
+    })
+
+    var extension = path.split('.').pop().toLowerCase()
+
+    return (imageExtensions.indexOf(extension) !== -1)
+};
+// just a wrapper to call formatFiles() with useThumb = true property 
+var formatFilesWithThumb = function (file) {
+    return formatFiles(file, true);
+};
+var formatFiles = function (file, useThumb = false) {
 
     // show loading / placeholder
     if (file.loading) {
@@ -155,24 +247,33 @@ var formatFiles = function (file) {
     // mime types
     var preview = '';
     var text = file.path;
-    if (file.mime.indexOf("image") > -1) {
-        preview = '<img src="{$previewUrl}' + file.id + '" style="width:38px" />';
-    } else if (file.mime.indexOf("directory") > -1) {
-        preview = '<span style="width:40px"><i class="fa fa-folder-open fa-3x"></i></span>';
-    } else if (file.mime.indexOf("pdf") > -1) {
-        preview = '<span style="width:40px"><i class="fa fa-file-pdf-o fa-3x"></i></span>';
-    } else if (file.mime.indexOf("zip") > -1) {
-        preview = '<span style="width:40px"><i class="fa fa-file-zip-o fa-3x"></i></span>';
-    } else if (file.mime.indexOf("doc") > -1) {
-        preview = '<span style="width:40px"><i class="fa fa-file-word-o fa-3x"></i></span>';
-    } else if (file.mime.indexOf("xls") > -1) {
-        preview = '<span style="width:40px"><i class="fa fa-file-excel-o fa-3x"></i></span>';
-    } else if (file.mime.indexOf("ppt") > -1) {
-        preview = '<span style="width:40px"><i class="fa fa-file-powerpoint-o fa-3x"></i></span>';
-    } else {
-        preview = '<span style="width:40px"><i class="fa fa-file-o fa-3x"></i></span>';
+    preview = '<span style="width:40px"><i class="fa fa-file-o fa-3x"></i></span>';
+    
+    if (file.mime != '') {
+        if (file.mime.indexOf("image") > -1) {
+            preview = '<span style="width:40px"><i class="fa fa-picture-o fa-3x"></i></span>';
+        } else if (file.mime.indexOf("directory") > -1) {
+            preview = '<span style="width:40px"><i class="fa fa-folder-open fa-3x"></i></span>';
+        } else if (file.mime.indexOf("pdf") > -1) {
+            preview = '<span style="width:40px"><i class="fa fa-file-pdf-o fa-3x"></i></span>';
+        } else if (file.mime.indexOf("zip") > -1) {
+            preview = '<span style="width:40px"><i class="fa fa-file-zip-o fa-3x"></i></span>';
+        } else if (file.mime.indexOf("doc") > -1) {
+            preview = '<span style="width:40px"><i class="fa fa-file-word-o fa-3x"></i></span>';
+        } else if (file.mime.indexOf("xls") > -1) {
+            preview = '<span style="width:40px"><i class="fa fa-file-excel-o fa-3x"></i></span>';
+        } else if (file.mime.indexOf("ppt") > -1) {
+            preview = '<span style="width:40px"><i class="fa fa-file-powerpoint-o fa-3x"></i></span>';
+        } 
+    } else if (hasImageExtension(file.path)) {
+        preview = '<span style="width:40px"><i class="fa fa-picture-o fa-3x"></i></span>';
+        // don't do it, this will load way too much data....
+        // preview = '<img src="{$previewUrl}' + file.id + '" style="width:38px" />';
     }
-
+    if (useThumb == true && file.thumbnail && file.thumbnail != '') {
+        preview = '<img src="' + file.thumbnail + '" style="width:38px" />';
+    }
+    
     // one result line markup
     var markup =
         '<div class="row" style="min-height:38px">' +
