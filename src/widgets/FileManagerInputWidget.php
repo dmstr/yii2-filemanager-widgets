@@ -188,7 +188,7 @@ $('#{$inputId}').ready(function(){
 });
 JS;
 
-        $this->view->registerJs($initJs, View::POS_HEAD);
+        $this->view->registerJs($initJs, View::POS_READY);
 
         // format result markup and register addon button scripts and events
         // we need a separate searchData func for EVERY instance to be able to inject search params
