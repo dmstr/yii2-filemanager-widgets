@@ -8,87 +8,38 @@
  */
 namespace hrzg\filemanager\assets;
 
-use yii\helpers\FileHelper;
 use yii\web\AssetBundle;
 use yii\web\View;
 
 /**
- * Class FileManagerAsset
- * Publishes the compiled Vue 3 file manager (filemanager.css and filemanager.js) with its notice file filemanager.licenses.txt.
- * Bootstrap 3 CSS incl. Glyphicons is the only dependency, it comes from the host application.
- * @package hrzg\filemanager\assets
+ * Publishes the compiled file manager bundle. Bootstrap 3 CSS including
+ * Glyphicons is the only dependency and comes from the host application.
+ *
  * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
 class FileManagerAsset extends AssetBundle
 {
-    /**
-     * @var string
-     */
-    public $sourcePath = '@hrzg/filemanager/assets/dist';
+    public $sourcePath = __DIR__ . '/dist';
+
+    public $css = ['filemanager.css'];
+
+    public $js = ['filemanager.js'];
 
     /**
-     * @var string|null
+     * End of body: Yii renders the script files of a position before its inline
+     * code, so only POS_END guarantees that the config FileManagerWidget writes
+     * at POS_HEAD exists when the bundle runs.
      */
-    public static $assetSourcePath = null;
+    public $jsOptions = ['position' => View::POS_END];
 
     /**
-     * @var array
-     */
-    public $css = [
-        'filemanager.css',
-    ];
-
-    /**
-     * @var array
-     */
-    public $js = [
-        'filemanager.js',
-    ];
-
-    /**
-     * The bundle goes to the end of the body: inline code of a position renders after
-     * the script files of the same position, so only POS_END guarantees that the
-     * config FileManagerWidget writes at POS_HEAD exists when the bundle runs.
-     * The bundle mounts itself on DOMContentLoaded.
-     *
-     * @var array
-     */
-    public $jsOptions = [
-        'position' => View::POS_END,
-    ];
-
-    /**
-     * @var array $publishOptions
+     * Publish only the build output and its notice file, which the banner of
+     * the two bundles points to, so stray files in the directory never reach
+     * the web root.
      */
     public $publishOptions = [
-        'forceCopy' => false,
-        // publish only the build output; protects the web root from stray files in the directory.
-        // The notice file is published too: the banner of filemanager.js and filemanager.css points to it.
         'only' => ['filemanager.css', 'filemanager.js', 'filemanager.licenses.txt'],
     ];
 
-    /**
-     * @var array
-     */
-    public $depends = [
-        'yii\bootstrap\BootstrapAsset',
-    ];
-
-    /**
-     * @inheritdoc
-     */
-    public function init()
-    {
-        parent::init();
-
-        self::$assetSourcePath = $this->sourcePath;
-    }
-
-    /**
-     * @return false|string
-     */
-    public static function getPublishedUrl()
-    {
-        return \Yii::$app->assetManager->getPublishedUrl(self::$assetSourcePath);
-    }
+    public $depends = ['yii\bootstrap\BootstrapAsset'];
 }
