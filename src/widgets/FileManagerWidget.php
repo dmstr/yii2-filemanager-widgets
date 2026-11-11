@@ -101,7 +101,8 @@ class FileManagerWidget extends Widget
             $allowPermissions = true;
         }
 
-        $title             = empty($this->title) ? getenv('AFM_TITLE') : $this->title;
+        // getenv() returns false for an unset variable, which the breadcrumb would print as "false"
+        $title             = empty($this->title) ? (string)getenv('AFM_TITLE') : $this->title;
         $lang              = \Yii::$app->language;
 
         $this->options = is_array($this->options) ? $this->options : [];
