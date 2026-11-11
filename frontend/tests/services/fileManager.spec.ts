@@ -400,13 +400,22 @@ describe('copy', () => {
     expect(requests).toEqual([]);
   });
 
+  it('allows a new, unused name in the same folder and sends it as newFilename', async () => {
+    select('a.txt');
+    fm.modalWithPathSelector('copy');
+    item('a.txt').tempModel.name = 'fresh.txt';
+    expect(fm.copy()).toBeUndefined();
+    await settle();
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/', newFilename: 'fresh.txt' });
+  });
+
   it('allows an existing name when the destination is another folder', async () => {
     select('a.txt');
     fm.modalWithPathSelector('copy');
     fm.selectedModalPath = ['other'];
     expect(fm.copy()).toBeUndefined();
     await settle();
-    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/other', singleFilename: 'a.txt' });
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/other', newFilename: 'a.txt' });
   });
 
   it('copies several items without name check, refreshes and closes', async () => {

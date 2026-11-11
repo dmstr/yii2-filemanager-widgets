@@ -103,10 +103,15 @@ describe('POST requests match the recorded apiMiddleware', () => {
     });
   });
 
-  it('the copy of one item carries singleFilename, several items do not (Q-14)', async () => {
-    await api.copy([items()[0]], ['t']);
+  it('the copy of one item carries the new name as newFilename, several items do not', async () => {
+    const [first] = items();
+    first.tempModel.name = '  copy.txt ';
+    await api.copy([first], ['t']);
     await api.copy(items(), ['t']);
-    expect(requests[0].body).toHaveProperty('singleFilename', 'a.txt');
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/docs/a.txt'], newPath: '/t', newFilename: 'copy.txt' });
+    expect(Object.keys(requests[0].body as object)).toEqual(['action', 'items', 'newPath', 'newFilename']);
+    expect(requests[0].body).not.toHaveProperty('singleFilename');
+    expect(requests[1].body).not.toHaveProperty('newFilename');
     expect(requests[1].body).not.toHaveProperty('singleFilename');
   });
 

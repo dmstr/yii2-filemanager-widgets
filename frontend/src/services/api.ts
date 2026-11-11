@@ -249,11 +249,12 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
 
     copy(files, path) {
       const items = getFileList(files);
-      const singleFilename = items.length === 1 ? (files[0] as Item).tempModel.name : undefined;
+      // Trimmed like the name check in copy(), so the stored name is the one that was validated.
+      const newFilename = items.length === 1 ? (files[0] as Item).tempModel.name.trim() : undefined;
       const data: Record<string, unknown> = { action: 'copy', items, newPath: getPath(path) };
-      // Q-14: filefly reads `newFilename`, so this name never arrives.
-      if (singleFilename && items.length === 1) {
-        data.singleFilename = singleFilename;
+      // filefly reads `newFilename` as the name of the copy.
+      if (newFilename) {
+        data.newFilename = newFilename;
       }
       return post(config.copyUrl, data, () => i18n.t('error_copying'));
     },
