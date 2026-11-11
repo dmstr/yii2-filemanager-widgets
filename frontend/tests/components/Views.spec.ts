@@ -179,11 +179,32 @@ describe('icon content', () => {
     expect(cells[1].findAll('td')[2].text()).toMatch(/^2021-03-0\d \d\d:\d\d:\d\d$/);
   });
 
-  it('table: Q-07 hideSize hides the header cell only', async () => {
-    app = await open('table', { config: { hideSize: true } });
-    const headers = main().findAll('thead th');
-    expect(isShown(headers[1].element)).toBe(false);
-    expect(isShown(main().find('tbody tr.item-list td.hidden-xs').element)).toBe(true);
+  describe.each([
+    { hideSize: true, hideDate: false, hidePermissions: false },
+    { hideSize: false, hideDate: false, hidePermissions: false },
+    { hideSize: true, hideDate: true, hidePermissions: false },
+    { hideSize: true, hideDate: false, hidePermissions: true },
+    { hideSize: true, hideDate: true, hidePermissions: true },
+    { hideSize: false, hideDate: true, hidePermissions: true },
+  ])('table: columns with %o', (config) => {
+    it('shows or hides each column on the header and on the cells of folders and files alike', async () => {
+      app = await open('table', { files: [dir('folder'), file('a.txt')], config: { showSizeForDirectories: true, ...config } });
+      const expected = [true, !config.hideSize, !config.hideDate, !config.hidePermissions];
+      expect(main().findAll('thead th').map((h) => isShown(h.element))).toEqual(expected);
+      const items = main().findAll('tr.item-list');
+      expect(items).toHaveLength(2);
+      for (const item of items) {
+        expect(item.findAll('td').map((c) => isShown(c.element))).toEqual(expected);
+      }
+    });
+  });
+
+  it('table: the size cell keeps its responsive class and the folder size switch', async () => {
+    app = await open('table', { files: [dir('folder')] });
+    const cell = main().find('tr.item-list').findAll('td')[1];
+    expect(cell.classes()).toContain('hidden-xs');
+    expect(isShown(cell.element)).toBe(true);
+    expect(isShown(cell.find('span').element)).toBe(false);
   });
 
   it('table: hides date and permission columns by config on header and cells', async () => {

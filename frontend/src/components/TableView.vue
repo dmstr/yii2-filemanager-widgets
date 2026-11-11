@@ -24,7 +24,6 @@ const sizeOf = useFileSize();
             <span v-show="fm.predicate[1] === 'model.name'" class="sortorder" :class="{ reverse: fm.reverse }"></span>
           </a>
         </th>
-        <!-- Q-07: hideSize hides only the header cell, never the body cells -->
         <th v-show="!config.hideSize" class="hidden-xs">
           <a href="" @click.prevent="fm.order('model.size')">
             {{ t('size') }}
@@ -81,7 +80,7 @@ const sizeOf = useFileSize();
             {{ strLimit(item.model.name, 64) }}
           </a>
         </td>
-        <td class="hidden-xs">
+        <td v-show="!config.hideSize" class="hidden-xs">
           <span v-show="item.model.type !== 'dir' || config.showSizeForDirectories">
             {{ sizeOf(item.model.size) }}
           </span>
