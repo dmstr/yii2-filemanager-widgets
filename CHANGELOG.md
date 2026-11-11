@@ -1,5 +1,11 @@
 # CHANGELOG
 
+### 2.0.3
+
+Changed requirements:
+
+- the requirement on `dmstr/yii2-filefly-module` is widened from `^1.7.0-rc1` to `^1.7.0-rc1 || ^2.0`, so the file manager can be installed next to filefly 2.0; the widgets use only the HTTP API of filefly (`filefly/api`), no PHP class of it
+
 ### 2.0.2
 
 Fixes:
