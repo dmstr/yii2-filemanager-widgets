@@ -1,0 +1,62 @@
+<script setup lang="ts">
+/**
+ * Extract dialog (`#extract`, F-56). Port of the legacy modal markup; the
+ * legacy `ng-init="singleSelection().emptyName()"` is dropped (Q-09).
+ */
+import { computed } from 'vue';
+import { useI18n } from '../../i18n/index.ts';
+import { useFileManager } from '../../services/fileManager.ts';
+import BaseModal from './BaseModal.vue';
+import ErrorBar from './ErrorBar.vue';
+
+const fm = useFileManager();
+const { t } = useI18n();
+
+/**
+ * Q-29: AngularJS bound `singleSelection().tempModel.name` and assigned
+ * through an undefined base without error; the getter renders '' and the
+ * setter drops the write then. `v-model.trim` reproduces `ngTrim`.
+ */
+const name = computed({
+  get: () => fm.singleSelection()?.tempModel.name ?? '',
+  set: (value: string) => {
+    const item = fm.singleSelection();
+    if (item) {
+      item.tempModel.name = value;
+    }
+  },
+});
+</script>
+
+<template>
+  <BaseModal id="extract" v-slot="{ close }">
+    <form @submit.prevent="fm.extract()">
+      <div class="modal-header">
+        <button type="button" class="close" @click="close()">
+          <span aria-hidden="true">&times;</span>
+          <span class="sr-only">{{ t('close') }}</span>
+        </button>
+        <h4 class="modal-title">{{ t('extract_item') }}</h4>
+      </div>
+      <div class="modal-body">
+        <div v-show="fm.api.asyncSuccess">
+          <div class="label label-success error-msg">{{ t('extraction_started') }}</div>
+        </div>
+        <div v-show="!fm.api.asyncSuccess">
+          <label class="radio">{{ t('enter_folder_name_for_extraction') }} <b>{{ fm.singleSelection()?.model.name ?? '' }}</b></label>
+          <input class="form-control" v-model.trim="name" autofocus>
+        </div>
+        <ErrorBar />
+      </div>
+      <div class="modal-footer">
+        <div v-show="fm.api.asyncSuccess">
+          <button type="button" class="btn btn-default" :disabled="fm.api.inprocess" @click="close()">{{ t('close') }}</button>
+        </div>
+        <div v-show="!fm.api.asyncSuccess">
+          <button type="button" class="btn btn-default" :disabled="fm.api.inprocess" @click="close()">{{ t('cancel') }}</button>
+          <button type="submit" class="btn btn-primary" :disabled="fm.api.inprocess">{{ t('extract') }}</button>
+        </div>
+      </div>
+    </form>
+  </BaseModal>
+</template>
