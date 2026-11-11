@@ -8,7 +8,13 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const distDir = fileURLToPath(new URL('../src/assets/dist', import.meta.url));
 
 export default defineConfig({
-  plugins: [vue(), mockApiPlugin(), devAssetsPlugin()],
+  plugins: [
+    // Preserve: AngularJS keeps every whitespace between inline elements and the stylesheet's layout
+    // (button gaps, icon-to-label spacing) depends on it; Vue's default `condense` would drop it.
+    vue({ template: { compilerOptions: { whitespace: 'preserve' } } }),
+    mockApiPlugin(),
+    devAssetsPlugin(),
+  ],
   // The Yii2 asset bundle loads a plain script tag, so Vue's dev/prod switch
   // must be resolved at build time.
   define: { 'process.env.NODE_ENV': JSON.stringify('production') },

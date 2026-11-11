@@ -3,6 +3,11 @@
 // Optional query flags to reach UI paths the widget defaults switch off:
 //   ?allow=rename,changePermissions   turns those allowedActions on
 //   ?editable=1                       makes .txt and .svg editable
+//   ?preview=1                        enables the icon preview view (enableIconPreviewView)
+//   ?thumbs=1                         enables image thumbnails (enableThumbnails)
+//   ?perms=1                          shows the permissions column (hidePermissions off)
+//   ?pick=1                           enables pickFiles/pickFolders with a logging pickCallback
+//   ?custom=1                         adds one custom file action and one custom folder action
 (function () {
   var handlerUrl = '/mock/api';
   var params = new URLSearchParams(window.location.search);
@@ -72,6 +77,23 @@
     if (name in config.allowedActions) config.allowedActions[name] = true;
   });
   if (params.get('editable')) config.isEditableFilePattern = /\.(txt|svg)$/i;
+  if (params.get('preview')) config.enableIconPreviewView = true;
+  if (params.get('thumbs')) config.enableThumbnails = true;
+  if (params.get('perms')) config.hidePermissions = false;
+  if (params.get('pick')) {
+    config.allowedActions.pickFiles = true;
+    config.allowedActions.pickFolders = true;
+    config.pickCallback = function (model) {
+      console.log('pickCallback', model);
+    };
+  }
+  if (params.get('custom')) {
+    // Callbacks are names of global functions, the form PHP-driven hosts use.
+    window.harnessFileAction = function (item) { console.log('custom file action', item); };
+    window.harnessDirAction = function (item) { console.log('custom folder action', item); };
+    config.allowedActions.customFileActions = { 'Custom file action': 'harnessFileAction' };
+    config.allowedActions.customDirActions = { 'Custom folder action': 'harnessDirAction' };
+  }
 
   window.fileManagerConfig = config;
 })();
