@@ -150,7 +150,32 @@ describe('tempModelField', () => {
     expect(owner.tempModel.name).toBe('b');
   });
 
-  it('reads undefined and drops the write without an owner (Q-29)', () => {
+  it('keeps the typed text without an owner and shows the model once an owner exists', async () => {
+    const holder = reactive<{ owner: { tempModel: Record<string, unknown> } | undefined }>({ owner: undefined });
+    const { el, type } = mountField(tempModelField(() => holder.owner, 'name'));
+    for (const value of ['a', 'ab', 'abc', 'ab', 'ab c', ' ab c ']) {
+      type(value);
+      await nextTick();
+      expect(el.value).toBe(value);
+    }
+    holder.owner = { tempModel: { name: 'own' } };
+    await nextTick();
+    expect(el.value).toBe('own');
+    type('own2 ');
+    expect(holder.owner.tempModel.name).toBe('own2');
+    expect(el.value).toBe('own2 ');
+  });
+
+  it('shows an empty field when an owner appears whose model is empty', async () => {
+    const holder = reactive<{ owner: { tempModel: Record<string, unknown> } | undefined }>({ owner: undefined });
+    const { el, type } = mountField(tempModelField(() => holder.owner, 'name'));
+    type('typed');
+    holder.owner = { tempModel: {} };
+    await nextTick();
+    expect(el.value).toBe('');
+  });
+
+  it('reads undefined and drops the write without an owner', () => {
     for (const missing of [undefined, null, false] as const) {
       const model = tempModelField(() => missing, 'name');
       expect(model.get()).toBeUndefined();

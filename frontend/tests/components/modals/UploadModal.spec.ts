@@ -175,7 +175,7 @@ describe('UploadModal', () => {
     expect(app.fm.uploadFiles).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps the list when the dialog is cancelled or closed (Q-11), and Cancel is never disabled', async () => {
+  it('empties the list however the dialog is closed, and Cancel is never disabled', async () => {
     app = mountModal(UploadModal);
     app.fm.uploadFileList = [makeFile('a.txt')];
     app.fm.api.inprocess = true;
@@ -184,11 +184,17 @@ describe('UploadModal', () => {
     app.fm.modals.open('uploadfile');
     await cancel().trigger('click');
     expect(app.fm.modals.isOpen('uploadfile')).toBe(false);
-    expect(app.fm.uploadFileList).toHaveLength(1);
+    expect(app.fm.uploadFileList).toHaveLength(0);
+    app.fm.uploadFileList = [makeFile('a.txt')];
     app.fm.modals.open('uploadfile');
     await app.wrapper.find('button.close').trigger('click');
     expect(app.fm.modals.isOpen('uploadfile')).toBe(false);
-    expect(app.fm.uploadFileList).toHaveLength(1);
+    expect(app.fm.uploadFileList).toHaveLength(0);
+    // Escape and the backdrop close through the modal manager as well.
+    app.fm.uploadFileList = [makeFile('a.txt')];
+    app.fm.modals.open('uploadfile');
+    app.fm.modals.close('uploadfile');
+    expect(app.fm.uploadFileList).toHaveLength(0);
   });
 
   it('shows the API error in the error bar', async () => {

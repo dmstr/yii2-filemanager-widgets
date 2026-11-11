@@ -157,11 +157,13 @@ class FileManagerWidget extends Widget
                 'move' => true,
                 'copy' => true,
                 'edit' => true,
-                'compress' => true,
-                'compressChooseName' => true,
-                'extract' => true,
+                // Off because the filefly backend has no matching API action;
+                // a backend that implements them switches them on via $options.
+                'compress' => false,
+                'compressChooseName' => false,
+                'extract' => false,
                 'download' => true,
-                'downloadMultiple' => true,
+                'downloadMultiple' => false,
                 'downloadLink' => true,
                 'preview' => true,
                 'remove' => true,

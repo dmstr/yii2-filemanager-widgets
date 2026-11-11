@@ -24,9 +24,13 @@ export interface Navigator {
   currentPath: string[];
   history: TreeNode[];
   error: string;
-  /** Called after every successful refresh; the file manager hooks its selection reset in here. */
-  onRefresh: () => void;
-  refresh(recycle?: boolean): Promise<void>;
+  /**
+   * Called after every successful refresh; the file manager hooks its selection reset in here.
+   * `keepState` is set for a reload that must not disturb an open dialog.
+   */
+  onRefresh: (keepState: boolean) => void;
+  /** `keepState` reloads the list without the `onRefresh` reset of selection and search. */
+  refresh(recycle?: boolean, keepState?: boolean): Promise<void>;
   buildTree(path: string): void;
   folderClick(item?: Item): void;
   upDir(): void;
@@ -35,23 +39,41 @@ export interface Navigator {
   listHasFolders(): Item | undefined;
 }
 
+/**
+ * Is the node `name` (full path without leading slash, `''` for the root) on `path`, i.e. are its segments
+ * a prefix of the segments of `path`? Compared by segment, so `doc` is not on `documents/x`.
+ */
+export function isOnPath(name: string, path: string): boolean {
+  return name === '' || path === name || path.startsWith(name + '/');
+}
+
 /** Creates a navigator with its own API client. */
 export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigator {
   const api = createApi(config, i18n);
   // Assigned right below; the functions only run after that.
   let nav: Navigator;
 
-  /** The navigator's own variant of `deferredHandler`: it writes to `nav.error` and keeps an error that is already set. */
-  const deferredHandler: DeferredHandler = (data, deferred, code, defaultMsg) =>
-    settleDeferred(nav, data, deferred, code, defaultMsg, false);
+  // Counts the refresh calls; only the answer to the latest one may touch the navigator.
+  let latestRequest = 0;
+
+  /**
+   * The navigator's own variant of `deferredHandler`: it writes to `nav.error` and keeps an error that is already set.
+   * The answer to a superseded request settles quietly, so it neither sets an error nor rejects its caller.
+   */
+  const handlerFor =
+    (request: number): DeferredHandler =>
+    (data, deferred, code, defaultMsg) =>
+      request === latestRequest
+        ? settleDeferred(nav, data, deferred, code, defaultMsg, false)
+        : deferred.resolve({});
 
   function buildTree(path: string): void {
     const flatNodes: TreeNode[] = [];
 
     function recursive(parent: TreeNode, item: Item, currentPath: string): void {
       const absName = currentPath ? currentPath + '/' + item.model.name : item.model.name;
-      // Q-24: a folder counts as "on the path" when its name appears at the start of the path as plain text.
-      if (parent.name.trim() && currentPath.trim().indexOf(parent.name) !== 0) {
+      // Branches off the listed path are pruned; "on the path" is decided by segments, so `doc` is not on `documents`.
+      if (parent.name.trim() && !isOnPath(parent.name, currentPath)) {
         parent.nodes = [];
       }
       if (parent.name !== currentPath) {
@@ -89,21 +111,27 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
     }
   }
 
-  function refresh(recycle?: boolean): Promise<void> {
+  function refresh(recycle?: boolean, keepState = false): Promise<void> {
+    const request = ++latestRequest;
     const path = nav.currentPath.join('/');
     nav.requesting = true;
     nav.fileList = [];
     // Q-02 fixed: the AngularJS navigator never cleared a failed list's error, so every later refresh failed too.
     nav.error = '';
     const done = api
-      .list(nav.currentPath, deferredHandler, recycle)
+      .list(nav.currentPath, handlerFor(request), recycle)
       .then((data) => {
+        if (request !== latestRequest) {
+          return;
+        }
         nav.fileList = (data.result || []).map((file: object) => new Item(file, nav.currentPath, config));
         buildTree(path);
-        nav.onRefresh();
+        nav.onRefresh(keepState);
       })
       .finally(() => {
-        nav.requesting = false;
+        if (request === latestRequest) {
+          nav.requesting = false;
+        }
       });
     // Callers may ignore the outcome, as the AngularJS ones all did.
     done.catch(noop);

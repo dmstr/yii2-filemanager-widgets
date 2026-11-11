@@ -7,6 +7,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MultiSelect, { type MultiSelectItem } from '../../src/components/MultiSelect.vue';
+import { createI18n, I18N_KEY } from '../../src/i18n/index.ts';
 import { loadFixture } from '../utils/fixtures.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -40,6 +41,7 @@ function vueDriver(input: Any, output?: Any): Driver & { wrapper: VueWrapper } {
     },
     attrs: { class: 'permission-multi-select-button' },
     attachTo: document.body,
+    global: { provide: { [I18N_KEY as symbol]: createI18n('en') } },
   });
   return {
     wrapper,
@@ -128,12 +130,18 @@ type Step = (d: Driver) => unknown;
 /**
  * Runs the steps of the running test on the component and compares the state
  * after mount and after every step with the one recorded from the directive
- * (the scenario is the full name of the test). Returns the component's driver
- * states for additional assertions.
+ * (the scenario is the full name of the test). With `sameAs` the states are
+ * compared with the recording of that other scenario instead, except for the
+ * input model, which is what the two differ in. Returns the component's
+ * driver states for additional assertions.
  */
-async function replay(fixture: () => Any, steps: Step[], options: { checked?: boolean; output?: () => Any } = {}) {
+async function replay(
+  fixture: () => Any,
+  steps: Step[],
+  options: { checked?: boolean; output?: () => Any; sameAs?: string } = {},
+) {
   const checked = options.checked ?? true;
-  const scenario = expect.getState().currentTestName!;
+  const scenario = options.sameAs ?? expect.getState().currentTestName!;
   const expected = recorded.scenarios[scenario];
   if (!expected) throw new Error(`no recording for: ${scenario}`);
   const d = vueDriver(fixture(), options.output?.());
@@ -148,7 +156,8 @@ async function replay(fixture: () => Any, steps: Step[], options: { checked?: bo
   expect(states).toHaveLength(expected.length);
   for (let i = 0; i < expected.length; i++) {
     const { dom, ...rest } = states[i];
-    expect({ ...rest, dom: describeShape(dom) }, `state after step ${i}`).toEqual({ ...expected[i], dom: recorded.doms[expected[i].dom] });
+    const input = options.sameAs ? expected[i].input : rest.input;
+    expect({ ...rest, input, dom: describeShape(dom) }, `state after step ${i}`).toEqual({ ...expected[i], dom: recorded.doms[expected[i].dom] });
   }
   return states;
 }
@@ -165,6 +174,7 @@ const type = (d: Driver, text: string) => {
   field.value = text;
   field.dispatchEvent(new Event('input', { bubbles: true }));
 };
+const rowNames = (d: Driver) => $$(d, '.multiSelectItem label span').map((el) => el.textContent!.trim());
 const key = (keyCode: number, shiftKey = false) => {
   const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, shiftKey });
   Object.defineProperty(event, 'keyCode', { value: keyCode });
@@ -215,17 +225,20 @@ describe('MultiSelect rendering', () => {
     await replay(() => [], [toggle]);
   });
 
-  it('keeps the empty button of an undefined input model and opens an empty list', async () => {
-    await replay(() => undefined, [toggle, toggle]);
-  });
+  // Deviation: the directive ignored a null or undefined input model (an empty button, no output, and no
+  // opening for null). It counts as an empty list here, so it renders, opens and outputs like `[]`.
+  for (const [name, value] of [
+    ['undefined', undefined],
+    ['null', null],
+  ] as const) {
+    it(`renders, opens and outputs an input model of ${name} like an empty array`, async () => {
+      await replay(() => value, [toggle], { sameAs: 'MultiSelect rendering > renders an empty array like the directive' });
+    });
 
-  it('keeps the empty button of an undefined input model while the parent holds an output array', async () => {
-    await replay(() => undefined, [toggle], { output: () => [] });
-  });
-
-  it('does not open for a null input model', async () => {
-    await replay(() => null, [toggle, (d) => click($(d, '.clearButton'))]);
-  });
+    it(`renders an input model of ${name} like an empty array while the parent holds an output array`, async () => {
+      await replay(() => value, [toggle], { output: () => [], sameAs: 'MultiSelect rendering > renders an empty array like the directive' });
+    });
+  }
 
   it('reduces the output to role and selected in the input key order, only for selected === true', async () => {
     const vue = await replay(
@@ -333,21 +346,39 @@ describe('MultiSelect helpers', () => {
   });
 
   it('applies select all, none and reset to the filtered items only', async () => {
-    await replay(roles, [
-      toggle,
-      (d) => type(d, 'e'),
-      (d) => type(d, 'er'),
-      (d) => click(helper(d, 0)),
-      (d) => click($(d, '.clearButton')),
-      (d) => type(d, 'ad'),
-      (d) => click(helper(d, 1)),
-      (d) => type(d, 'gu'),
-      (d) => click(helper(d, 1)),
-      (d) => click($(d, '.clearButton')),
-      (d) => type(d, 'min'),
-      (d) => click(helper(d, 2)),
-      (d) => click($(d, '.clearButton')),
+    // Explicit expectations: the search matches the role name only, so `e` no longer shows Admin.
+    const d = vueDriver(roles());
+    await settle();
+    const ticked = () => (d.input() as MultiSelectItem[]).map((item) => item.selected);
+    const step = async (fn: () => unknown) => {
+      fn();
+      await settle();
+    };
+    await step(() => toggle(d));
+    await step(() => type(d, 'e'));
+    expect(rowNames(d)).toEqual(['Editor', 'Guest', 'Reviewer']);
+    await step(() => click(helper(d, 0)));
+    expect(ticked()).toEqual([true, true, true, true]);
+    await step(() => click($(d, '.clearButton')));
+    await step(() => type(d, 'ad'));
+    await step(() => click(helper(d, 1)));
+    expect(ticked()).toEqual([false, true, true, true]);
+    await step(() => type(d, 'gu'));
+    await step(() => click(helper(d, 1)));
+    expect(ticked()).toEqual([false, true, false, true]);
+    await step(() => click($(d, '.clearButton')));
+    await step(() => type(d, 'min'));
+    await step(() => click(helper(d, 2)));
+    // Reset restores only the shown row; Guest stays as changed.
+    expect(ticked()).toEqual([true, true, false, true]);
+    expect(d.output()).toEqual([
+      { role: 'Admin', selected: true },
+      { role: 'Editor', selected: true },
+      { role: 'Reviewer', selected: true },
     ]);
+    await step(() => click($(d, '.clearButton')));
+    expect(rowNames(d)).toHaveLength(4);
+    d.destroy();
   });
 
   it('keeps the reset backup across closing and reopening', async () => {
@@ -363,27 +394,42 @@ describe('MultiSelect helpers', () => {
 });
 
 describe('MultiSelect filter', () => {
-  it('filters case-insensitively by substring, trims, keeps input order and clears with the button', async () => {
-    await replay(roles, [
-      toggle,
-      (d) => type(d, 'E'),
-      (d) => type(d, 'ER'),
-      (d) => type(d, ' er '),
-      (d) => type(d, 'xyz'),
-      (d) => click($(d, '.clearButton')),
-    ]);
+  it('filters by role name case-insensitively as a substring, trims, keeps input order and clears with the button', async () => {
+    const d = vueDriver(roles());
+    await settle();
+    const search = async (text: string) => {
+      type(d, text);
+      await settle();
+      return rowNames(d);
+    };
+    toggle(d);
+    await settle();
+    expect(await search('E')).toEqual(['Editor', 'Guest', 'Reviewer']);
+    expect(await search('ER')).toEqual(['Reviewer']);
+    expect(await search(' er ')).toEqual(['Reviewer']);
+    expect(await search('itor')).toEqual(['Editor']);
+    expect(await search('xyz')).toEqual([]);
+    click($(d, '.clearButton'));
+    await settle();
+    expect(rowNames(d)).toEqual(['Admin', 'Editor', 'Guest', 'Reviewer']);
+    expect(($(d, '.inputFilter') as HTMLInputElement).value).toBe('');
+    expect(await search('   ')).toEqual(['Admin', 'Editor', 'Guest', 'Reviewer']);
+    d.destroy();
   });
 
-  it('matches every row through the hidden properties the directive puts on the items', async () => {
-    // `0` hits the spacing property, `obj`/`C` hit ng-repeat's `$$hashKey` ("object:<uid>").
-    const vue = await replay(roles, [
-      toggle,
-      (d) => type(d, 'obj'),
-      (d) => type(d, 'Admin'),
-      (d) => type(d, '0'),
-      (d) => type(d, 'c'),
-    ]);
-    expect((vue[2].dom as Any).children[0].children[1].children[1].children).toHaveLength(4);
+  it('does not match internal values such as the row index or a generated key', async () => {
+    const d = vueDriver(roles());
+    await settle();
+    toggle(d);
+    await settle();
+    // Only `t` occurs in role names (Editor, Guest).
+    const expected: Record<string, string[]> = { '0': [], '1': [], obj: [], 'object:1': [], ':': [], c: [], t: ['Editor', 'Guest'] };
+    for (const [text, names] of Object.entries(expected)) {
+      type(d, text);
+      await settle();
+      expect(rowNames(d), text).toEqual(names);
+    }
+    d.destroy();
   });
 
   it('clears the filter on reopen but not on close', async () => {
@@ -410,24 +456,70 @@ describe('MultiSelect input model replaced from outside', () => {
     ]);
   });
 
-  it('keeps the stale list and label when the input model becomes undefined', async () => {
-    await replay(roles, [toggle, (d) => type(d, 'ed'), toggle, (d) => d.setInput(undefined), toggle, (d) => click(helper(d, 0))]);
-  });
+  // Deviation: the directive kept the list, label, reset backup and output of the previous input model here,
+  // so a dialog reused for another item showed and returned that item's roles.
+  for (const [name, value] of [
+    ['undefined', undefined],
+    ['null', null],
+  ] as const) {
+    it(`clears list, label, output and reset backup when the input model becomes ${name}`, async () => {
+      const previous = roles();
+      const d = vueDriver(previous);
+      await settle();
+      toggle(d);
+      type(d, 'ed');
+      toggle(d);
+      await settle();
+      await d.setInput(value);
+      expect(mainButton(d).textContent).toBe('None Selected');
+      expect($$(d, '.multiSelectItem')).toHaveLength(0);
+      expect(d.output()).toEqual([]);
 
-  it('keeps the stale list and label when the input model becomes null and refuses to open', async () => {
-    await replay(roles, [(d) => d.setInput(null), toggle]);
-  });
+      toggle(d);
+      await settle();
+      expect($(d, '.checkboxLayer').classList.contains('show')).toBe(true);
+      expect($$(d, '.multiSelectItem')).toHaveLength(0);
+      click(helper(d, 0));
+      click(helper(d, 2));
+      await settle();
+      expect(d.output()).toEqual([]);
+      expect(mainButton(d).textContent).toBe('None Selected');
+      expect(flags(previous)).toEqual(flags(roles()));
+
+      // A later input model gets its own backup: Reset restores its ticks, not those of `previous`.
+      await d.setInput([
+        { role: 'X', selected: false },
+        { role: 'Y', selected: true },
+      ]);
+      click(helper(d, 0));
+      click(helper(d, 2));
+      await settle();
+      expect(d.output()).toEqual([{ role: 'Y', selected: true }]);
+      d.destroy();
+    });
+  }
 
   it('follows the filter that is active while the input model is replaced', async () => {
-    await replay(roles, [
-      toggle,
-      (d) => type(d, 'e'),
-      () => click(document.body),
-      (d) => d.setInput([...roles(), { role: 'Zed', selected: true }]),
-      toggle,
-      (d) => click(row(d, 4)),
-      (d) => click(helper(d, 2)),
+    const d = vueDriver(roles());
+    await settle();
+    toggle(d);
+    type(d, 'e');
+    click(document.body);
+    await settle();
+    await d.setInput([...roles(), { role: 'Zed', selected: true }]);
+    toggle(d);
+    await settle();
+    // Reopening clears the search, so every row of the new input model is listed.
+    expect(rowNames(d)).toEqual(['Admin', 'Editor', 'Guest', 'Reviewer', 'Zed']);
+    click(row(d, 4));
+    click(helper(d, 2));
+    await settle();
+    expect(d.output()).toEqual([
+      { role: 'Admin', selected: true },
+      { role: 'Guest', selected: true },
+      { role: 'Zed', selected: true },
     ]);
+    d.destroy();
   });
 });
 

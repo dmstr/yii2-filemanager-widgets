@@ -1,8 +1,46 @@
 # CHANGELOG
 
-### 2.0.1 (unreleased)
+### 2.0.3
+
+Changed requirements:
 
 - the requirement on `dmstr/yii2-filefly-module` is widened from `^1.7.0-rc1` to `^1.7.0-rc1 || ^2.0`, so the file manager can be installed next to filefly 2.0; the widgets use only the HTTP API of filefly (`filefly/api`), no PHP class of it
+
+### 2.0.2
+
+Fixes:
+
+- the file table shows the modification time exactly as the server reports it, regardless of the browser's time zone; before, it was shifted by the browser's offset to UTC
+- file sizes use correct units (kB = 1000 bytes, or KiB = 1024 bytes with `useBinarySizePrefixes`), have a single space before the unit, switch units at the right boundary and show `0.0 kB` for empty files
+- texts fall back to the base language (`de-DE` uses German) and then to English instead of showing raw keys. Missing texts are defined in English and German: the error messages for moving and downloading, the view-switch tooltips, the labels of the role selector; the refresh button's tooltip reads "Refresh" instead of "Icons"
+- the icon views list folders first and sort by the column and direction last chosen in the table, so the order no longer differs between views
+- in the icon view with previews, an image without a thumbnail shows the picture icon instead of an empty tile
+- the sidebar tree marks only the folders that really lie on the current path as open, and no longer keeps stale subfolders of a folder whose name is the beginning of another folder's name (for example `doc` and `documents`)
+- Escape closes the topmost open dialog wherever the keyboard focus is, also in dialogs without an input field and when the folder selector is open on top of another dialog; an open role list in the permissions dialog still closes first
+- with two dialogs open, the page behind no longer starts scrolling when the upper one closes, and the scrollbar padding on the page is removed reliably instead of staying and growing
+- the rename, copy, extract, compress and edit dialogs always open with the item's current state; text typed and then cancelled no longer reappears or gets sent by a later action
+- opening or cancelling the "New folder" dialog no longer changes the current selection, and a folder name is checked for duplicates and emptiness in the form that is actually created (`My Folder` is recognised as `my-folder`)
+- closing the upload dialog without uploading empties the list of waiting files, so they are not uploaded to a different folder the next time the dialog opens; the upload progress reaches 100 %
+- shift-clicking a file after the previously selected file was filtered out by the search field selects just the clicked file instead of producing a selection that counted one item too many
+- the search field of the role selector in the permissions dialog filters by role name only
+- the redundant "Close" button in the middle of the move and copy dialogs is removed
+- dialog fields no longer empty themselves on every keystroke when no single item is selected, and the rename dialog no longer shows the word "false" as the item name
+
+### 2.0.1
+
+Changed defaults:
+
+- `FileManagerWidget` no longer offers "Download as ZIP", "Compress" (including the name prompt) and "Extract" by default: `downloadMultiple`, `compress`, `compressChooseName` and `extract` are `false`. The filefly backend has no such actions, so the entries led to a 404 page or did nothing. A backend that implements them switches them back on in the widget's options: `'options' => ['allowedActions' => ['downloadMultiple' => true, 'compress' => true, 'compressChooseName' => true, 'extract' => true]]`
+
+Fixes:
+
+- if loading the permissions of a file or folder fails, the permissions dialog shows the error with no roles and cannot be saved. It no longer shows or saves the roles of a previously opened item, also not for a permission type the server returns no roles for
+- copying a single file under a new name works: the name typed in the copy dialog is applied, where before the copy always kept the original name. An unchanged name is not sent, so the copy keeps the original name as before
+- copying several items into the folder they are already in is refused in the dialog with an error message, instead of sending a request that fails on the server
+- the file list is reloaded after a failed action (delete, move, copy, rename, new folder, upload, compress, extract), so changes the server already made show up at once, for example the accepted files of a partly rejected upload. The error message and the open dialog stay as they were
+- when the folder is changed again before the previous one has finished loading, only the answer to the latest navigation is shown; before, the list could show the contents of the wrong folder
+- handler URLs that already contain a query string, such as `/filefly/api?scope=my-scope`, work for downloads, previews and the "copy link" dialog: parameters are appended with `&` instead of a second `?`. Handler URLs without a query string behave exactly as before
+- choosing a destination folder in the move, copy, compress and extract dialogs sends the same path (`/a/b`) whether the folder row's button or the button for the folder currently shown is used; the row button sent `//a/b`
 
 ### 2.0.0
 

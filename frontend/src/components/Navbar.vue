@@ -55,8 +55,7 @@ const {
           <div class="navbar-collapse">
             <div class="navbar-form navbar-right text-right">
 
-              <!-- Q-05: the tooltip uses the key `icons`, as in the AngularJS frontend -->
-              <button class="btn btn-flat btn-sm" :title="t('icons')" @click="fm.refreshLocation(true)">
+              <button class="btn btn-flat btn-sm" :title="t('refresh')" @click="fm.refreshLocation(true)">
                 <i class="glyphicon glyphicon-refresh"></i>
               </button>
 
@@ -83,7 +82,7 @@ const {
                   (fm.viewTemplate === 'main-table.html' && !config.enableIconPreviewView)
                 "
                 class="btn btn-flat btn-sm fm-icons"
-                :title="t('Switch to icons view')"
+                :title="t('switch_to_icons_view')"
                 @click="fm.setTemplate('main-icons.html')"
               >
 
@@ -93,7 +92,7 @@ const {
               <button
                 v-show="fm.viewTemplate === 'main-icons.html'"
                 class="btn btn-flat btn-sm fm-table"
-                :title="t('Switch to table view')"
+                :title="t('switch_to_table_view')"
                 @click="fm.setTemplate('main-table.html')"
               >
 
@@ -104,7 +103,7 @@ const {
                 v-if="config.enableIconPreviewView"
                 v-show="fm.viewTemplate === 'main-table.html' && config.enableIconPreviewView"
                 class="btn btn-flat btn-sm fm-preview"
-                :title="t('Switch to preview view')"
+                :title="t('switch_to_preview_view')"
                 @click="fm.setTemplate('main-icons-preview.html')"
               >
 

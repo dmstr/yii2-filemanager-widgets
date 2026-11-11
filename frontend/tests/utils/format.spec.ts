@@ -6,7 +6,6 @@ import { loadFixture, outcomeOf, type Outcome } from './fixtures.ts';
 const recorded = loadFixture<{
   strLimit: Array<{ args: unknown[] } & Outcome>;
   fileExtension: Array<{ args: unknown[] } & Outcome>;
-  humanReadableFileSize: Array<{ binary: boolean; size: number } & Outcome>;
   formatDate: Array<{ args: unknown[] } & Outcome>;
 }>('utils/format.json');
 
@@ -42,43 +41,94 @@ describe('fileExtension', () => {
 });
 
 describe('humanReadableFileSize', () => {
-  it('matches the recorded results for decimal and binary prefixes', () => {
-    for (const row of recorded.humanReadableFileSize) {
-      expect(outcomeOf(() => humanReadableFileSize(row.size, row.binary)), `${row.size}/${row.binary}`).toStrictEqual(outcomeRow(row));
+  // Q-21, Q-38: changed on purpose from the recorded AngularJS output (divisor 1024 for decimal units, doubled
+  // spaces, a 0.1 minimum, `1024.0 kB` for 1 MiB, `undefined` past the table), so these tables replace the recording.
+  const decimal: Array<[number, string]> = [
+    [0, '0.0 kB'],
+    [1, '0.0 kB'],
+    [100, '0.1 kB'],
+    [999, '1.0 kB'],
+    [1000, '1.0 kB'],
+    [1536, '1.5 kB'],
+    [999949, '999.9 kB'],
+    [999960, '1.0 MB'],
+    [1e6, '1.0 MB'],
+    [1.5e6, '1.5 MB'],
+    [1e9, '1.0 GB'],
+    [1e12, '1.0 TB'],
+    [1e15, '1.0 PB'],
+    [1e18, '1.0 EB'],
+    [1e21, '1.0 ZB'],
+    [1e24, '1.0 YB'],
+    [1.5e24, '1.5 YB'],
+  ];
+  const binary: Array<[number, string]> = [
+    [0, '0.0 KiB'],
+    [1, '0.0 KiB'],
+    [100, '0.1 KiB'],
+    [1023, '1.0 KiB'],
+    [1024, '1.0 KiB'],
+    [1536, '1.5 KiB'],
+    [1024 ** 2 - 1, '1.0 MiB'],
+    [1024 ** 2, '1.0 MiB'],
+    [1.5 * 1024 ** 2, '1.5 MiB'],
+    [1024 ** 3, '1.0 GiB'],
+    [1024 ** 4, '1.0 TiB'],
+    [1024 ** 5, '1.0 PiB'],
+    [1024 ** 6, '1.0 EiB'],
+    [1024 ** 7, '1.0 ZiB'],
+    [1024 ** 8, '1.0 YiB'],
+  ];
+
+  it('uses divisor 1000 and the decimal units by default', () => {
+    for (const [size, expected] of decimal) {
+      expect(humanReadableFileSize(size, false), String(size)).toBe(expected);
     }
   });
 
-  it('Q-21: an empty file shows 0.1 and the decimal unit has a doubled space', () => {
-    expect(humanReadableFileSize(0, false)).toBe('0.1  kB');
-    expect(humanReadableFileSize(1536, false)).toBe('1.5  kB');
-    expect(humanReadableFileSize(1536, true)).toBe('1.5 KiB');
+  it('uses divisor 1024 and the binary units', () => {
+    for (const [size, expected] of binary) {
+      expect(humanReadableFileSize(size, true), String(size)).toBe(expected);
+    }
   });
 
-  it('Q-21: the unit only advances above 1024, so 1024 of a unit stays in it', () => {
-    expect(humanReadableFileSize(1024, false)).toBe('1.0  kB');
-    expect(humanReadableFileSize(1024 * 1024, false)).toBe('1024.0  kB');
-    expect(humanReadableFileSize(1024 * 1024 + 1, false)).toBe('1.0  MB');
-    expect(humanReadableFileSize(1024 ** 3, true)).toBe('1024.0 MiB');
+  it('puts exactly one space between number and unit', () => {
+    for (const [size] of [...decimal, ...binary]) {
+      expect(humanReadableFileSize(size, false)).toMatch(/^\d+\.\d [a-zA-Z]+$/);
+      expect(humanReadableFileSize(size, true)).toMatch(/^\d+\.\d [a-zA-Z]+$/);
+    }
   });
 
-  it('Q-21: units without a leading space and the end of the unit table', () => {
-    expect(humanReadableFileSize(1.5 * 1024 ** 5, false)).toBe('1.5 PB');
-    expect(humanReadableFileSize(1.5 * 1024 ** 8, true)).toBe('1.5 YiB');
-    expect(humanReadableFileSize(1.5 * 1024 ** 9, true)).toBe('1.5 undefined');
+  it('stays in the last unit for values beyond the table', () => {
+    expect(humanReadableFileSize(1e27, false)).toBe('1000.0 YB');
+    expect(humanReadableFileSize(1e30, false)).toBe('1000000.0 YB');
+    expect(humanReadableFileSize(1024 ** 9, true)).toBe('1024.0 YiB');
+  });
+
+  it('treats NaN, negative numbers and Infinity as 0', () => {
+    for (const bad of [Number.NaN, -5, -Infinity, Infinity]) {
+      expect(humanReadableFileSize(bad, false), String(bad)).toBe('0.0 kB');
+      expect(humanReadableFileSize(bad, true), String(bad)).toBe('0.0 KiB');
+    }
   });
 });
 
 describe('formatDate', () => {
-  it('matches the recorded results for valid dates, strings and numbers', () => {
+  it('matches the recorded results for strings and numbers', () => {
     const valid = recorded.formatDate.filter((row) => 'result' in row);
-    expect(valid).toHaveLength(6);
+    expect(valid).toHaveLength(3);
     for (const row of valid) {
       expect(outcomeOf(() => formatDate(row.args[0])), String(row.args[0])).toStrictEqual(outcomeRow(row));
     }
   });
 
-  it('Q-22: prints the UTC time of the date', () => {
-    expect(formatDate(new Date(Date.UTC(2020, 5, 7, 8, 9, 10)))).toBe('2020-06-07 08:09:10');
+  // Q-22: changed on purpose, the recording printed the UTC time. The dates are built from local fields, so the
+  // expectations hold in any time zone.
+  it('Q-22: prints the local wall-clock time of the date, independent of the time zone', () => {
+    expect(formatDate(new Date(2020, 5, 7, 8, 9, 10))).toBe('2020-06-07 08:09:10');
+    expect(formatDate(new Date(2020, 0, 2, 15, 2, 45))).toBe('2020-01-02 15:02:45');
+    expect(formatDate(new Date(1999, 11, 31, 23, 59, 59))).toBe('1999-12-31 23:59:59');
+    expect(formatDate(new Date(2020, 0, 1, 0, 0, 0))).toBe('2020-01-01 00:00:00');
   });
 
   it('does not throw for an Invalid Date, where the AngularJS filter threw a RangeError', () => {

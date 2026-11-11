@@ -1,7 +1,8 @@
 /**
- * Minimal translator replacing angular-translate 2.9.2 as configured in the
- * AngularJS app: no fallback language, no sanitizing. Which locale to start with
- * is decided elsewhere and passed in.
+ * Minimal translator replacing angular-translate 2.9.2: no sanitizing. A key is
+ * looked up in the current language, then in the base language of a code with a
+ * region (`de-DE`), then in `en`, and only then returned as is. Which locale to
+ * start with is decided elsewhere and passed in.
  */
 import { inject, provide, ref, type InjectionKey, type Ref } from 'vue';
 import en from './locales/en.ts';
@@ -22,7 +23,7 @@ const catalogs: Record<string, Record<string, string>> = {
 };
 
 export interface I18n {
-  /** Current locale code; may be a code without a table (every lookup then yields the key). */
+  /** Current locale code; may be a code without a table (lookups then fall back to `en`). */
   locale: Ref<string>;
   use(locale: string): void;
   t(key: string, params?: Record<string, unknown>): string;
@@ -48,6 +49,12 @@ function interpolate(text: string, params: Record<string, unknown>): string {
   });
 }
 
+/** The tables to try for a locale code, most specific first; `de_DE` and `DE-de` resolve to `de`. */
+function chain(code: string): Record<string, string>[] {
+  const names = [has(catalogs, code) ? code : code.toLowerCase().split(/[-_]/)[0], 'en'];
+  return names.filter((name) => has(catalogs, name)).map((name) => catalogs[name]);
+}
+
 /** Creates a translator; `t` reads the reactive locale, so templates and computeds re-run on `use()`. */
 export function createI18n(initialLocale: string): I18n {
   const locale = ref(initialLocale);
@@ -57,15 +64,13 @@ export function createI18n(initialLocale: string): I18n {
       locale.value = next;
     },
     t(key, params = {}) {
-      const table = has(catalogs, locale.value) ? catalogs[locale.value] : undefined;
-      // Unknown key or unknown locale: the key itself, as angular-translate without fallback does.
-      if (!table || !has(table, key)) return key;
-      return interpolate(table[key], params);
+      const table = chain(locale.value).find((candidate) => has(candidate, key));
+      return table ? interpolate(table[key], params) : key;
     },
   };
 }
 
-const I18N_KEY: InjectionKey<I18n> = Symbol('i18n');
+export const I18N_KEY: InjectionKey<I18n> = Symbol('i18n');
 
 /** Makes the instance available to all descendants of the calling component. */
 export function provideI18n(instance: I18n): void {

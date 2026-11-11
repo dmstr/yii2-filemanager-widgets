@@ -1,18 +1,68 @@
 <script lang="ts">
 /**
  * State that Bootstrap kept per document rather than per dialog: the one
- * `focusin.bs.modal` handler on `document`, the `resize.bs.modal` handlers on
- * `window` (any hide removes all of them), jQuery's `padding-right` data on
- * fixed navbars, and, for the unmount cleanup only, the body state before the
- * first dialog opened.
+ * `focusin.bs.modal` handler on `document` and the `resize.bs.modal` handlers
+ * on `window` (any hide removes all of them). Also the shown dialogs in the
+ * order they were shown, for Escape, and the page state: `modal-open` and the
+ * scrollbar compensation are applied when the first dialog shows and undone
+ * when the last one hides, restoring the inline `padding-right` of `body` and
+ * of the fixed navbars from before. Bootstrap did both per dialog, which
+ * broke with stacked dialogs: the page scrolled again behind the lower one,
+ * or the padding stayed and grew.
  */
 let focusinHandler: ((event: FocusEvent) => void) | null = null;
 const resizeHandlers = new Set<() => void>();
-const fixedPadding = new WeakMap<HTMLElement, string>();
+const fixedPadding = new Map<HTMLElement, string>();
 let openCount = 0;
 let baselineBodyPad = '';
 
+interface ShownDialog {
+  el: HTMLElement;
+  /** Whether the dialog is the topmost open one of its file manager. */
+  isTop(): boolean;
+  close(): void;
+}
+const shownDialogs: ShownDialog[] = [];
+
 const FIXED_CONTENT = '.navbar-fixed-top, .navbar-fixed-bottom';
+
+/**
+ * Escape closes the topmost dialog wherever the focus is: dialogs without a
+ * focusable field leave it on the page, and in the stacked state it may sit
+ * in the lower dialog. The capture phase on `window` runs before any handler
+ * that could stop the event. An open role list (MultiSelect) closes itself
+ * through its own `keydown` handler on `document`, which still runs, so the
+ * dialog stays open for that key. The last shown dialog wins should several
+ * widgets on a page each have one open.
+ */
+function onEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' && event.keyCode !== 27) return;
+  for (let i = shownDialogs.length - 1; i >= 0; i--) {
+    const dialog = shownDialogs[i];
+    if (dialog.isTop()) {
+      if (!dialog.el.querySelector('.checkboxLayer.show')) {
+        dialog.close();
+      }
+      return;
+    }
+  }
+}
+
+function addShownDialog(dialog: ShownDialog): void {
+  if (shownDialogs.length === 0) {
+    window.addEventListener('keydown', onEscape, true);
+  }
+  shownDialogs.push(dialog);
+}
+
+function removeShownDialog(el: HTMLElement): void {
+  const index = shownDialogs.findIndex((dialog) => dialog.el === el);
+  if (index === -1) return;
+  shownDialogs.splice(index, 1);
+  if (shownDialogs.length === 0) {
+    window.removeEventListener('keydown', onEscape, true);
+  }
+}
 
 function onWindowResize(): void {
   resizeHandlers.forEach((handler) => handler());
@@ -59,13 +109,14 @@ function setPx(el: HTMLElement, value: number): void {
  * open; Escape, a click on the backdrop area and the slot's `close` only
  * change that state.
  *
- * Reproduced on purpose (Q-32): every dialog appends its own backdrop, any
- * hide removes `modal-open` from `body`, resets the body padding to what it
- * was when that dialog opened, and drops the document-wide focus and resize
- * handlers, even while another dialog stays open. Escape is handled on the
- * dialog element, so it closes the dialog that contains the focus, and runs
- * before handlers on `document` (Q-45). The enforced focus calls `focus()` on
- * the `.modal` element, which has no `tabindex` in the AngularJS markup: it takes
+ * Reproduced on purpose (Q-32): every dialog appends its own backdrop, and
+ * any hide drops the document-wide focus and resize handlers, even while
+ * another dialog stays open. Unlike the plugin, the body state is shared by
+ * all dialogs (see the module state above), and Escape is handled for the
+ * whole page and closes the topmost dialog only (see `onEscape`).
+ *
+ * The enforced focus calls `focus()` on the `.modal` element, which has no
+ * `tabindex` in the AngularJS markup: it takes
  * the focus only where the browser treats it as focusable (Chromium does so
  * for a scroll container whose content overflows); otherwise the focus stays
  * where it is, as in the AngularJS frontend.
@@ -95,7 +146,6 @@ let ignoreBackdropClick = false;
 let mouseupPending = false;
 let bodyIsOverflowing = false;
 let scrollbarWidth = 0;
-let originalBodyPad = '';
 const timers = new Set<ReturnType<typeof setTimeout>>();
 
 /** Hides the dialog like `data-dismiss="modal"`: state only, the API error stays. */
@@ -128,7 +178,7 @@ function measureScrollbar(): number {
 function setScrollbar(): void {
   const body = document.body;
   const bodyPad = parseInt(getComputedStyle(body).paddingRight || '0', 10);
-  originalBodyPad = body.style.paddingRight || '';
+  baselineBodyPad = body.style.paddingRight || '';
   if (bodyIsOverflowing) {
     setPx(body, bodyPad + scrollbarWidth);
     document.querySelectorAll<HTMLElement>(FIXED_CONTENT).forEach((element) => {
@@ -138,14 +188,13 @@ function setScrollbar(): void {
   }
 }
 
-// modal.js 286-293
+// modal.js 286-293, but only the navbars that were compensated are reset.
 function resetScrollbar(): void {
-  document.body.style.paddingRight = originalBodyPad;
-  document.querySelectorAll<HTMLElement>(FIXED_CONTENT).forEach((element) => {
-    const padding = fixedPadding.get(element);
-    fixedPadding.delete(element);
-    element.style.paddingRight = padding ? padding : '';
+  document.body.style.paddingRight = baselineBodyPad;
+  fixedPadding.forEach((padding, element) => {
+    element.style.paddingRight = padding;
   });
+  fixedPadding.clear();
 }
 
 // modal.js 244-251
@@ -172,13 +221,13 @@ function show(): void {
   const el = root.value;
   if (isShown || !el) return;
   isShown = true;
-  if (openCount++ === 0) {
-    baselineBodyPad = document.body.style.paddingRight;
-  }
 
+  // Measured for every dialog, as `adjustDialog` uses it for the dialog's own padding.
   checkScrollbar();
-  setScrollbar();
-  document.body.classList.add('modal-open');
+  if (openCount++ === 0) {
+    setScrollbar();
+    document.body.classList.add('modal-open');
+  }
   addResizeHandler(adjustDialog);
 
   backdrop = document.createElement('div');
@@ -191,6 +240,7 @@ function show(): void {
   el.scrollTop = 0;
   adjustDialog();
   isIn.value = true;
+  addShownDialog({ el, isTop: () => fm.modals.top === props.id, close });
   enforceFocus(el);
   el.focus();
 
@@ -209,7 +259,7 @@ function hide(): void {
   const el = root.value;
   if (!isShown || !el) return;
   isShown = false;
-  openCount--;
+  removeShownDialog(el);
 
   clearResizeHandlers();
   setFocusinHandler(null);
@@ -220,16 +270,11 @@ function hide(): void {
   el.style.display = 'none';
   backdrop?.remove();
   backdrop = null;
-  document.body.classList.remove('modal-open');
   el.style.paddingLeft = '';
   el.style.paddingRight = '';
-  resetScrollbar();
-}
-
-// modal.js 152-160: bound to the dialog element, so only a key pressed inside it counts.
-function onKeydown(event: KeyboardEvent): void {
-  if (isShown && (event.key === 'Escape' || event.keyCode === 27)) {
-    close();
+  if (--openCount === 0) {
+    document.body.classList.remove('modal-open');
+    resetScrollbar();
   }
 }
 
@@ -274,12 +319,10 @@ onBeforeUnmount(() => {
   hide();
   timers.forEach((timer) => clearTimeout(timer));
   timers.clear();
-  // Not a Bootstrap step: leave the body as it was once no dialog is shown any more.
+  // Not a Bootstrap step: drop the document-wide handlers once no dialog is shown any more.
   if (openCount === 0) {
     clearResizeHandlers();
     setFocusinHandler(null);
-    document.body.classList.remove('modal-open');
-    document.body.style.paddingRight = baselineBodyPad;
   }
 });
 </script>
@@ -290,7 +333,6 @@ onBeforeUnmount(() => {
     ref="root"
     class="modal animated fadeIn"
     :class="{ in: isIn }"
-    @keydown="onKeydown"
     @mouseup="onMouseup"
     @click="onClick"
   >

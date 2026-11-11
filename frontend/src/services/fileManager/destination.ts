@@ -5,7 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import type { Item } from '../../models/Item.ts';
-import type { Navigator } from '../navigator.ts';
+import { isOnPath, type Navigator } from '../navigator.ts';
 import { orderBy } from './collection.ts';
 import { createSortState } from './view.ts';
 import type { createSelection } from './selection.ts';
@@ -26,9 +26,9 @@ export function createDestination({ navigator, selectorNavigator, selection, mod
   /** The folder list of the dialog, sorted by its own state. The template shows the folders among them. */
   const fileList = computed<Item[]>(() => orderBy(selectorNavigator.fileList, sort.predicate.value, sort.reverse.value));
 
-  /** Picks a folder row. The leading empty element of `split('/')` stays, so the request path starts with `//`. */
+  /** Picks a folder row. The empty segments of `split('/')` are dropped so a row stores the same segments as the current-folder button. */
   function select(item: Item): void {
-    selectedModalPath.value = item.model.fullPath().split('/');
+    selectedModalPath.value = item.model.fullPath().split('/').filter(Boolean);
     modal('selector', true);
   }
 
@@ -52,12 +52,12 @@ export function createDestination({ navigator, selectorNavigator, selection, mod
 
   /** The target as shown in the path selector; a single file gets its (edited) name appended. */
   function getSelectedPath(): string {
-    const path = selectedModalPath.value.filter(Boolean);
-    let result = '/' + path.join('/');
+    let result = '/' + selectedModalPath.value.join('/');
     const single = selection.singleSelection();
     if (single && !single.isFolder()) {
       result += '/' + single.tempModel.name;
     }
+    // The root plus a file name gives `//name`.
     return result.replace(/\/\//, '/');
   }
 
@@ -73,7 +73,8 @@ export function createDestination({ navigator, selectorNavigator, selection, mod
     return selectedItemsPath === selectedPath;
   }
 
-  const isInThisPath = (path: string): boolean => navigator.currentPath.join('/').indexOf(path) !== -1;
+  /** Is the sidebar node `path` on the current path, by whole segments (the root is on every path)? */
+  const isInThisPath = (path: string): boolean => isOnPath(path, navigator.currentPath.join('/'));
 
   return {
     navigator: selectorNavigator,

@@ -48,7 +48,7 @@ describe('view switch buttons (F-05)', () => {
     expect(window.localStorage.getItem('viewTemplate')).toBe('main-icons.html');
   });
 
-  it('keeps the AngularJS titles, including the raw keys of the three missing translations', async () => {
+  it('titles the view buttons with their own texts', async () => {
     app = await mountWidget({ config: { enableIconPreviewView: true } });
     expect(button('fm-icons').attributes('title')).toBe('Switch to icons view');
     expect(button('fm-table').attributes('title')).toBe('Switch to table view');
@@ -57,10 +57,10 @@ describe('view switch buttons (F-05)', () => {
 });
 
 describe('navbar controls', () => {
-  it('refreshes with recycle: true and the Q-05 tooltip', async () => {
+  it('refreshes with recycle: true and a tooltip that says so', async () => {
     app = await mountWidget();
     const refresh = app.wrapper.find('nav .glyphicon-refresh').element.parentElement!;
-    expect(refresh.getAttribute('title')).toBe('Icons');
+    expect(refresh.getAttribute('title')).toBe('Refresh');
     refresh.click();
     await settle();
     expect(app.requests[0].body).toMatchObject({ action: 'list', recycle: true });
@@ -105,12 +105,16 @@ describe('navbar controls', () => {
     expect(app.fm.fileList).toHaveLength(sampleFiles.length);
   });
 
-  it('opens the new folder dialog state and the phantom selection from the more menu', async () => {
+  it.each([[0], [1], [3]])('opens the new folder dialog from the more menu without touching a selection of %i items', async (count) => {
     app = await mountWidget();
+    app.fm.fileList.slice(0, count).forEach((item, i) => app.fm.selectOrUnselect(item, i ? { ctrlKey: true } : undefined));
+    const before = [...app.fm.temps];
     await app.wrapper.find('#more').trigger('click');
     await app.wrapper.find('#more ~ ul li').trigger('click');
     expect(app.fm.modals.isOpen('newfolder')).toBe(true);
-    expect(app.fm.temps).toHaveLength(1);
+    expect(app.fm.newFolder).not.toBeNull();
+    expect(app.fm.temps).toHaveLength(count);
+    expect(app.fm.temps).toEqual(before);
   });
 });
 

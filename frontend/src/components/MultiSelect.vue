@@ -14,11 +14,6 @@ export interface MultiSelectOutputItem {
 
 // The directive's `output-properties="role selected"`.
 const OUTPUT_PROPERTIES = ['role', 'selected'];
-
-// AngularJS's ng-repeat writes `$$hashKey = 'object:<uid>'` onto every item it renders,
-// from one counter shared by the whole app; the filter later searches that value.
-let nextUid = 0;
-const hashKeys = new WeakMap<object, string>();
 </script>
 
 <script setup lang="ts">
@@ -28,7 +23,7 @@ const hashKeys = new WeakMap<object, string>();
  * the full notice is in `frontend/licenses/isteven-multi-select.txt` and is
  * copied into the build's `filemanager.licenses.txt`), limited to
  * what the permissions dialog uses: multiple selection, vertical
- * layout, all four helper elements, the fixed English texts and
+ * layout, all four helper elements and
  * `button-label`/`item-label` `role`, `tick-property` `selected`,
  * `output-properties` `role selected`. Markup, class names and the order of
  * state changes follow the directive's link function and template, so the
@@ -37,10 +32,18 @@ const hashKeys = new WeakMap<object, string>();
  * Like the directive, it ticks the input items in place (`selected`) and
  * writes the ticked items to the output model, which is bound with
  * `v-model:output-model`.
+ *
+ * Unlike the directive, a `null` or `undefined` input model counts as an empty
+ * list: the directive ignored it, so the rows, label, reset backup and output
+ * of the previous input model stayed, and a dialog reused for another item
+ * showed and returned that item's roles.
  */
+import { useI18n } from '../i18n/index.ts';
 import { onBeforeUnmount, ref, shallowReactive, shallowRef, toRaw, watch, type ComponentPublicInstance } from 'vue';
 
 type ButtonLabel = { kind: 'empty' } | { kind: 'none' } | { kind: 'labels'; labels: string[] };
+
+const { t } = useI18n();
 
 const props = defineProps<{
   inputModel?: MultiSelectItem[] | null;
@@ -78,21 +81,11 @@ let helperItemsLength = 0;
 let formElements: HTMLElement[] = [];
 let lastSnapshot = '';
 const timers = new Set<ReturnType<typeof setTimeout>>();
-// The directive's random `idx_*` and `spc_*` properties, kept off the items.
+// The directive's random `idx_*` property, kept off the items.
 const indexOf = new WeakMap<object, number>();
-const spacingOf = new WeakMap<object, number>();
 const rowItem = new WeakMap<Element, object>();
 
 const raw = (item: object): object => toRaw(item);
-
-function hashKeyOf(item: object): string {
-  let key = hashKeys.get(raw(item));
-  if (key === undefined) {
-    key = `object:${++nextUid}`;
-    hashKeys.set(raw(item), key);
-  }
-  return key;
-}
 
 /** The directive's `writeLabel`: each label property is prefixed with `&nbsp;`, a falsy role gives no text. */
 function writeLabel(item: MultiSelectItem): string {
@@ -159,29 +152,17 @@ function refreshButton(): boolean {
   return true;
 }
 
-/** Any non-boolean value of the item counts, including the hidden index, spacing and `$$hashKey`. */
+/** Only the role name is searched, so internal values such as the row index cannot match. */
 function matches(item: MultiSelectItem, needle: string): boolean {
-  const values: unknown[] = [];
-  for (const key in item) values.push(item[key]);
-  // The directive's own properties sit on the item in AngularJS; a filter of `0` or `obj` matches every row through them.
-  const key = raw(item);
-  if (spacingOf.has(key)) values.push(spacingOf.get(key));
-  if (indexOf.has(key)) values.push(indexOf.get(key));
-  if (hashKeys.has(key)) values.push(hashKeys.get(key));
-  return values.some((value) => typeof value !== 'boolean' && String(value).toUpperCase().indexOf(needle) >= 0);
+  return String(item.role ?? '').toUpperCase().includes(needle);
 }
 
 /**
  * The directive's `updateFilter`: case-insensitive substring match, collected
- * from the end of the input and reversed back to input order. Returns false
- * where the directive throws, which is for a `null` input model.
+ * from the end of the input and reversed back to input order.
  */
-function updateFilter(): boolean {
-  const input = props.inputModel;
-  if (input === undefined || input === null) {
-    setFiltered([]);
-    return input === undefined;
-  }
+function updateFilter(): void {
+  const input = props.inputModel ?? [];
   const needle = labelFilter.toUpperCase();
   const result: MultiSelectItem[] = [];
   for (let i = input.length - 1; i >= 0; i--) {
@@ -190,19 +171,13 @@ function updateFilter(): boolean {
   result.reverse();
   setFiltered(result);
   later(getFormElements);
-  return true;
 }
 
 function setFiltered(list: MultiSelectItem[]): void {
   const kept = new Set(list.map(raw));
   // ng-repeat drops the row element of an item that leaves the list, and with it the hand-set focus class.
   for (const item of [...focused]) if (!kept.has(item)) focused.delete(item);
-  for (const item of list) hashKeyOf(item);
   filteredModel.value = list;
-}
-
-function prepareGrouping(): void {
-  for (const item of filteredModel.value) spacingOf.set(raw(item), 0);
 }
 
 function prepareIndex(): void {
@@ -267,8 +242,8 @@ function removeDocumentListeners(): void {
   document.removeEventListener('keydown', keyboardListener);
 }
 
-/** Opens or closes the layer; returns false where the directive throws (opening with a `null` input model). */
-function toggleCheckboxes(): boolean {
+/** Opens or closes the layer. */
+function toggleCheckboxes(): void {
   removeDocumentListeners();
   if (shown.value) {
     setShown(false);
@@ -277,10 +252,10 @@ function toggleCheckboxes(): boolean {
     focusRow(tabIndex, false);
     formElements[tabIndex]?.blur();
     button.value?.focus();
-    return true;
+    return;
   }
   setFilter('');
-  if (!updateFilter()) return false;
+  updateFilter();
   helperItems = [];
   helperItemsLength = 0;
   setShown(true);
@@ -295,13 +270,13 @@ function toggleCheckboxes(): boolean {
   }
   filterInput.value?.focus();
   tabIndex = tabIndex + helperItemsLength - 2;
-  return true;
 }
 
 function onButtonClick(): void {
   // ng-click="toggleCheckboxes(); refreshSelectedItems(); refreshButton(); prepareGrouping; prepareIndex();"
   // refreshSelectedItems does not exist and prepareGrouping is not called, so both do nothing.
-  if (toggleCheckboxes() && refreshButton()) prepareIndex();
+  toggleCheckboxes();
+  if (refreshButton()) prepareIndex();
   digest();
 }
 
@@ -321,6 +296,7 @@ function select(type: 'all' | 'none' | 'reset' | 'clear' | 'filter', e: Event): 
   switch (type) {
     case 'all':
     case 'none':
+      // Acts on the rows the search currently shows, which is the intended meaning of these buttons while a filter is active.
       for (const value of filteredModel.value) value.selected = type === 'all';
       ticks.value++;
       refreshOutputModel();
@@ -357,7 +333,8 @@ function onHelperClick(type: 'all' | 'none' | 'reset', e: Event): void {
 
 function onClearClick(e: Event): void {
   setFilter('');
-  if (updateFilter()) select('clear', e);
+  updateFilter();
+  select('clear', e);
   digest();
 }
 
@@ -469,11 +446,9 @@ watch(
     if (!initial && out !== previous[1] && toRaw(out) !== toRaw(lastEmitted)) output = out;
     if (!initial && input === previous[0]) return;
     lastSnapshot = snapshot();
-    if (!input) return;
     // The directive's reference watch: new backup for Reset, then filter, index and both outputs.
-    backUp = input.map((item) => ({ selected: item.selected }));
+    backUp = (input ?? []).map((item) => ({ selected: item.selected }));
     updateFilter();
-    prepareGrouping();
     prepareIndex();
     refreshOutputModel();
     refreshButton();
@@ -494,15 +469,15 @@ onBeforeUnmount(() => {
 <template>
   <div ref="rootEl">
     <span class="multiSelect inlineBlock" :class="{ buttonClicked: spanClicked }">
-      <button ref="button" id="" type="button" @click="onButtonClick"><template v-if="buttonLabel.kind === 'none'">None Selected<span class="caret"></span></template><template v-else-if="buttonLabel.kind === 'labels'"><template v-for="(text, i) in buttonLabel.labels" :key="i"><template v-if="i > 0">, </template><div class="buttonLabel">{{ text }}<span v-if="i === buttonLabel.labels.length - 1" class="caret"></span></div></template><span v-if="buttonLabel.labels.length === 0" class="caret"></span></template></button>
+      <button ref="button" id="" type="button" @click="onButtonClick"><template v-if="buttonLabel.kind === 'none'">{{ t('none_selected') }}<span class="caret"></span></template><template v-else-if="buttonLabel.kind === 'labels'"><template v-for="(text, i) in buttonLabel.labels" :key="i"><template v-if="i > 0">, </template><div class="buttonLabel">{{ text }}<span v-if="i === buttonLabel.labels.length - 1" class="caret"></span></div></template><span v-if="buttonLabel.labels.length === 0" class="caret"></span></template></button>
       <div ref="layer" class="checkboxLayer" :class="{ show: shown }">
         <div ref="helperContainer" class="helperContainer">
           <!-- No whitespace between the helper buttons: the directive's template had only comments there, and a space shifts them -->
-          <div class="line"><button type="button" class="helperButton" @click="onHelperClick('all', $event)">&#10003;&nbsp;&nbsp;Select All</button><button type="button" class="helperButton" @click="onHelperClick('none', $event)">&times;&nbsp;&nbsp;Select None</button><button type="button" class="helperButton reset" @click="onHelperClick('reset', $event)">&#8630;&nbsp;&nbsp;Reset</button></div>
+          <div class="line"><button type="button" class="helperButton" @click="onHelperClick('all', $event)">&#10003;&nbsp;&nbsp;{{ t('select_all') }}</button><button type="button" class="helperButton" @click="onHelperClick('none', $event)">&times;&nbsp;&nbsp;{{ t('select_none') }}</button><button type="button" class="helperButton reset" @click="onHelperClick('reset', $event)">&#8630;&nbsp;&nbsp;{{ t('reset') }}</button></div>
           <div class="line" style="position: relative">
             <input
               ref="filterInput"
-              placeholder="Search..."
+              :placeholder="t('search_placeholder')"
               type="text"
               class="inputFilter"
               @click="onFilterClick"
@@ -516,7 +491,7 @@ onBeforeUnmount(() => {
         <div ref="checkBoxContainer" class="checkBoxContainer">
           <div
             v-for="(item, index) in filteredModel"
-            :key="hashKeyOf(item)"
+            :key="raw(item) as PropertyKey"
             :ref="(el) => setRow(el, item)"
             class="multiSelectItem"
             :class="rowClass(item)"

@@ -30,8 +30,8 @@ describe('selectOrUnselect gestures', () => {
     click('a.txt');
     click('c.png');
     expect(names(fm.temps)).toEqual(['c.png']);
-    expect(fm.isSelected(fm.fileList[2])).toBe(true);
-    expect(fm.isSelected(fm.fileList[0])).toBe(false);
+    expect(fm.isSelected(fm.fileList.find((i) => i.model.name === 'c.png'))).toBe(true);
+    expect(fm.isSelected(fm.fileList.find((i) => i.model.name === 'a.txt'))).toBe(false);
   });
 
   it('Ctrl and Cmd click add and remove', () => {
@@ -44,12 +44,13 @@ describe('selectOrUnselect gestures', () => {
   });
 
   it('Shift click selects the range from the first selected item, both directions', () => {
+    // The displayed order is folders first, then by name: b, e, a.txt, c.png, d.md, f.zip.
     click('b');
-    click('d.md', { shiftKey: true });
-    expect(names(fm.temps)).toEqual(['b', 'c.png', 'd.md']);
-    click('e');
-    click('a.txt', { shiftKey: true });
-    expect(names(fm.temps)).toEqual(['e', 'd.md', 'c.png', 'b', 'a.txt']);
+    click('c.png', { shiftKey: true });
+    expect(names(fm.temps)).toEqual(['b', 'e', 'a.txt', 'c.png']);
+    click('d.md');
+    click('e', { shiftKey: true });
+    expect(names(fm.temps)).toEqual(['d.md', 'c.png', 'a.txt', 'e']);
   });
 
   it('Shift click on the anchor itself, or without a selection, selects just the item', () => {
@@ -99,10 +100,10 @@ describe('selectOrUnselect gestures', () => {
 
   it('works without an event', () => {
     fm.selectOrUnselect(fm.fileList[1]);
-    expect(names(fm.temps)).toEqual(['b']);
+    expect(names(fm.temps)).toEqual(['e']);
   });
 
-  it('the range follows the displayed list: filtered and, in the table, sorted', async () => {
+  it('the range follows the displayed list: filtered and sorted, in every view', async () => {
     fm.query = '.';
     click('a.txt');
     click('d.md', { shiftKey: true });
@@ -114,54 +115,107 @@ describe('selectOrUnselect gestures', () => {
     click('f.zip');
     click('c.png', { shiftKey: true });
     expect(names(fm.temps)).toEqual(['f.zip', 'd.md', 'c.png']);
+    fm.setTemplate('main-icons.html');
+    click('f.zip');
+    click('c.png', { shiftKey: true });
+    expect(names(fm.temps)).toEqual(['f.zip', 'd.md', 'c.png']);
   });
 
-  it('keeps the hole of a shift range whose anchor is not in the displayed list, like the AngularJS code', () => {
-    click('a.txt');
-    fm.query = 'c';
-    click('c.png', { shiftKey: true });
-    expect(names(fm.temps)).toEqual([undefined, 'c.png']);
-    expect(fm.totalSelecteds().total).toBe(2);
-    expect(fm.singleSelection()).toBeUndefined();
-    expect(fm.selectionHas('dir')).toBeUndefined();
-    expect(fm.selectionHas('file')?.model.name).toBe('c.png');
+  describe('Shift click whose anchor is not a usable range start', () => {
+    const noGap = () => expect(fm.temps.every((i) => i !== undefined)).toBe(true);
+
+    it.each(['main-table.html', 'main-icons.html', 'main-icons-preview.html'] as const)('anchor filtered out (%s): selects just the clicked item, which becomes the anchor', (template) => {
+      fm.setTemplate(template);
+      click('a.txt');
+      fm.query = 'c';
+      click('c.png', { shiftKey: true });
+      expect(names(fm.temps)).toEqual(['c.png']);
+      expect(fm.totalSelecteds().total).toBe(1);
+      expect(fm.singleSelection()?.model.name).toBe('c.png');
+      noGap();
+      fm.query = '';
+      click('e', { shiftKey: true });
+      const shown = names(fm.fileList);
+      const [from, to] = [shown.indexOf('c.png'), shown.indexOf('e')].sort((x, y) => x - y);
+      expect(names(fm.temps).sort()).toEqual(shown.slice(from, to + 1).sort());
+      expect(names(fm.temps)[0]).toBe('c.png');
+      noGap();
+    });
+
+    it('empty selection: selects just the clicked item', () => {
+      click('c.png', { shiftKey: true });
+      expect(names(fm.temps)).toEqual(['c.png']);
+      noGap();
+    });
+
+    it('the clicked item is the anchor, alone or with others selected: selects just the item', () => {
+      click('b');
+      click('b', { shiftKey: true });
+      expect(names(fm.temps)).toEqual(['b']);
+      click('d.md', { ctrlKey: true });
+      click('b', { shiftKey: true });
+      expect(names(fm.temps)).toEqual(['b']);
+    });
+
+    it('the clicked item is not in the displayed list: selects just that item', () => {
+      click('a.txt');
+      const hidden = fm.temps[0];
+      fm.query = 'c';
+      fm.selectOrUnselect(hidden, event({ shiftKey: true }));
+      expect(fm.temps).toEqual([hidden]);
+      noGap();
+    });
   });
 });
 
-describe('selection gestures equal the recorded AngularJS controller', () => {
-  interface RecordedStep {
-    /** Position of the clicked item in the list; the list length stands for a click on no item. */
-    index: number;
-    event: Partial<SelectEvent> & { prevent?: boolean };
-    temps: Array<string | undefined>;
-    /** One digit per item: 1 when selected. */
-    selected: string;
-    /** One digit per item: 1 when the dirty dialog input was reverted to the model, 0 when it was left alone. */
-    reverted: string;
-    single: string | undefined;
-  }
+describe('selection gestures', () => {
   const recorded = loadFixture<{
-    walks: Array<{ seed: number; steps: RecordedStep[] }>;
     summary: { selectedIndexes: number[]; totalSelecteds: unknown; hasDir: boolean; hasNope: boolean; hasSingleSelection: boolean };
   }>('services/selection.json');
 
-  /** The recorded seeded random walks over all gesture kinds, replayed step by step. */
-  it.each(recorded.walks.map((walk) => [walk.seed, walk] as const))('random sequence %i', (seed, walk) => {
-    expect(walk.steps).toHaveLength(400);
-    for (const item of fm.fileList) item.tempModel.name = 'dirty-' + item.model.name;
+  /**
+   * Q-23: the five recorded random walks of the AngularJS controller ran on the unsorted
+   * backend order of an icon view, and a shift range depends on the displayed order, so
+   * they no longer apply. This sequence covers the same gesture kinds on the new order
+   * (b, e, a.txt, c.png, d.md, f.zip), identical in all three views.
+   */
+  it.each(['main-icons.html', 'main-icons-preview.html', 'main-table.html'] as const)('a mixed gesture sequence in %s', (view) => {
+    fm.setTemplate(view);
+    expect(names(fm.fileList)).toEqual(['b', 'e', 'a.txt', 'c.png', 'd.md', 'f.zip']);
+    const gesture = (index: number | null, extra: Partial<SelectEvent> & { prevent?: boolean } = {}) =>
+      fm.selectOrUnselect(index === null ? null : fm.fileList[index], event(extra));
+    const selected = () => fm.fileList.map((i) => (fm.isSelected(i) ? '1' : '0')).join('');
+    const dirty = () => fm.fileList.forEach((i) => (i.tempModel.name = 'dirty-' + i.model.name));
+    const reverted = () => fm.fileList.filter((i) => i.tempModel.name === i.model.name).map((i) => i.model.name);
 
-    walk.steps.forEach((expected, step) => {
-      fm.selectOrUnselect(expected.index === raws.length ? null : fm.fileList[expected.index], event(expected.event));
-
-      const label = `seed ${seed} step ${step}`;
-      expect(names(fm.temps), label).toEqual(expected.temps);
-      expect(fm.fileList.map((i) => (fm.isSelected(i) ? '1' : '0')).join(''), label).toBe(expected.selected);
-      // The watcher reverts a single selected item's tempModel: same visible effect.
-      expect(fm.fileList.map((i) => (i.tempModel.name === 'dirty-' + i.model.name ? '0' : i.tempModel.name === i.model.name ? '1' : '?')).join(''), label).toBe(expected.reverted);
-      expect(fm.singleSelection()?.model.name, label).toEqual(expected.single);
-      // Dirty the inputs again so every replacement shows up as a revert.
-      for (const item of fm.fileList) item.tempModel.name = 'dirty-' + item.model.name;
-    });
+    dirty();
+    gesture(2);
+    expect(names(fm.temps)).toEqual(['a.txt']);
+    expect(reverted()).toEqual(['a.txt']);
+    gesture(4, { shiftKey: true });
+    expect(names(fm.temps)).toEqual(['a.txt', 'c.png', 'd.md']);
+    expect(selected()).toBe('001110');
+    gesture(0, { ctrlKey: true });
+    expect(names(fm.temps)).toEqual(['a.txt', 'c.png', 'd.md', 'b']);
+    gesture(3, { metaKey: true });
+    expect(names(fm.temps)).toEqual(['a.txt', 'd.md', 'b']);
+    gesture(5, { shiftKey: true });
+    expect(names(fm.temps)).toEqual(['a.txt', 'c.png', 'd.md', 'f.zip']);
+    dirty();
+    gesture(1, { which: 3 });
+    expect(names(fm.temps)).toEqual(['e']);
+    expect(reverted()).toEqual(['e']);
+    gesture(1, { which: 3 });
+    expect(names(fm.temps)).toEqual(['e']);
+    gesture(0, { metaKey: true });
+    expect(names(fm.temps)).toEqual(['e', 'b']);
+    gesture(3, { shiftKey: true });
+    expect(names(fm.temps)).toEqual(['e', 'a.txt', 'c.png']);
+    expect(fm.singleSelection()).toBeUndefined();
+    gesture(null, { prevent: true });
+    expect(fm.temps).toEqual([]);
+    gesture(null);
+    expect(fm.temps).toEqual([]);
   });
 
   it('totalSelecteds, selectionHas and singleSelection', () => {
@@ -210,7 +264,7 @@ describe('revert on replacement (the AngularJS $watch)', () => {
     fm.selectOrUnselect(fm.fileList[1], event({ ctrlKey: true }));
     expect(fm.fileList[0].tempModel.name).toBe('typed');
     fm.selectOrUnselect(fm.fileList[0]);
-    expect(fm.fileList[0].tempModel.name).toBe('a.txt');
+    expect(fm.fileList[0].tempModel.name).toBe('b');
   });
 
   it('clears the item error on revert', () => {
@@ -221,15 +275,38 @@ describe('revert on replacement (the AngularJS $watch)', () => {
 });
 
 describe('prepareNewFolder (Q-26)', () => {
-  it('selects a phantom item that is not in the list and stays selected', async () => {
-    const item = fm.prepareNewFolder();
-    expect(fm.singleSelection()).toBe(item);
-    expect(fm.fileList).not.toContain(item);
-    expect(item.model.type).toBe('file');
-    expect(item.model.name).toBe('');
-    expect(item.model.path).toEqual([]);
+  it('creates a draft outside the list and the selection, and leaves the selection alone', async () => {
+    fm.selectOrUnselect(fm.fileList[0]);
+    fm.selectOrUnselect(fm.fileList[2], { ctrlKey: true });
+    const before = [...fm.temps];
+    const draft = fm.prepareNewFolder();
+    expect(fm.newFolder).toBe(draft);
+    expect(fm.temps).toEqual(before);
+    expect(fm.fileList).not.toContain(draft);
+    expect(draft.model.type).toBe('file');
+    expect(draft.model.name).toBe('');
     fm.modal('newfolder', true);
-    expect(fm.singleSelection()).toBe(item);
+    expect(fm.temps).toEqual(before);
+    await flush();
+  });
+
+  it('keeps an empty selection empty and a single selection unreverted', async () => {
+    fm.prepareNewFolder();
+    expect(fm.temps).toEqual([]);
+    fm.selectOrUnselect(fm.fileList[0]);
+    fm.fileList[0].tempModel.name = 'typed';
+    fm.prepareNewFolder();
+    expect(fm.singleSelection()).toBe(fm.fileList[0]);
+    expect(fm.fileList[0].tempModel.name).toBe('typed');
+    await flush();
+  });
+
+  it('starts a fresh draft on every call', async () => {
+    const first = fm.prepareNewFolder();
+    first.tempModel.name = 'abandoned';
+    const second = fm.prepareNewFolder();
+    expect(second).not.toBe(first);
+    expect(second.tempModel.name).toBe('');
     await flush();
   });
 

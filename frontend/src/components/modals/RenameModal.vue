@@ -12,12 +12,8 @@ const { t } = useI18n();
 /** `ng-model="singleSelection().tempModel.name"` (Q-29 without a single selection). */
 const name = tempModelField(() => fm.singleSelection(), 'name');
 
-/**
- * AngularJS `{{singleSelection() && singleSelection().model.name}}`: with no or
- * several items selected the expression is `false`, which AngularJS prints as
- * the text "false"; a selection of one hole (Q-39) prints nothing.
- */
-const selectedName = (): string => (fm.temps.length === 1 ? (fm.temps[0]?.model.name ?? '') : 'false');
+/** Empty without a single selection, like the other dialogs. */
+const selectedName = (): string => fm.singleSelection()?.model.name ?? '';
 </script>
 
 <template>

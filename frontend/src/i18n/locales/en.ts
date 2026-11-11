@@ -1,4 +1,4 @@
-/** "en" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
+/** "en" translations, carried over from the AngularJS frontend of version 1.x, plus the texts that frontend used without defining them. */
 const messages: Record<string, string> = {
   "filemanager": "File Manager",
   "language": "Language",
@@ -80,6 +80,7 @@ const messages: Record<string, string> = {
   "error_creating_folder": "An error occurred creating the folder",
   "error_getting_content": "An error occurred getting the content of the file",
   "error_changing_perms": "An error occurred changing the permissions of the file",
+  "error_get_permissions": "An error occurred loading the permissions of the file or folder",
   "error_uploading_files": "An error occurred uploading files",
   "sure_to_start_compression_with": "Are you sure to compress",
   "owner": "Owner",
@@ -99,6 +100,19 @@ const messages: Record<string, string> = {
   "download_as_zip": "Download as ZIP",
   "roles": "Roles",
   "domain": "Domain",
+  "refresh": "Refresh",
+  "selection": "Selection",
+  "switch_to_icons_view": "Switch to icons view",
+  "switch_to_table_view": "Switch to table view",
+  "switch_to_preview_view": "Switch to preview view",
+  "error_moving": "An error occurred moving the file or folder",
+  "error_downloading": "An error occurred downloading the file",
+  "error_cannot_move_same_path": "Cannot move to the same path",
+  "select_all": "Select All",
+  "select_none": "Select None",
+  "reset": "Reset",
+  "search_placeholder": "Search...",
+  "none_selected": "None Selected",
 };
 
 export default messages;

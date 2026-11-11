@@ -126,6 +126,134 @@ describe('refresh', () => {
   });
 });
 
+describe('overlapping refreshes', () => {
+  /** Answers every list request when the test releases it, so the order of the responses is the test's choice. */
+  function gated(answers: Record<string, FakeReply>) {
+    const gates: Record<string, Array<() => void>> = {};
+    stubFetch(
+      (request) =>
+        new Promise<FakeReply>((resolve) => {
+          const path = (request.body as { path: string }).path;
+          (gates[path] ||= []).push(() => resolve(answers[path]));
+        }),
+    );
+    const nav = createNavigator(config, makeI18n());
+    const release = async (path: string) => {
+      gates[path].shift()!();
+      await flush();
+    };
+    return { nav, release };
+  }
+
+  const answers = (): Record<string, FakeReply> => ({
+    '/A': { body: { result: [file('a1'), dir('a-sub')] } },
+    '/B': { body: { result: [file('b1'), dir('b-sub')] } },
+    '/C': { body: { result: [file('c1')] } },
+    '/F': { body: { result: { error: 'denied' } } },
+    '/': { body: { result: [dir('A'), dir('B')] } },
+  });
+
+  const visit = (nav: ReturnType<typeof createNavigator>, path: string[]) => {
+    nav.currentPath = path;
+    return nav.refresh();
+  };
+
+  it('ignores a late answer for A once B was requested', async () => {
+    const { nav, release } = gated(answers());
+    const root = visit(nav, []);
+    await release('/');
+    await root;
+    const a = visit(nav, ['A']);
+    const b = visit(nav, ['B']);
+    await release('/B');
+    expect(nav.requesting).toBe(false);
+    await release('/A');
+    await Promise.all([a, b]);
+    expect(nav.requesting).toBe(false);
+    expect(nav.fileList.map((i) => i.model.name)).toEqual(['b1', 'b-sub']);
+    expect(nav.fileList.map((i) => i.model.fullPath())).toEqual(['/B/b1', '/B/b-sub']);
+    expect(strip(nav.history)).toEqual([
+      { name: '', nodes: [{ name: 'A', nodes: [] }, { name: 'B', nodes: [{ name: 'B/b-sub', nodes: [] }] }] },
+    ]);
+  });
+
+  it('keeps the loading flag until the latest answer when A answers first', async () => {
+    const { nav, release } = gated(answers());
+    const a = visit(nav, ['A']);
+    const b = visit(nav, ['B']);
+    await release('/A');
+    await a;
+    expect(nav.requesting).toBe(true);
+    expect(nav.fileList).toEqual([]);
+    await release('/B');
+    await b;
+    expect(nav.requesting).toBe(false);
+    expect(nav.fileList.map((i) => i.model.name)).toEqual(['b1', 'b-sub']);
+  });
+
+  it('applies only the last of three overlapping requests', async () => {
+    const { nav, release } = gated(answers());
+    const all = [visit(nav, ['A']), visit(nav, ['B']), visit(nav, ['C'])];
+    await release('/B');
+    await release('/C');
+    await release('/A');
+    await Promise.all(all);
+    expect(nav.requesting).toBe(false);
+    expect(nav.fileList.map((i) => i.model.name)).toEqual(['c1']);
+  });
+
+  it('lets a superseded failure neither set an error nor reject', async () => {
+    const { nav, release } = gated(answers());
+    const f = visit(nav, ['F']);
+    const b = visit(nav, ['B']);
+    await release('/B');
+    await release('/F');
+    await expect(f).resolves.toBeUndefined();
+    await b;
+    expect(nav.error).toBe('');
+    expect(nav.fileList.map((i) => i.model.name)).toEqual(['b1', 'b-sub']);
+  });
+
+  it('lets a superseded success not clear the error of a newer failure', async () => {
+    const { nav, release } = gated(answers());
+    const b = visit(nav, ['B']);
+    const f = visit(nav, ['F']);
+    await release('/F');
+    await expect(f).rejects.toBeDefined();
+    expect(nav.error).toBe('denied');
+    await release('/B');
+    await b;
+    expect(nav.error).toBe('denied');
+    expect(nav.fileList).toEqual([]);
+    expect(nav.requesting).toBe(false);
+  });
+
+  it('calls onRefresh once per applied listing', async () => {
+    const { nav, release } = gated(answers());
+    const onRefresh = vi.fn();
+    nav.onRefresh = onRefresh;
+    const all = [visit(nav, ['A']), visit(nav, ['B'])];
+    await release('/A');
+    await release('/B');
+    await Promise.all(all);
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps two navigators independent', async () => {
+    const { nav: main, release } = gated(answers());
+    const dialog = createNavigator(config, makeI18n());
+    const a = visit(main, ['A']);
+    const d = visit(dialog, ['C']);
+    await release('/A');
+    await release('/C');
+    await Promise.all([a, d]);
+    expect(main.fileList.map((i) => i.model.name)).toEqual(['a1', 'a-sub']);
+    expect(dialog.fileList.map((i) => i.model.name)).toEqual(['c1']);
+    expect(main.requesting).toBe(false);
+    expect(dialog.requesting).toBe(false);
+  });
+});
+
 describe('navigation', () => {
   it('folderClick enters a folder, upDir and goTo walk back', async () => {
     const { nav, requests } = setup();
@@ -215,6 +343,49 @@ describe('buildTree', () => {
     // Listing the root resets the nodes below it; only A was entered afterwards.
     expect(last[0].nodes.find((n) => n.name === 'b')!.nodes).toEqual([]);
     expect(last[0].nodes.find((n) => n.name === 'A')!.nodes).toHaveLength(2);
+  });
+
+  describe('siblings whose names are prefixes of each other', () => {
+    const folders: Record<string, RawItem[]> = {
+      '/': [dir('doc'), dir('documents'), dir('a'), dir('ab')],
+      '/doc': [dir('x')],
+      '/documents': [dir('y')],
+      '/a': [dir('c')],
+      '/ab': [dir('d')],
+    };
+    async function visitAll(visits: string[][]) {
+      const { nav } = setup((request) => ({ body: { result: folders[(request.body as { path: string }).path] || [] } }));
+      for (const path of visits) {
+        nav.currentPath = path;
+        await nav.refresh();
+      }
+      return strip(nav.history[0].nodes) as Array<{ name: string; nodes: unknown[] }>;
+    }
+    const children = (nodes: Array<{ name: string; nodes: unknown[] }>, name: string) => nodes.find((n) => n.name === name)!.nodes;
+
+    it('prunes doc when documents is listed after it', async () => {
+      const nodes = await visitAll([[], ['doc'], ['documents']]);
+      expect(children(nodes, 'doc')).toEqual([]);
+      expect(children(nodes, 'documents')).toEqual([{ name: 'documents/y', nodes: [] }]);
+    });
+
+    it('prunes a when ab is listed after it', async () => {
+      const nodes = await visitAll([[], ['a'], ['ab']]);
+      expect(children(nodes, 'a')).toEqual([]);
+      expect(children(nodes, 'ab')).toEqual([{ name: 'ab/d', nodes: [] }]);
+    });
+
+    it('prunes the longer sibling when the shorter one is listed after it', async () => {
+      const nodes = await visitAll([[], ['documents'], ['doc']]);
+      expect(children(nodes, 'documents')).toEqual([]);
+      expect(children(nodes, 'doc')).toEqual([{ name: 'doc/x', nodes: [] }]);
+    });
+
+    it('keeps the branch of the listed folder when its parent is listed through a prefix-named sibling', async () => {
+      const nodes = await visitAll([[], ['a'], [], ['a']]);
+      expect(children(nodes, 'a')).toEqual([{ name: 'a/c', nodes: [] }]);
+      expect(children(nodes, 'ab')).toEqual([]);
+    });
   });
 
   it('keeps the item of every node so the sidebar can navigate by it', async () => {
