@@ -116,15 +116,50 @@ describe('selectOrUnselect gestures', () => {
     expect(names(fm.temps)).toEqual(['f.zip', 'd.md', 'c.png']);
   });
 
-  it('keeps the hole of a shift range whose anchor is not in the displayed list, like the AngularJS code', () => {
-    click('a.txt');
-    fm.query = 'c';
-    click('c.png', { shiftKey: true });
-    expect(names(fm.temps)).toEqual([undefined, 'c.png']);
-    expect(fm.totalSelecteds().total).toBe(2);
-    expect(fm.singleSelection()).toBeUndefined();
-    expect(fm.selectionHas('dir')).toBeUndefined();
-    expect(fm.selectionHas('file')?.model.name).toBe('c.png');
+  describe('Shift click whose anchor is not a usable range start', () => {
+    const noGap = () => expect(fm.temps.every((i) => i !== undefined)).toBe(true);
+
+    it.each(['main-table.html', 'main-icons.html', 'main-icons-preview.html'] as const)('anchor filtered out (%s): selects just the clicked item, which becomes the anchor', (template) => {
+      fm.setTemplate(template);
+      click('a.txt');
+      fm.query = 'c';
+      click('c.png', { shiftKey: true });
+      expect(names(fm.temps)).toEqual(['c.png']);
+      expect(fm.totalSelecteds().total).toBe(1);
+      expect(fm.singleSelection()?.model.name).toBe('c.png');
+      noGap();
+      fm.query = '';
+      click('e', { shiftKey: true });
+      const shown = names(fm.fileList);
+      const [from, to] = [shown.indexOf('c.png'), shown.indexOf('e')].sort((x, y) => x - y);
+      expect(names(fm.temps).sort()).toEqual(shown.slice(from, to + 1).sort());
+      expect(names(fm.temps)[0]).toBe('c.png');
+      noGap();
+    });
+
+    it('empty selection: selects just the clicked item', () => {
+      click('c.png', { shiftKey: true });
+      expect(names(fm.temps)).toEqual(['c.png']);
+      noGap();
+    });
+
+    it('the clicked item is the anchor, alone or with others selected: selects just the item', () => {
+      click('b');
+      click('b', { shiftKey: true });
+      expect(names(fm.temps)).toEqual(['b']);
+      click('d.md', { ctrlKey: true });
+      click('b', { shiftKey: true });
+      expect(names(fm.temps)).toEqual(['b']);
+    });
+
+    it('the clicked item is not in the displayed list: selects just that item', () => {
+      click('a.txt');
+      const hidden = fm.temps[0];
+      fm.query = 'c';
+      fm.selectOrUnselect(hidden, event({ shiftKey: true }));
+      expect(fm.temps).toEqual([hidden]);
+      noGap();
+    });
   });
 });
 

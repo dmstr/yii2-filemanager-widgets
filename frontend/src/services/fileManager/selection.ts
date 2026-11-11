@@ -20,9 +20,8 @@ export interface SelectEvent {
 export type MultipleItem = Item & { multiple?: boolean };
 
 /**
- * The array may contain `undefined`: a shift-click whose anchor is not in the
- * displayed list walks from index -1 and the AngularJS code pushed that hole
- * into the selection too.
+ * The `| undefined` is legacy: no gesture puts `undefined` into the selection
+ * any more (Q-39 fixed), so it and the guards of the consumers can go.
  */
 export type SelectedItems = Array<Item | undefined>;
 
@@ -81,7 +80,14 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
       const lastSelected = temps.value[0];
       let i = list.indexOf(lastSelected);
       const next: SelectedItems = [];
-      if (lastSelected && i < indexInList) {
+      // No usable anchor (nothing selected, or filtered out of the displayed
+      // list) or an unlisted clicked item: there is no range to walk, so act
+      // as a plain click and make the clicked item the new anchor.
+      if (!lastSelected || i === -1 || indexInList === -1) {
+        replace([item]);
+        return;
+      }
+      if (i < indexInList) {
         while (i <= indexInList) {
           const current = list[i];
           !next.includes(current) && next.push(current);
@@ -90,7 +96,7 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
         replace(next);
         return;
       }
-      if (lastSelected && i > indexInList) {
+      if (i > indexInList) {
         while (i >= indexInList) {
           const current = list[i];
           !next.includes(current) && next.push(current);
