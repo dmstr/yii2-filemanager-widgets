@@ -1,5 +1,11 @@
 # CHANGELOG
 
+### 2.0.4
+
+Fixes:
+
+- a page that renders `FileManagerWidget` before a bundle that depends on `yii\bootstrap\BootstrapAsset` with an earlier script position, such as kartik's dialog (`kartik\dialog\DialogAsset`, in the head; it comes with `kartik-v/yii2-tree-manager`), no longer fails with "An asset bundle that depends on 'yii\bootstrap\BootstrapAsset' has a higher javascript file position configured". `FileManagerAsset` still writes `filemanager.js` at the end of the body, but no longer declares that position in `$jsOptions`, which Yii handed on to `BootstrapAsset`; the asset manager kept it there for the following requests of a long-running application such as a Codeception functional test. A position that a depending bundle sets is kept. The load order of Bootstrap and jQuery is unchanged
+
 ### 2.0.3
 
 Changed requirements:
