@@ -1,11 +1,12 @@
 {
   "name": "dmstr/yii2-filemanager-widgets",
-  "description": "A very smart filemanager to manage your files in the browser developed in AngularJS with Material-Design",
+  "description": "A smart filemanager to manage your files in the browser, built with Vue 3 for Yii2 and Bootstrap 3",
   "type": "yii2-extension",
   "keywords": [
     "yii2",
     "filemanager",
-    "angular-filemanager"
+    "vue",
+    "vue3"
   ],
   "license": "BSD-3-Clause",
   "authors": [
@@ -19,13 +20,10 @@
     "dmstr/yii2-filefly-module" : "^1.7.0-rc1",
     "kartik-v/yii2-widget-select2": "^2.0.0",
     "rmrevin/yii2-fontawesome": "~2.9",
-    "yii2assets/yii2-fullscreen-modal": "^1.0.2"
+    "yiisoft/yii2-bootstrap": "~2.0"
   },
   "extra": {
-    "bootstrap": "hrzg\\filemanager\\Bootstrap",
-    "asset-installer-paths": {
-      "bower-asset-library": "vendor/bower"
-    }
+    "bootstrap": "hrzg\\filemanager\\Bootstrap"
   },
   "suggest": {
     "pheme/yii2-settings": "Allows more advanced settings fpr e.g. FileManagerWidget"

@@ -1,0 +1,984 @@
+{
+  "raws": [
+    { "$$": "undefined" },
+    null,
+    {},
+    {
+      "name": "photo.JPG",
+      "thumbnail": "/t/photo.jpg",
+      "preview": "/p/photo.jpg",
+      "urls": { "download": "/d", "stream": "/s" },
+      "extension": "jpg",
+      "type": "file",
+      "size": "2048",
+      "date": "2021-03-04 05:06:07",
+      "rights": "rw-r--r--",
+      "content": "abc"
+    },
+    { "name": "dir", "type": "dir", "rights": "0755", "size": 0 },
+    { "name": "a.zip", "size": "10", "date": "2020-01-02 03:04:05", "rights": "drwxr-xr-x" },
+    { "name": "noDate" }
+  ],
+  "paths": [ { "$$": "undefined" }, [], [ "a" ], [ "a", "", "b" ], [ "a/", "b/" ] ],
+  "results": [
+    [
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b//"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": { "$$": "undefined" },
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b//"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      }
+    ],
+    [
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b//"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": null,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b//"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      }
+    ],
+    [
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b/"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b/"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b//"
+        },
+        "tempModel": {
+          "name": "",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b//"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      }
+    ],
+    [
+      {
+        "model": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/photo.JPG"
+        },
+        "tempModel": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/photo.JPG"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": true,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/photo.JPG"
+        },
+        "tempModel": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/photo.JPG"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": true,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [ "a" ],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/a/photo.JPG"
+        },
+        "tempModel": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [ "a" ],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/a/photo.JPG"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": true,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/a/b/photo.JPG"
+        },
+        "tempModel": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/a/b/photo.JPG"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": true,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/a/b//photo.JPG"
+        },
+        "tempModel": {
+          "name": "photo.JPG",
+          "urls": { "download": "/d", "stream": "/s" },
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": 2048,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": "rw-r--r--",
+          "fullPath": "/a/b//photo.JPG"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": true,
+        "isExtractable": false,
+        "isSelectable": false
+      }
+    ],
+    [
+      {
+        "model": {
+          "name": "dir",
+          "urls": [],
+          "path": [],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/dir"
+        },
+        "tempModel": {
+          "name": "dir",
+          "urls": [],
+          "path": [],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/dir"
+        },
+        "isFolder": true,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "dir",
+          "urls": [],
+          "path": [],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/dir"
+        },
+        "tempModel": {
+          "name": "dir",
+          "urls": [],
+          "path": [],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/dir"
+        },
+        "isFolder": true,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "dir",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/dir"
+        },
+        "tempModel": {
+          "name": "dir",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/dir"
+        },
+        "isFolder": true,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "dir",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/b/dir"
+        },
+        "tempModel": {
+          "name": "dir",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/b/dir"
+        },
+        "isFolder": true,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "dir",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/b//dir"
+        },
+        "tempModel": {
+          "name": "dir",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "dir",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/b//dir"
+        },
+        "isFolder": true,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      }
+    ],
+    [
+      {
+        "model": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a.zip"
+        },
+        "tempModel": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a.zip"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": true,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a.zip"
+        },
+        "tempModel": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a.zip"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": true,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/a.zip"
+        },
+        "tempModel": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/a.zip"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": true,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/b/a.zip"
+        },
+        "tempModel": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/b/a.zip"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": true,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/b//a.zip"
+        },
+        "tempModel": {
+          "name": "a.zip",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": 10,
+          "date": "2020-01-02 03:04:05.000",
+          "perms": "rwxr-xr-x",
+          "fullPath": "/a/b//a.zip"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": true,
+        "isSelectable": false
+      }
+    ],
+    [
+      {
+        "model": {
+          "name": "noDate",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/noDate"
+        },
+        "tempModel": {
+          "name": "noDate",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/noDate"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "noDate",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/noDate"
+        },
+        "tempModel": {
+          "name": "noDate",
+          "urls": [],
+          "path": [],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/noDate"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "noDate",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/noDate"
+        },
+        "tempModel": {
+          "name": "noDate",
+          "urls": [],
+          "path": [ "a" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/noDate"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "noDate",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b/noDate"
+        },
+        "tempModel": {
+          "name": "noDate",
+          "urls": [],
+          "path": [ "a", "", "b" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b/noDate"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      },
+      {
+        "model": {
+          "name": "noDate",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b//noDate"
+        },
+        "tempModel": {
+          "name": "noDate",
+          "urls": [],
+          "path": [ "a/", "b/" ],
+          "type": "file",
+          "size": 0,
+          "date": "Invalid Date",
+          "perms": "---------",
+          "fullPath": "/a/b//noDate"
+        },
+        "isFolder": false,
+        "isEditable": false,
+        "isImage": false,
+        "isExtractable": false,
+        "isSelectable": false
+      }
+    ]
+  ]
+}

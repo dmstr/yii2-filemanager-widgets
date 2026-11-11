@@ -1,0 +1,105 @@
+{
+  "post": [
+    { "name": "list", "url": "/api/list", "body": { "action": "list", "path": "/docs/x" } },
+    {
+      "name": "list with recycle",
+      "url": "/api/list",
+      "body": { "action": "list", "path": "/docs", "recycle": true }
+    },
+    {
+      "name": "copy",
+      "url": "/api/copy",
+      "body": { "action": "copy", "items": [ "/docs/a.txt", "/docs/b c.txt" ], "newPath": "/t" }
+    },
+    {
+      "name": "copy of one item",
+      "url": "/api/copy",
+      "body": { "action": "copy", "items": [ "/docs/a.txt" ], "newPath": "/t/u", "singleFilename": "a.txt" }
+    },
+    {
+      "name": "move",
+      "url": "/api/move",
+      "body": { "action": "move", "items": [ "/docs/a.txt", "/docs/b c.txt" ], "newPath": "/t" }
+    },
+    {
+      "name": "remove",
+      "url": "/api/remove",
+      "body": { "action": "remove", "items": [ "/docs/a.txt", "/docs/b c.txt" ] }
+    },
+    {
+      "name": "getContent",
+      "url": "/api/getContent",
+      "body": { "action": "getContent", "item": "/docs/a.txt" }
+    },
+    {
+      "name": "edit",
+      "url": "/api/edit",
+      "body": { "action": "edit", "item": "/docs/a.txt", "content": "new text" }
+    },
+    {
+      "name": "rename",
+      "url": "/api/rename",
+      "body": { "action": "rename", "item": "/docs/a.txt", "newItemPath": "/docs/renamed.txt" }
+    },
+    {
+      "name": "compress",
+      "url": "/api/compress",
+      "body": {
+        "action": "compress",
+        "items": [ "/docs/a.txt", "/docs/b c.txt" ],
+        "destination": "/t",
+        "compressedFilename": "pack"
+      }
+    },
+    {
+      "name": "extract",
+      "url": "/api/extract",
+      "body": { "action": "extract", "item": "/docs/a.txt", "destination": "/t", "folderName": "out" }
+    },
+    {
+      "name": "changePermissions",
+      "url": "/api/permissions",
+      "body": {
+        "action": "changePermissions",
+        "path": "/docs/a.txt",
+        "item": {
+          "name": "a.txt",
+          "thumbnail": "",
+          "preview": "",
+          "urls": [],
+          "extension": "",
+          "dirName": "",
+          "path": [ "docs" ],
+          "type": "file",
+          "size": 10,
+          "date": "2021-03-04 05:06:07.000",
+          "perms": {
+            "owner": { "read": true, "write": true, "exec": false },
+            "group": { "read": true, "write": false, "exec": false },
+            "others": { "read": true, "write": false, "exec": false }
+          },
+          "content": "",
+          "recursive": false,
+          "authRead": [ { "role": "admin", "selected": true } ]
+        }
+      }
+    },
+    {
+      "name": "createFolder",
+      "url": "/api/createFolder",
+      "body": { "action": "createFolder", "newPath": "/docs/new-folder" }
+    }
+  ],
+  "urls": {
+    "getUrl": "/filefly/api?scope=x?action=download&path=%2Fa%20b%2Fmy%20file%20%26%20more.txt",
+    "getPreviewUrl": "/filefly/api?scope=x?action=download&path=%2Fa%20b%2Fmy%20file%20%26%20more.txt",
+    "getPreviewUrlOfPreviewItem": "/previews/p.png",
+    "downloadMultipleWithoutTimestamp": "/dl/multi?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa.txt&items%5B%5D=%2Fdocs%2Fb%20c.txt&-angular-filemanager.zip"
+  },
+  "upload": {
+    "fieldNames": [ "destination", "file-0", "file-1" ],
+    "destination": "/docs",
+    "url": "/api/upload"
+  },
+  "emptyUpload": { "calls": 0, "settled": false, "inprocess": true }
+}
