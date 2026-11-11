@@ -17,6 +17,16 @@ export function createDialogActions(ctx: FileManagerContext) {
 
   const uploadFileList = ref<File[]>([]);
 
+  /**
+   * A failed write may still have changed the backend (a folder deleted with a
+   * "not allowed" note, the accepted files of a partly rejected upload), so the
+   * listing is reloaded. The open dialog keeps its content: a regular refresh
+   * clears the selection, which the dialogs render from.
+   */
+  const reloadAfterFailure = (): void => {
+    navigator.refresh(false, true);
+  };
+
   function edit(): void {
     const item = selection.singleSelection();
     if (!item) {
@@ -69,10 +79,14 @@ export function createDialogActions(ctx: FileManagerContext) {
     if (!name || (samePath && navigator.fileNameExists(name))) {
       return invalidName();
     }
-    settled(api.rename(item), () => {
-      navigator.refresh();
-      modal('rename', true);
-    });
+    settled(
+      api.rename(item),
+      () => {
+        navigator.refresh();
+        modal('rename', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   function refreshLocation(recycle?: boolean): void {
@@ -99,10 +113,14 @@ export function createDialogActions(ctx: FileManagerContext) {
     if (!item && destinationIsItemsFolder()) {
       return invalidName();
     }
-    settled(api.copy(selection.temps.value, destination.selectedModalPath.value), () => {
-      navigator.refresh();
-      modal('copy', true);
-    });
+    settled(
+      api.copy(selection.temps.value, destination.selectedModalPath.value),
+      () => {
+        navigator.refresh();
+        modal('copy', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   /** Compress and extract: with the `*Async` option the dialog stays open and shows a success note. */
@@ -128,6 +146,7 @@ export function createDialogActions(ctx: FileManagerContext) {
       },
       () => {
         api.asyncSuccess = false;
+        reloadAfterFailure();
       },
     );
   }
@@ -147,10 +166,14 @@ export function createDialogActions(ctx: FileManagerContext) {
     );
 
   function remove(): void {
-    settled(api.remove(selection.temps.value), () => {
-      navigator.refresh();
-      modal('remove', true);
-    });
+    settled(
+      api.remove(selection.temps.value),
+      () => {
+        navigator.refresh();
+        modal('remove', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   function move(): false | undefined {
@@ -158,10 +181,14 @@ export function createDialogActions(ctx: FileManagerContext) {
       api.error = i18n.t('error_cannot_move_same_path');
       return false;
     }
-    settled(api.move(selection.temps.value, destination.selectedModalPath.value), () => {
-      navigator.refresh();
-      modal('move', true);
-    });
+    settled(
+      api.move(selection.temps.value, destination.selectedModalPath.value),
+      () => {
+        navigator.refresh();
+        modal('move', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   function createFolder(): false | undefined {
@@ -174,10 +201,14 @@ export function createDialogActions(ctx: FileManagerContext) {
     if (!name || navigator.fileNameExists(name)) {
       return invalidName();
     }
-    settled(api.createFolder(item), () => {
-      navigator.refresh();
-      modal('newfolder', true);
-    });
+    settled(
+      api.createFolder(item),
+      () => {
+        navigator.refresh();
+        modal('newfolder', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   function addForUpload(files: ArrayLike<File>): void {
@@ -201,6 +232,7 @@ export function createDialogActions(ctx: FileManagerContext) {
         // The response may be missing altogether after a network failure.
         const result = (data as { result?: { error?: string } } | null)?.result;
         api.error = (result && result.error) || i18n.t('error_uploading_files');
+        reloadAfterFailure();
       },
     );
   }

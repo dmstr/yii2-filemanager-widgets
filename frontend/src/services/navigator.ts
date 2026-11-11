@@ -24,9 +24,13 @@ export interface Navigator {
   currentPath: string[];
   history: TreeNode[];
   error: string;
-  /** Called after every successful refresh; the file manager hooks its selection reset in here. */
-  onRefresh: () => void;
-  refresh(recycle?: boolean): Promise<void>;
+  /**
+   * Called after every successful refresh; the file manager hooks its selection reset in here.
+   * `keepState` is set for a reload that must not disturb an open dialog.
+   */
+  onRefresh: (keepState: boolean) => void;
+  /** `keepState` reloads the list without the `onRefresh` reset of selection and search. */
+  refresh(recycle?: boolean, keepState?: boolean): Promise<void>;
   buildTree(path: string): void;
   folderClick(item?: Item): void;
   upDir(): void;
@@ -99,7 +103,7 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
     }
   }
 
-  function refresh(recycle?: boolean): Promise<void> {
+  function refresh(recycle?: boolean, keepState = false): Promise<void> {
     const request = ++latestRequest;
     const path = nav.currentPath.join('/');
     nav.requesting = true;
@@ -114,7 +118,7 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
         }
         nav.fileList = (data.result || []).map((file: object) => new Item(file, nav.currentPath, config));
         buildTree(path);
-        nav.onRefresh();
+        nav.onRefresh(keepState);
       })
       .finally(() => {
         if (request === latestRequest) {

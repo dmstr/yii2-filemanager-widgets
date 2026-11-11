@@ -367,14 +367,14 @@ describe('rename', () => {
     expect(fm.modals.isOpen('rename')).toBe(false);
   });
 
-  it('keeps the dialog open and does not refresh on an error', async () => {
+  it('keeps the dialog open and reloads the list on an error', async () => {
     override = (r) => ((r.body as { action: string }).action === 'rename' ? { body: { result: { error: 'exists' } } } : undefined);
     select('a.txt');
     fm.modal('rename');
     item('a.txt').tempModel.name = 'z.txt';
     fm.rename();
     await settle();
-    expect(actionsSent()).toEqual(['rename']);
+    expect(actionsSent()).toEqual(['rename', 'list']);
     expect(fm.modals.isOpen('rename')).toBe(true);
     expect(fm.api.error).toBe('exists');
   });
@@ -459,7 +459,7 @@ describe('copy', () => {
     await settle();
     expect(fm.api.error).toBe(makeI18n().t('error_copying'));
     expect(fm.modals.isOpen('copy')).toBe(true);
-    expect(actionsSent()).toEqual(['copy']);
+    expect(actionsSent()).toEqual(['copy', 'list']);
   });
 });
 
@@ -566,14 +566,14 @@ describe('remove and move', () => {
     expect(fm.modals.isOpen('remove')).toBe(false);
   });
 
-  it('remove stays open on an error and does not refresh', async () => {
+  it('remove stays open on an error and reloads the list', async () => {
     override = (r) => ((r.body as { action: string }).action === 'remove' ? { body: { result: { error: 'busy' } } } : undefined);
     select('a.txt');
     fm.modal('remove');
     fm.remove();
     await settle();
     expect(fm.api.error).toBe('busy');
-    expect(actionsSent()).toEqual(['remove']);
+    expect(actionsSent()).toEqual(['remove', 'list']);
     expect(fm.modals.isOpen('remove')).toBe(true);
   });
 
@@ -900,10 +900,111 @@ describe('destination dialog', () => {
   });
 });
 
+describe('reload after a failed action', () => {
+  const failWith = (action: string, reply: FakeReply) => {
+    override = (r) => ((r.body as { action: string }).action === action ? reply : undefined);
+  };
+  const listRequests = () => requests.filter((r) => (r.body as { action: string }).action === 'list');
+
+  const cases: Array<[string, string, () => void, string]> = [
+    ['rename', 'rename', () => { item('a.txt').tempModel.name = 'z.txt'; fm.rename(); }, 'rename'],
+    ['copy', 'copy', () => { fm.selectedModalPath = ['elsewhere']; fm.copy(); }, 'copy'],
+    ['move', 'move', () => { fm.selectedModalPath = ['elsewhere']; fm.move(); }, 'move'],
+    ['remove', 'remove', () => fm.remove(), 'remove'],
+    ['createFolder', 'createFolder', () => { item('a.txt').tempModel.name = 'fresh'; fm.createFolder(); }, 'newfolder'],
+    ['compress', 'compress', () => { fm.temp.tempModel.name = 'pack'; fm.compress(); }, 'compress'],
+    ['extract', 'extract', () => { fm.temp.tempModel.name = 'out'; fm.extract(); }, 'extract'],
+  ];
+
+  it.each(cases)('%s: a failure reloads the current path once and keeps dialog, error and selection', async (_n, action, run, modalId) => {
+    fm.navigator.currentPath = ['b'];
+    failWith(action, { body: { result: { error: 'nope' } } });
+    select('a.txt');
+    fm.query = 'a';
+    fm.modal(modalId);
+    run();
+    await settle();
+    expect(listRequests()).toHaveLength(1);
+    expect(listRequests()[0].body).toMatchObject({ action: 'list', path: '/b' });
+    expect(fm.api.error).toBe('nope');
+    expect(fm.modals.isOpen(modalId)).toBe(true);
+    expect(fm.temps.map((i) => i!.model.name)).toEqual(['a.txt']);
+    expect(fm.query).toBe('a');
+  });
+
+  it.each(cases)('%s: a success still reloads exactly once', async (_n, action, run, modalId) => {
+    fm.navigator.currentPath = ['b'];
+    select('a.txt');
+    fm.modal(modalId);
+    run();
+    await settle();
+    expect(listRequests()).toHaveLength(1);
+    expect(fm.modals.isOpen(modalId)).toBe(false);
+    expect(fm.temps).toEqual([]);
+  });
+
+  it('delete of a non-empty folder: success true with a note still counts as failure, the folder is gone after the reload', async () => {
+    let deleted = false;
+    override = (r) => {
+      const action = (r.body as { action: string }).action;
+      if (action === 'remove') {
+        deleted = true;
+        return { body: { result: { success: true, error: 'You are not allowed to delete some records' } } };
+      }
+      return action === 'list' ? { body: { result: files.filter((f) => !(deleted && f.name === 'b')) } } : undefined;
+    };
+    select('b');
+    fm.modal('remove');
+    fm.remove();
+    await settle();
+    expect(fm.api.error).toBe('You are not allowed to delete some records');
+    expect(fm.modals.isOpen('remove')).toBe(true);
+    expect(listRequests()).toHaveLength(1);
+    expect(fm.navigator.fileList.map((i) => i.model.name)).not.toContain('b');
+    // The dialog renders from the selection, which survives the reload.
+    expect(fm.temps.map((i) => i!.model.name)).toEqual(['b']);
+    expect(() => fm.temp.model.name).not.toThrow();
+  });
+
+  it('upload with one rejected file: the list is reloaded, the queue and the error stay', async () => {
+    const Xhr = stubXhr();
+    fm.navigator.currentPath = ['folder'];
+    fm.addForUpload([new File(['1'], 'a.png'), new File(['2'], 'b.exe')]);
+    fm.uploadFiles();
+    Xhr.instances[0].respond(400, { result: { success: false, error: 'File type not allowed', uploadedFiles: ['folder/a.png'] } });
+    await settle();
+    expect(listRequests()).toHaveLength(1);
+    expect(listRequests()[0].body).toMatchObject({ action: 'list', path: '/folder' });
+    expect(fm.api.error).toBe('File type not allowed');
+    expect(fm.uploadFileList.map((f) => f.name)).toEqual(['a.png', 'b.exe']);
+    expect(fm.modals.isOpen('uploadfile')).toBe(true);
+  });
+
+  it('compressAsync: a failure resets the note and reloads', async () => {
+    await boot({ compressAsync: true });
+    failWith('compress', { body: { result: { error: 'no' } } });
+    select('a.txt', 'd.md');
+    fm.temp.tempModel.name = 'pack';
+    fm.api.asyncSuccess = true;
+    fm.compress();
+    await settle();
+    expect(fm.api.asyncSuccess).toBe(false);
+    expect(listRequests()).toHaveLength(1);
+  });
+
+  it('a failed reload does not replace the action error', async () => {
+    override = () => ({ body: { result: { error: 'denied' } } });
+    select('a.txt');
+    fm.remove();
+    await settle();
+    expect(fm.api.error).toBe('denied');
+  });
+});
+
 describe('error state shared with the dialogs', () => {
   it('uses one api instance whose state the dialogs show, apart from the navigators', async () => {
     select('a.txt', 'd.md');
-    override = () => ({ body: { result: { error: 'denied' } } });
+    override = (r) => ((r.body as { action: string }).action === 'remove' ? { body: { result: { error: 'denied' } } } : undefined);
     fm.remove();
     await settle();
     expect(fm.api.error).toBe('denied');
