@@ -52,6 +52,19 @@ echo \hrzg\filemanager\widgets\FileManagerWidget::widget([
 ]);
 ```
 
+`downloadMultiple`, `compress`, `compressChooseName` and `extract` are off by default because `dmstr/yii2-filefly-module` has no such API actions. With a backend that implements them, switch them on:
+
+```
+'options' => [
+    'allowedActions' => [
+        'downloadMultiple' => true,
+        'compress' => true,
+        'compressChooseName' => true,
+        'extract' => true,
+    ],
+],
+```
+
 The three pattern options (`isEditableFilePattern`, `isImageFilePattern`, `isExtractableFilePattern`) are strings in regular expression literal notation, for example `'/\.(jpe?g|png)$/i'`.
 
 #### Callbacks

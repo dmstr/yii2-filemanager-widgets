@@ -43,7 +43,10 @@ export function createFileManager(config: FileManagerConfig, i18n: I18n) {
   const browse = createBrowseActions(ctx);
   const actions = createDialogActions(ctx);
 
-  navigator.onRefresh = () => {
+  navigator.onRefresh = (keepState) => {
+    if (keepState) {
+      return;
+    }
     selection.replace([]);
     view.query.value = '';
     destination.selectedModalPath.value = navigator.currentPath;

@@ -5,7 +5,7 @@
  * AngularJS swallowed it (Q-29: expressions on an empty selection; Q-03: permissions need exactly one item) they return without doing anything.
  */
 import { ref } from 'vue';
-import type { Item } from '../../models/Item.ts';
+import type { Item, RoleSelection } from '../../models/Item.ts';
 import { settled, type FileManagerContext } from './types.ts';
 
 export function createDialogActions(ctx: FileManagerContext) {
@@ -17,6 +17,16 @@ export function createDialogActions(ctx: FileManagerContext) {
 
   const uploadFileList = ref<File[]>([]);
 
+  /**
+   * A failed write may still have changed the backend (a folder deleted with a
+   * "not allowed" note, the accepted files of a partly rejected upload), so the
+   * listing is reloaded. The open dialog keeps its content: a regular refresh
+   * clears the selection, which the dialogs render from.
+   */
+  const reloadAfterFailure = (): void => {
+    navigator.refresh(false, true);
+  };
+
   function edit(): void {
     const item = selection.singleSelection();
     if (!item) {
@@ -25,35 +35,50 @@ export function createDialogActions(ctx: FileManagerContext) {
     settled(api.edit(item), () => modal('edit', true));
   }
 
+  /** True while the open permissions dialog has no roles to show because loading them failed; the submit is disabled then. */
+  const permissionsLoadFailed = ref(false);
+
   /**
-   * Loads the roles, then opens the dialog. AngularJS quirk: the error set for a
-   * failed request is wiped again at once, because opening the dialog clears
-   * `api.error`; the dialog opens either way.
+   * Loads the roles, then opens the dialog. A failed load opens it as well,
+   * because its error bar is the only place an action error can be shown, but
+   * with empty role lists and with the submit disabled, so nothing of an earlier
+   * load is shown or saved for this item. The edited role lists start empty:
+   * the selectors fill them with the ticked roles of each loaded list, and a
+   * section without roles must not keep what an earlier edit left there.
    */
   function updatePermissions(): void {
     const item = selection.singleSelection();
     if (!item) {
       return;
     }
+    // `auth` is falsy for a failed request and for a response without roles.
+    const show = (auth: Partial<Record<'read' | 'update' | 'delete', unknown>> | undefined): void => {
+      const roles = (section: unknown) => (Array.isArray(section) ? (section as RoleSelection[]) : null);
+      item.model.authRead = roles(auth?.read);
+      item.model.authUpdate = roles(auth?.update);
+      item.model.authDelete = roles(auth?.delete);
+      item.tempModel.authRead = [];
+      item.tempModel.authUpdate = [];
+      item.tempModel.authDelete = [];
+      permissionsLoadFailed.value = !auth;
+      modal('changepermissions', false);
+      if (!auth) {
+        // Set after opening, which clears the error.
+        api.error = i18n.t('error_get_permissions');
+      }
+    };
     api
       .resolvePermissions(item.model.fullPath())
       .then(
-        (data) => {
-          item.model.authRead = data.auth.read;
-          item.model.authUpdate = data.auth.update;
-          item.model.authDelete = data.auth.delete;
-        },
-        () => {
-          api.error = i18n.t('error_get_permissions');
-        },
+        (data) => show(data?.auth || undefined),
+        () => show(undefined),
       )
-      .finally(() => modal('changepermissions', false))
       .catch((error: unknown) => console.error(error));
   }
 
   function changePermissions(): void {
     const item = selection.singleSelection();
-    if (!item) {
+    if (!item || permissionsLoadFailed.value) {
       return;
     }
     settled(api.changePermissions(item.tempModel), () => modal('changepermissions', true));
@@ -69,10 +94,14 @@ export function createDialogActions(ctx: FileManagerContext) {
     if (!name || (samePath && navigator.fileNameExists(name))) {
       return invalidName();
     }
-    settled(api.rename(item), () => {
-      navigator.refresh();
-      modal('rename', true);
-    });
+    settled(
+      api.rename(item),
+      () => {
+        navigator.refresh();
+        modal('rename', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   function refreshLocation(recycle?: boolean): void {
@@ -84,15 +113,29 @@ export function createDialogActions(ctx: FileManagerContext) {
     return !!(navigator.fileNameExists(name) && destination.validateSamePath(item)) || !name;
   }
 
+  /** The first item stands for the selection; a leading hole in it (shift-click) skips the check. */
+  function destinationIsItemsFolder(): boolean {
+    const anyItem = selection.singleSelection() || selection.temps.value[0];
+    return !!anyItem && destination.validateSamePath(anyItem);
+  }
+
   function copy(): false | undefined {
     const item = selection.singleSelection();
     if (item && nameInvalid(item.tempModel.name.trim(), item)) {
       return invalidName();
     }
-    settled(api.copy(selection.temps.value, destination.selectedModalPath.value), () => {
-      navigator.refresh();
-      modal('copy', true);
-    });
+    // Several items cannot be renamed on the way, so a copy into their own folder would collide with the originals.
+    if (!item && destinationIsItemsFolder()) {
+      return invalidName();
+    }
+    settled(
+      api.copy(selection.temps.value, destination.selectedModalPath.value),
+      () => {
+        navigator.refresh();
+        modal('copy', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   /** Compress and extract: with the `*Async` option the dialog stays open and shows a success note. */
@@ -118,6 +161,7 @@ export function createDialogActions(ctx: FileManagerContext) {
       },
       () => {
         api.asyncSuccess = false;
+        reloadAfterFailure();
       },
     );
   }
@@ -137,22 +181,29 @@ export function createDialogActions(ctx: FileManagerContext) {
     );
 
   function remove(): void {
-    settled(api.remove(selection.temps.value), () => {
-      navigator.refresh();
-      modal('remove', true);
-    });
+    settled(
+      api.remove(selection.temps.value),
+      () => {
+        navigator.refresh();
+        modal('remove', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   function move(): false | undefined {
-    const anyItem = selection.singleSelection() || selection.temps.value[0];
-    if (anyItem && destination.validateSamePath(anyItem)) {
+    if (destinationIsItemsFolder()) {
       api.error = i18n.t('error_cannot_move_same_path');
       return false;
     }
-    settled(api.move(selection.temps.value, destination.selectedModalPath.value), () => {
-      navigator.refresh();
-      modal('move', true);
-    });
+    settled(
+      api.move(selection.temps.value, destination.selectedModalPath.value),
+      () => {
+        navigator.refresh();
+        modal('move', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   function createFolder(): false | undefined {
@@ -165,10 +216,14 @@ export function createDialogActions(ctx: FileManagerContext) {
     if (!name || navigator.fileNameExists(name)) {
       return invalidName();
     }
-    settled(api.createFolder(item), () => {
-      navigator.refresh();
-      modal('newfolder', true);
-    });
+    settled(
+      api.createFolder(item),
+      () => {
+        navigator.refresh();
+        modal('newfolder', true);
+      },
+      reloadAfterFailure,
+    );
   }
 
   function addForUpload(files: ArrayLike<File>): void {
@@ -192,6 +247,7 @@ export function createDialogActions(ctx: FileManagerContext) {
         // The response may be missing altogether after a network failure.
         const result = (data as { result?: { error?: string } } | null)?.result;
         api.error = (result && result.error) || i18n.t('error_uploading_files');
+        reloadAfterFailure();
       },
     );
   }
@@ -199,6 +255,7 @@ export function createDialogActions(ctx: FileManagerContext) {
   return {
     uploadFileList,
     edit,
+    permissionsLoadFailed,
     updatePermissions,
     changePermissions,
     rename,

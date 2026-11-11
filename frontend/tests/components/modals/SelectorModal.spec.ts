@@ -161,13 +161,13 @@ describe('SelectorModal actions', () => {
     expect(fm.navigator.currentPath).toEqual([]);
   });
 
-  it('selects a row with the leading empty segment and closes (Q-40)', async () => {
+  it('selects a row without an empty leading segment and closes', async () => {
     const { wrapper, fm } = mountSelector();
     fm.modals.open('move');
     await open(fm);
     const alpha = itemRows(wrapper).find((r) => squash(r.text()).startsWith('alpha'))!;
     await alpha.find('button').trigger('click');
-    expect(fm.selectedModalPath).toEqual(['', 'docs', 'alpha']);
+    expect(fm.selectedModalPath).toEqual(['docs', 'alpha']);
     expect(fm.modals.stack).toEqual(['move']);
   });
 

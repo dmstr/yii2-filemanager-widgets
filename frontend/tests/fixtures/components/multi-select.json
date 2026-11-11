@@ -3201,17 +3201,6 @@
       }
     ],
     "MultiSelect rendering > renders an empty array like the directive": [ { "dom": 2, "output": "[]", "input": "[]", "active": null }, { "dom": 3, "output": "[]", "input": "[]", "active": [ 0, 1, 0, 1, 0 ] } ],
-    "MultiSelect rendering > keeps the empty button of an undefined input model and opens an empty list": [
-      { "dom": 4, "output": { "$$": "undefined" }, "input": { "$$": "undefined" }, "active": null },
-      { "dom": 5, "output": { "$$": "undefined" }, "input": { "$$": "undefined" }, "active": [ 0, 1, 0, 1, 0 ] },
-      { "dom": 4, "output": { "$$": "undefined" }, "input": { "$$": "undefined" }, "active": [ 0, 0 ] }
-    ],
-    "MultiSelect rendering > keeps the empty button of an undefined input model while the parent holds an output array": [ { "dom": 4, "output": "[]", "input": { "$$": "undefined" }, "active": null }, { "dom": 3, "output": "[]", "input": { "$$": "undefined" }, "active": [ 0, 1, 0, 1, 0 ] } ],
-    "MultiSelect rendering > does not open for a null input model": [
-      { "dom": 4, "output": { "$$": "undefined" }, "input": "null", "active": null },
-      { "dom": 4, "output": { "$$": "undefined" }, "input": "null", "active": null },
-      { "dom": 4, "output": { "$$": "undefined" }, "input": "null", "active": null }
-    ],
     "MultiSelect rendering > reduces the output to role and selected in the input key order, only for selected === true": [
       {
         "dom": 6,
@@ -3813,45 +3802,6 @@
         "active": [ 0, 1, 0, 1, 0 ]
       },
       { "dom": 56, "output": "[{\"role\":\"Y\",\"selected\":true}]", "input": "[{\"role\":\"X\",\"selected\":false},{\"role\":\"Y\",\"selected\":true}]", "active": [ 0, 1, 0, 1, 0 ] }
-    ],
-    "MultiSelect input model replaced from outside > keeps the stale list and label when the input model becomes undefined": [
-      {
-        "dom": 0,
-        "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]",
-        "input": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Editor\",\"selected\":false},{\"role\":\"Guest\",\"selected\":true},{\"role\":\"Reviewer\",\"selected\":false}]",
-        "active": null
-      },
-      {
-        "dom": 8,
-        "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]",
-        "input": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Editor\",\"selected\":false},{\"role\":\"Guest\",\"selected\":true},{\"role\":\"Reviewer\",\"selected\":false}]",
-        "active": [ 0, 1, 0, 1, 0 ]
-      },
-      {
-        "dom": 57,
-        "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]",
-        "input": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Editor\",\"selected\":false},{\"role\":\"Guest\",\"selected\":true},{\"role\":\"Reviewer\",\"selected\":false}]",
-        "active": [ 0, 1, 0, 1, 0 ]
-      },
-      {
-        "dom": 58,
-        "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]",
-        "input": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Editor\",\"selected\":false},{\"role\":\"Guest\",\"selected\":true},{\"role\":\"Reviewer\",\"selected\":false}]",
-        "active": [ 0, 0 ]
-      },
-      { "dom": 58, "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]", "input": { "$$": "undefined" }, "active": [ 0, 0 ] },
-      { "dom": 59, "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]", "input": { "$$": "undefined" }, "active": [ 0, 1, 0, 1, 0 ] },
-      { "dom": 3, "output": "[]", "input": { "$$": "undefined" }, "active": [ 0, 1, 0, 1, 0 ] }
-    ],
-    "MultiSelect input model replaced from outside > keeps the stale list and label when the input model becomes null and refuses to open": [
-      {
-        "dom": 0,
-        "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]",
-        "input": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Editor\",\"selected\":false},{\"role\":\"Guest\",\"selected\":true},{\"role\":\"Reviewer\",\"selected\":false}]",
-        "active": null
-      },
-      { "dom": 0, "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]", "input": "null", "active": null },
-      { "dom": 60, "output": "[{\"role\":\"Admin\",\"selected\":true},{\"role\":\"Guest\",\"selected\":true}]", "input": "null", "active": null }
     ],
     "MultiSelect input model replaced from outside > follows the filter that is active while the input model is replaced": [
       {

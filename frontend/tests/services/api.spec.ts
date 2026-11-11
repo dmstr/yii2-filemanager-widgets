@@ -40,7 +40,15 @@ const postCases: Array<{
   { name: 'list', url: '/api/list', port: (a) => a.list(['docs', 'x']) },
   { name: 'list with recycle', url: '/api/list', port: (a) => a.list(['docs'], undefined, true) },
   { name: 'copy', url: '/api/copy', port: (a, m) => a.copy(m(), ['t']) },
-  { name: 'copy of one item', url: '/api/copy', port: (a, m) => a.copy([m()[0]], ['t', 'u']) },
+  {
+    name: 'copy of one item',
+    url: '/api/copy',
+    port: (a, m) => {
+      const [item] = m();
+      item.tempModel.name = 'renamed.txt';
+      return a.copy([item], ['t', 'u']);
+    },
+  },
   { name: 'move', url: '/api/move', port: (a, m) => a.move(m(), ['t']) },
   { name: 'remove', url: '/api/remove', port: (a, m) => a.remove(m()) },
   { name: 'getContent', url: '/api/getContent', port: (a, m) => a.getContent(m()[0]) },
@@ -103,11 +111,27 @@ describe('POST requests match the recorded apiMiddleware', () => {
     });
   });
 
-  it('the copy of one item carries singleFilename, several items do not (Q-14)', async () => {
-    await api.copy([items()[0]], ['t']);
+  it('the copy of one item with a changed name carries the trimmed name as newFilename', async () => {
+    const [first] = items();
+    first.tempModel.name = '  copy.txt ';
+    await api.copy([first], ['t']);
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/docs/a.txt'], newPath: '/t', newFilename: 'copy.txt' });
+    expect(Object.keys(requests[0].body as object)).toEqual(['action', 'items', 'newPath', 'newFilename']);
+  });
+
+  it('the copy of one item sends no name when it is unchanged or differs only by surrounding spaces', async () => {
+    const [first] = items();
+    await api.copy([first], ['t']);
+    first.tempModel.name = ' a.txt  ';
+    await api.copy([first], ['t']);
+    for (const request of requests) {
+      expect(request.body).toEqual({ action: 'copy', items: ['/docs/a.txt'], newPath: '/t' });
+    }
+  });
+
+  it('the copy of several items sends no name', async () => {
     await api.copy(items(), ['t']);
-    expect(requests[0].body).toHaveProperty('singleFilename', 'a.txt');
-    expect(requests[1].body).not.toHaveProperty('singleFilename');
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/docs/a.txt', '/docs/b c.txt'], newPath: '/t' });
   });
 
   it('createFolder slugs tempModel.name in place (Q-28)', async () => {
@@ -122,12 +146,14 @@ describe('POST requests match the recorded apiMiddleware', () => {
 describe('URLs match the recorded apiMiddleware', () => {
   const urlConfig = makeConfig({ downloadFileUrl: '/filefly/api?scope=x', downloadMultipleUrl: '/dl/multi' });
 
-  it('getUrl and getPreviewUrl, including the doubled ? of a handler URL with a query (Q-36)', () => {
+  // The recording joined a handler URL that has a query with a second `?`, which broke every link; the two entries
+  // for `/filefly/api?scope=x` in the fixture were changed to the `&` join on purpose.
+  it('getUrl and getPreviewUrl of a handler URL with a query', () => {
     const local = createApi(urlConfig, i18n);
     const raw = file('my file & more.txt');
     const withPreview = file('p.png', { preview: '/previews/p.png' });
     expect(local.getUrl(makeItem(raw, ['a b']))).toBe(recorded.urls.getUrl);
-    expect(local.getUrl(makeItem(raw, ['a b']))).toBe('/filefly/api?scope=x?action=download&path=%2Fa%20b%2Fmy%20file%20%26%20more.txt');
+    expect(local.getUrl(makeItem(raw, ['a b']))).toBe('/filefly/api?scope=x&action=download&path=%2Fa%20b%2Fmy%20file%20%26%20more.txt');
     expect(local.getPreviewUrl(makeItem(withPreview))).toBe('/previews/p.png');
     expect(recorded.urls.getPreviewUrlOfPreviewItem).toBe('/previews/p.png');
     expect(local.getPreviewUrl(makeItem(raw, ['a b']))).toBe(recorded.urls.getPreviewUrl);
@@ -144,6 +170,37 @@ describe('URLs match the recorded apiMiddleware', () => {
     expect(mine).toMatch(/^\/dl\/multi\?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa\.txt&items%5B%5D=%2Fdocs%2Fb%20c\.txt&toFilename=\d{5}-angular-filemanager\.zip$/);
     // The timestamp prefix depends on the clock; everything else is identical to the recording.
     expect(mine.replace(/toFilename=\d+/, '')).toBe(recorded.urls.downloadMultipleWithoutTimestamp);
+  });
+});
+
+describe('GET URLs by handler URL shape', () => {
+  const build = (handler: string) => {
+    const local = createApi(makeConfig({ downloadFileUrl: handler, downloadMultipleUrl: handler }), i18n);
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    local.downloadMultiple(items());
+    const zip = open.mock.calls[0][0] as string;
+    return {
+      download: local.getUrl(makeItem(file('a.txt'))),
+      preview: local.getPreviewUrl(makeItem(file('a.txt'))),
+      zip: zip.replace(/toFilename=\d+/, 'toFilename=N'),
+    };
+  };
+  const zipParams = 'action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa.txt&items%5B%5D=%2Fdocs%2Fb%20c.txt&toFilename=N-angular-filemanager.zip';
+
+  it('joins with ? for a plain handler URL, as before', () => {
+    expect(build('/filefly/api')).toEqual({
+      download: '/filefly/api?action=download&path=%2Fa.txt',
+      preview: '/filefly/api?action=download&path=%2Fa.txt',
+      zip: '/filefly/api?' + zipParams,
+    });
+  });
+
+  it('joins with & for a handler URL that has a query, the ZIP array parameter included', () => {
+    expect(build('/filefly/api?scope=some-scope')).toEqual({
+      download: '/filefly/api?scope=some-scope&action=download&path=%2Fa.txt',
+      preview: '/filefly/api?scope=some-scope&action=download&path=%2Fa.txt',
+      zip: '/filefly/api?scope=some-scope&' + zipParams,
+    });
   });
 });
 

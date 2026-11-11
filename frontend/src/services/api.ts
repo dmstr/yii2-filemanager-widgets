@@ -10,6 +10,7 @@ import type { I18n } from '../i18n/index.ts';
 import type { Item, ItemModel } from '../models/Item.ts';
 import { param } from '../utils/param.ts';
 import { slug } from '../utils/slug.ts';
+import { withQuery } from '../utils/withQuery.ts';
 import { REQUEST_HEADERS, isSuccess, parseBody, request, type HttpResult } from './http.ts';
 
 /** Shape of a decoded API response; every part is optional on the wire. */
@@ -101,8 +102,7 @@ const getFilePath = (item: Item | undefined): string | undefined => item && item
 const getFileList = (files: Selection | undefined): Array<string | undefined> =>
   (files || []).map((file) => file && file.model.fullPath());
 
-/** `[url, $.param(data)].join('?')`; Q-36: a handler URL that already has a query gets a second `?`. */
-const withQuery = (url: string, data: Record<string, unknown>): string => [url, param(data)].join('?');
+const urlWithParams = (url: string, data: Record<string, unknown>): string => withQuery(url, param(data));
 
 /**
  * The AngularJS item model carried two fields the port's `Item` dropped as
@@ -249,11 +249,14 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
 
     copy(files, path) {
       const items = getFileList(files);
-      const singleFilename = items.length === 1 ? (files[0] as Item).tempModel.name : undefined;
+      const [file] = files as Item[];
+      const newFilename = items.length === 1 ? file.tempModel.name.trim() : '';
       const data: Record<string, unknown> = { action: 'copy', items, newPath: getPath(path) };
-      // Q-14: filefly reads `newFilename`, so this name never arrives.
-      if (singleFilename && items.length === 1) {
-        data.singleFilename = singleFilename;
+      // The dialog pre-fills the current name. Sending it unchanged would make the backend validate a
+      // name the user never chose, and a file whose name it rejects could no longer be copied.
+      // Trimmed like the name check in copy(), so the stored name is the one that was validated.
+      if (newFilename && newFilename !== file.model.name) {
+        data.newFilename = newFilename;
       }
       return post(config.copyUrl, data, () => i18n.t('error_copying'));
     },
@@ -296,7 +299,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
 
     getUrl(item) {
       const path = getFilePath(item);
-      return path && withQuery(config.downloadFileUrl, { action: 'download', path });
+      return path && urlWithParams(config.downloadFileUrl, { action: 'download', path });
     },
 
     getPreviewUrl(item) {
@@ -321,7 +324,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
       // Q-35: characters 9 to 13 of the millisecond timestamp.
       const timestamp = new Date().getTime().toString().substr(8, 13);
       const toFilename = timestamp + '-' + config.multipleDownloadFileName;
-      const url = withQuery(config.downloadMultipleUrl, {
+      const url = urlWithParams(config.downloadMultipleUrl, {
         action: 'downloadMultiple',
         items: getFileList(files),
         toFilename,

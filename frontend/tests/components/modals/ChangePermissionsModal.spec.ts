@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MultiSelect from '../../../src/components/MultiSelect.vue';
 import ChangePermissionsModal from '../../../src/components/modals/ChangePermissionsModal.vue';
+import type { Item } from '../../../src/models/Item.ts';
+import { flush, stubFetch, type FakeReply, type RecordedRequest } from '../../services/helpers.ts';
 import { diffAgainstRecorded, isHidden, item, recordedContent, mountModal, select, text, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
@@ -67,19 +69,22 @@ describe('ChangePermissionsModal', () => {
     expect(a.model.authRead).toEqual(roles('r1'));
   });
 
-  it('copes with null role lists in the model and in the output', async () => {
+  it('shows null role lists as no roles and writes an empty output to tempModel', async () => {
     app = mountModal(ChangePermissionsModal);
     const a = item('a.txt');
+    a.model.authRead = roles('r1');
+    await select(app.fm, a);
     a.model.authRead = null;
     a.model.authUpdate = null;
     a.model.authDelete = undefined;
     a.tempModel.authRead = null;
-    await expect(select(app.fm, a)).resolves.toBeUndefined();
+    await nextTick();
+    await nextTick();
     expect(selects()).toHaveLength(3);
     expect(selects()[0].props('inputModel')).toBeNull();
-    expect(selects()[0].props('outputModel')).toBeNull();
     expect(selects()[2].props('inputModel')).toBeUndefined();
-    selects()[0].vm.$emit('update:outputModel', []);
+    expect(selects().map((s) => text(s.find('.multiSelect > button')))).toEqual(['None Selected', 'None Selected', 'None Selected']);
+    expect(selects()[0].findAll('.multiSelectItem')).toHaveLength(0);
     expect(a.tempModel.authRead).toEqual([]);
   });
 
@@ -124,7 +129,7 @@ describe('ChangePermissionsModal', () => {
     expect(app.fm.changePermissions).toHaveBeenCalledTimes(2);
   });
 
-  it('never disables a button and keeps the id submit', async () => {
+  it('does not disable a button while a request runs and keeps the id submit', async () => {
     app = mountModal(ChangePermissionsModal);
     app.fm.api.inprocess = true;
     await nextTick();
@@ -140,5 +145,158 @@ describe('ChangePermissionsModal', () => {
     await nextTick();
     expect(isHidden(app.wrapper.find('.label-danger').element)).toBe(false);
     expect(app.wrapper.find('.label-danger span').text()).toBe('boom');
+  });
+});
+
+describe('ChangePermissionsModal opened through updatePermissions', () => {
+  type Reply = FakeReply | (() => FakeReply);
+  let requests: RecordedRequest[];
+  let replies: Record<string, Reply>;
+
+  const auth = (read: unknown, update: unknown, del: unknown): FakeReply => ({ body: { auth: { read, update, delete: del } } });
+  const A = () =>
+    auth(
+      [
+        { role: 'Admin', selected: true },
+        { role: 'Editor', selected: false },
+      ],
+      [{ role: 'Admin', selected: true }],
+      [{ role: 'Guest', selected: true }],
+    );
+  const B = (update: unknown = [{ role: 'Owner', selected: false }]) =>
+    auth(
+      [{ role: 'Owner', selected: true }],
+      update,
+      [
+        { role: 'Owner', selected: false },
+        { role: 'Staff', selected: true },
+      ],
+    );
+  const FAIL: FakeReply = { status: 500, body: {} };
+
+  const settle = async () => {
+    for (let i = 0; i < 4; i++) await flush();
+  };
+
+  function boot(): void {
+    app = mountModal(ChangePermissionsModal);
+    replies = {};
+    requests = stubFetch((request) => {
+      const body = request.body as { action: string; path: string };
+      if (body.action !== 'resolvePermissions') return { body: { result: {} } };
+      const reply = replies[body.path];
+      return typeof reply === 'function' ? reply() : reply;
+    });
+  }
+
+  /** Selects the item, loads its roles and opens the dialog, as the context menu does. */
+  async function open(target: Item, reply: Reply): Promise<void> {
+    replies[target.model.fullPath()] = reply;
+    await select(app.fm, target);
+    app.fm.updatePermissions();
+    await settle();
+  }
+
+  const cancel = () => footerButtons()[0].trigger('click');
+  const labels = () => selects().map((s) => text(s.find('.multiSelect > button')));
+  const rows = () => selects().map((s) => s.findAll('.multiSelectItem').map((r) => text(r.find('label'))));
+  const error = () => (isHidden(app.wrapper.find('.label-danger').element) ? '' : text(app.wrapper.find('.label-danger span')));
+
+  /** Submits through the form and returns the posted role lists, or undefined when nothing was posted. */
+  async function submitted(): Promise<Record<string, unknown> | undefined> {
+    requests.length = 0;
+    app.wrapper.find('form').element.dispatchEvent(new Event('submit', { cancelable: true }));
+    await settle();
+    const request = requests.find((r) => (r.body as { action: string }).action === 'changePermissions');
+    if (!request) return undefined;
+    const { authRead, authUpdate, authDelete } = (request.body as { item: Record<string, unknown> }).item;
+    return { authRead, authUpdate, authDelete };
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows the load error, empty selectors and a disabled submit when the first load fails', async () => {
+    boot();
+    await open(item('a.txt'), FAIL);
+    expect(app.fm.modals.isOpen('changepermissions')).toBe(true);
+    expect(app.t('error_get_permissions')).not.toBe('error_get_permissions');
+    expect(error()).toBe(app.t('error_get_permissions'));
+    expect(labels()).toEqual(['None Selected', 'None Selected', 'None Selected']);
+    expect(rows()).toEqual([[], [], []]);
+    expect(submit().attributes('disabled')).toBeDefined();
+    expect(await submitted()).toBeUndefined();
+    expect(app.fm.modals.isOpen('changepermissions')).toBe(true);
+  });
+
+  it('leaves nothing of the previous item behind when the load for the next one fails', async () => {
+    boot();
+    const b = item('b.txt');
+    await open(item('a.txt'), A());
+    expect(labels()).toEqual(['Admin', 'Admin', 'Guest']);
+    await cancel();
+    await open(b, FAIL);
+    expect(error()).toBe(app.t('error_get_permissions'));
+    expect(labels()).toEqual(['None Selected', 'None Selected', 'None Selected']);
+    expect(rows()).toEqual([[], [], []]);
+    expect([b.tempModel.authRead, b.tempModel.authUpdate, b.tempModel.authDelete]).toEqual([[], [], []]);
+    expect(submit().attributes('disabled')).toBeDefined();
+    expect(await submitted()).toBeUndefined();
+  });
+
+  it('shows an empty selector for a null section, also after another item filled it', async () => {
+    boot();
+    await open(item('a.txt'), A());
+    await cancel();
+    await open(item('b.txt'), B(null));
+    expect(error()).toBe('');
+    expect(labels()).toEqual(['Owner', 'None Selected', 'Staff']);
+    expect(rows()).toEqual([['Owner'], [], ['Owner', 'Staff']]);
+    expect(submit().attributes('disabled')).toBeUndefined();
+    expect(await submitted()).toEqual({
+      authRead: [{ role: 'Owner', selected: true }],
+      authUpdate: [],
+      authDelete: [{ role: 'Staff', selected: true }],
+    });
+  });
+
+  it('shows and submits the roles of the second item after a successful load for the first', async () => {
+    boot();
+    await open(item('a.txt'), A());
+    expect(await submitted()).toEqual({
+      authRead: [{ role: 'Admin', selected: true }],
+      authUpdate: [{ role: 'Admin', selected: true }],
+      authDelete: [{ role: 'Guest', selected: true }],
+    });
+    await open(item('b.txt'), B());
+    expect(labels()).toEqual(['Owner', 'None Selected', 'Staff']);
+    expect(rows()).toEqual([['Owner'], ['Owner'], ['Owner', 'Staff']]);
+    expect(await submitted()).toEqual({
+      authRead: [{ role: 'Owner', selected: true }],
+      authUpdate: [],
+      authDelete: [{ role: 'Staff', selected: true }],
+    });
+  });
+
+  it('enables the submit again once a later load succeeds', async () => {
+    boot();
+    await open(item('a.txt'), FAIL);
+    await cancel();
+    await open(item('b.txt'), B());
+    expect(error()).toBe('');
+    expect(submit().attributes('disabled')).toBeUndefined();
+    expect(labels()).toEqual(['Owner', 'None Selected', 'Staff']);
+  });
+
+  it('shows the server state again when the dialog is reopened for the same item after a cancelled edit', async () => {
+    boot();
+    await open(item('a.txt'), A);
+    await selects()[0].find('.multiSelect > button').trigger('click');
+    await selects()[0].findAll('.multiSelectItem')[1].trigger('click');
+    expect(labels()[0]).toBe('Admin, Editor');
+    await cancel();
+    app.fm.updatePermissions();
+    await settle();
+    expect(labels()).toEqual(['Admin', 'Admin', 'Guest']);
+    expect((await submitted())?.authRead).toEqual([{ role: 'Admin', selected: true }]);
   });
 });

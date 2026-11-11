@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
 import type { FileManagerConfig } from '../../src/config/types.ts';
 import { createFileManager, provideFileManager, useFileManager, type FileManager } from '../../src/services/fileManager.ts';
-import { dir, file, flush, makeConfig, makeI18n, stubFetch, stubXhr, type FakeReply, type RecordedRequest } from './helpers.ts';
+import type { RawItem } from '../../src/models/Item.ts';
+import { dir, file, makeItem, flush, makeConfig, makeI18n, stubFetch, stubXhr, type FakeReply, type RecordedRequest } from './helpers.ts';
 
 const files = [
   file('a.txt'),
@@ -304,13 +305,52 @@ describe('permissions', () => {
     expect(fm.modals.isOpen('changepermissions')).toBe(true);
   });
 
-  it('a failed load opens the dialog anyway and its error is wiped again by opening it', async () => {
+  it('a failed load opens the dialog with its error, no roles and the submit blocked', async () => {
+    select('a.txt');
+    fm.updatePermissions();
+    await settle();
+    expect(fm.permissionsLoadFailed).toBe(false);
+    fm.modal('changepermissions', true);
+    item('a.txt').tempModel.authRead = [{ role: 'r', selected: true }];
     override = () => ({ status: 500, body: {} });
+    requests.length = 0;
+    fm.updatePermissions();
+    await settle();
+    expect(fm.modals.isOpen('changepermissions')).toBe(true);
+    expect(fm.api.error).toBe(makeI18n().t('error_get_permissions'));
+    expect(fm.permissionsLoadFailed).toBe(true);
+    const { model, tempModel } = item('a.txt');
+    expect([model.authRead, model.authUpdate, model.authDelete]).toEqual([null, null, null]);
+    expect([tempModel.authRead, tempModel.authUpdate, tempModel.authDelete]).toEqual([[], [], []]);
+    requests.length = 0;
+    fm.changePermissions();
+    await settle();
+    expect(requests).toEqual([]);
+  });
+
+  it('a response without roles counts as a failed load', async () => {
+    override = (request) => ((request.body as { action: string }).action === 'resolvePermissions' ? { body: {} } : undefined);
     select('a.txt');
     fm.updatePermissions();
     await settle();
     expect(fm.modals.isOpen('changepermissions')).toBe(true);
+    expect(fm.api.error).toBe(makeI18n().t('error_get_permissions'));
+    expect(fm.permissionsLoadFailed).toBe(true);
+  });
+
+  it('a successful load starts the edited role lists empty and unblocks the submit', async () => {
+    override = (request) => ((request.body as { action: string }).action === 'resolvePermissions' ? { status: 500, body: {} } : undefined);
+    select('a.txt');
+    fm.updatePermissions();
+    await settle();
+    override = undefined;
+    item('a.txt').tempModel.authUpdate = [{ role: 'stale', selected: true }];
+    fm.updatePermissions();
+    await settle();
+    expect(fm.permissionsLoadFailed).toBe(false);
     expect(fm.api.error).toBe('');
+    // Without a mounted dialog no selector fills them with the ticked roles.
+    expect(item('a.txt').tempModel.authUpdate).toEqual([]);
   });
 
   it('updatePermissions does nothing without exactly one item (Q-03)', async () => {
@@ -366,14 +406,14 @@ describe('rename', () => {
     expect(fm.modals.isOpen('rename')).toBe(false);
   });
 
-  it('keeps the dialog open and does not refresh on an error', async () => {
+  it('keeps the dialog open and reloads the list on an error', async () => {
     override = (r) => ((r.body as { action: string }).action === 'rename' ? { body: { result: { error: 'exists' } } } : undefined);
     select('a.txt');
     fm.modal('rename');
     item('a.txt').tempModel.name = 'z.txt';
     fm.rename();
     await settle();
-    expect(actionsSent()).toEqual(['rename']);
+    expect(actionsSent()).toEqual(['rename', 'list']);
     expect(fm.modals.isOpen('rename')).toBe(true);
     expect(fm.api.error).toBe('exists');
   });
@@ -400,13 +440,22 @@ describe('copy', () => {
     expect(requests).toEqual([]);
   });
 
-  it('allows an existing name when the destination is another folder', async () => {
+  it('allows a new, unused name in the same folder and sends it as newFilename', async () => {
+    select('a.txt');
+    fm.modalWithPathSelector('copy');
+    item('a.txt').tempModel.name = 'fresh.txt';
+    expect(fm.copy()).toBeUndefined();
+    await settle();
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/', newFilename: 'fresh.txt' });
+  });
+
+  it('allows an existing name when the destination is another folder and sends no name for it', async () => {
     select('a.txt');
     fm.modalWithPathSelector('copy');
     fm.selectedModalPath = ['other'];
     expect(fm.copy()).toBeUndefined();
     await settle();
-    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/other', singleFilename: 'a.txt' });
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/other' });
   });
 
   it('copies several items without name check, refreshes and closes', async () => {
@@ -420,15 +469,36 @@ describe('copy', () => {
     expect(fm.modals.isOpen('copy')).toBe(false);
   });
 
+  it('refuses several items into the folder they are in, without a request', async () => {
+    select('a.txt', 'd.md');
+    fm.modalWithPathSelector('copy');
+    fm.modal('copy');
+    expect(fm.copy()).toBe(false);
+    expect(fm.api.error).toBe(makeI18n().t('error_invalid_filename'));
+    expect(fm.modals.isOpen('copy')).toBe(true);
+    await settle();
+    expect(requests).toEqual([]);
+  });
+
+  it('skips the same-folder check when the selection starts with a hole, like move', async () => {
+    select('a.txt', 'd.md');
+    fm.temps.unshift(undefined);
+    fm.modalWithPathSelector('copy');
+    expect(fm.copy()).toBeUndefined();
+    await settle();
+    expect(actionsSent()).toEqual(['copy', 'list']);
+  });
+
   it('stays open on an error', async () => {
     override = (r) => ((r.body as { action: string }).action === 'copy' ? { status: 500, body: {} } : undefined);
     select('a.txt', 'd.md');
     fm.modal('copy');
+    fm.selectedModalPath = ['t'];
     fm.copy();
     await settle();
     expect(fm.api.error).toBe(makeI18n().t('error_copying'));
     expect(fm.modals.isOpen('copy')).toBe(true);
-    expect(actionsSent()).toEqual(['copy']);
+    expect(actionsSent()).toEqual(['copy', 'list']);
   });
 });
 
@@ -535,14 +605,14 @@ describe('remove and move', () => {
     expect(fm.modals.isOpen('remove')).toBe(false);
   });
 
-  it('remove stays open on an error and does not refresh', async () => {
+  it('remove stays open on an error and reloads the list', async () => {
     override = (r) => ((r.body as { action: string }).action === 'remove' ? { body: { result: { error: 'busy' } } } : undefined);
     select('a.txt');
     fm.modal('remove');
     fm.remove();
     await settle();
     expect(fm.api.error).toBe('busy');
-    expect(actionsSent()).toEqual(['remove']);
+    expect(actionsSent()).toEqual(['remove', 'list']);
     expect(fm.modals.isOpen('remove')).toBe(true);
   });
 
@@ -558,11 +628,10 @@ describe('remove and move', () => {
   it('move posts the destination, refreshes and closes', async () => {
     select('a.txt', 'd.md');
     fm.modalWithPathSelector('move');
-    fm.selectedModalPath = ['', 'b'];
+    fm.selectedModalPath = ['b'];
     fm.move();
     await settle();
-    // The leading empty element of a picked folder path is kept, as in the AngularJS frontend.
-    expect(requests[0]).toMatchObject({ url: '/api/move', body: { action: 'move', items: ['/a.txt', '/d.md'], newPath: '//b' } });
+    expect(requests[0]).toMatchObject({ url: '/api/move', body: { action: 'move', items: ['/a.txt', '/d.md'], newPath: '/b' } });
     expect(fm.modals.isOpen('move')).toBe(false);
   });
 
@@ -716,6 +785,23 @@ describe('downloadLink', () => {
     expect(fm.modals.isOpen('downloadlink')).toBe(true);
   });
 
+  it('joins the links with & when the handler URL has a query', async () => {
+    await boot({ downloadFileUrl: '/api/downloadFile?scope=s' });
+    select('a.txt');
+    fm.downloadLink();
+    expect(fm.dlLink).toBe(window.location.protocol + '//' + window.location.host + '/api/downloadFile?scope=s&action=download&path=%2Fa.txt');
+    expect(fm.streamLink).toBe('/api/downloadFile?scope=s&action=stream&path=%2Fa.txt');
+  });
+
+  it('prefixes the page origin to an absolute handler URL', async () => {
+    // Existing behaviour, not fixed here: the origin is put in front blindly, so the absolute link is broken.
+    await boot({ downloadFileUrl: 'https://cdn.example/api' });
+    select('a.txt');
+    fm.downloadLink();
+    expect(fm.dlLink).toBe(window.location.protocol + '//' + window.location.host + 'https://cdn.example/api?action=download&path=%2Fa.txt');
+    expect(fm.streamLink).toBe('https://cdn.example/api?action=stream&path=%2Fa.txt');
+  });
+
   it('shows the urls of the API when the item has some', async () => {
     override = (r) => ((r.body as { action: string }).action === 'list' ? { body: { result: [file('u.txt', { urls: { image: '/i', download: '/d' } })] } } : undefined);
     await fm.refreshLocation();
@@ -801,13 +887,13 @@ describe('destination dialog', () => {
     expect(fm.navigator.error).toBe('');
   });
 
-  it('select takes a folder row, keeps the leading empty segment and closes the selector', async () => {
+  it('select takes a folder row, stores its segments and closes the selector', async () => {
     select('a.txt');
     fm.modalWithPathSelector('move');
     fm.openNavigator([]);
     await settle();
     fm.select(fm.selector.navigator.fileList[1]);
-    expect(fm.selectedModalPath).toEqual(['', 'b']);
+    expect(fm.selectedModalPath).toEqual(['b']);
     expect(fm.modals.stack).toEqual(['move']);
   });
 
@@ -832,7 +918,7 @@ describe('destination dialog', () => {
     select('a.txt');
     item('a.txt').tempModel.name = 'copy.txt';
     expect(fm.getSelectedPath()).toBe('/copy.txt');
-    fm.selectedModalPath = ['x', '', 'y'];
+    fm.selectedModalPath = ['x', 'y'];
     expect(fm.getSelectedPath()).toBe('/x/y/copy.txt');
     select('b');
     expect(fm.getSelectedPath()).toBe('/x/y');
@@ -853,10 +939,111 @@ describe('destination dialog', () => {
   });
 });
 
+describe('reload after a failed action', () => {
+  const failWith = (action: string, reply: FakeReply) => {
+    override = (r) => ((r.body as { action: string }).action === action ? reply : undefined);
+  };
+  const listRequests = () => requests.filter((r) => (r.body as { action: string }).action === 'list');
+
+  const cases: Array<[string, string, () => void, string]> = [
+    ['rename', 'rename', () => { item('a.txt').tempModel.name = 'z.txt'; fm.rename(); }, 'rename'],
+    ['copy', 'copy', () => { fm.selectedModalPath = ['elsewhere']; fm.copy(); }, 'copy'],
+    ['move', 'move', () => { fm.selectedModalPath = ['elsewhere']; fm.move(); }, 'move'],
+    ['remove', 'remove', () => fm.remove(), 'remove'],
+    ['createFolder', 'createFolder', () => { item('a.txt').tempModel.name = 'fresh'; fm.createFolder(); }, 'newfolder'],
+    ['compress', 'compress', () => { fm.temp.tempModel.name = 'pack'; fm.compress(); }, 'compress'],
+    ['extract', 'extract', () => { fm.temp.tempModel.name = 'out'; fm.extract(); }, 'extract'],
+  ];
+
+  it.each(cases)('%s: a failure reloads the current path once and keeps dialog, error and selection', async (_n, action, run, modalId) => {
+    fm.navigator.currentPath = ['b'];
+    failWith(action, { body: { result: { error: 'nope' } } });
+    select('a.txt');
+    fm.query = 'a';
+    fm.modal(modalId);
+    run();
+    await settle();
+    expect(listRequests()).toHaveLength(1);
+    expect(listRequests()[0].body).toMatchObject({ action: 'list', path: '/b' });
+    expect(fm.api.error).toBe('nope');
+    expect(fm.modals.isOpen(modalId)).toBe(true);
+    expect(fm.temps.map((i) => i!.model.name)).toEqual(['a.txt']);
+    expect(fm.query).toBe('a');
+  });
+
+  it.each(cases)('%s: a success still reloads exactly once', async (_n, action, run, modalId) => {
+    fm.navigator.currentPath = ['b'];
+    select('a.txt');
+    fm.modal(modalId);
+    run();
+    await settle();
+    expect(listRequests()).toHaveLength(1);
+    expect(fm.modals.isOpen(modalId)).toBe(false);
+    expect(fm.temps).toEqual([]);
+  });
+
+  it('delete of a non-empty folder: success true with a note still counts as failure, the folder is gone after the reload', async () => {
+    let deleted = false;
+    override = (r) => {
+      const action = (r.body as { action: string }).action;
+      if (action === 'remove') {
+        deleted = true;
+        return { body: { result: { success: true, error: 'You are not allowed to delete some records' } } };
+      }
+      return action === 'list' ? { body: { result: files.filter((f) => !(deleted && f.name === 'b')) } } : undefined;
+    };
+    select('b');
+    fm.modal('remove');
+    fm.remove();
+    await settle();
+    expect(fm.api.error).toBe('You are not allowed to delete some records');
+    expect(fm.modals.isOpen('remove')).toBe(true);
+    expect(listRequests()).toHaveLength(1);
+    expect(fm.navigator.fileList.map((i) => i.model.name)).not.toContain('b');
+    // The dialog renders from the selection, which survives the reload.
+    expect(fm.temps.map((i) => i!.model.name)).toEqual(['b']);
+    expect(() => fm.temp.model.name).not.toThrow();
+  });
+
+  it('upload with one rejected file: the list is reloaded, the queue and the error stay', async () => {
+    const Xhr = stubXhr();
+    fm.navigator.currentPath = ['folder'];
+    fm.addForUpload([new File(['1'], 'a.png'), new File(['2'], 'b.exe')]);
+    fm.uploadFiles();
+    Xhr.instances[0].respond(400, { result: { success: false, error: 'File type not allowed', uploadedFiles: ['folder/a.png'] } });
+    await settle();
+    expect(listRequests()).toHaveLength(1);
+    expect(listRequests()[0].body).toMatchObject({ action: 'list', path: '/folder' });
+    expect(fm.api.error).toBe('File type not allowed');
+    expect(fm.uploadFileList.map((f) => f.name)).toEqual(['a.png', 'b.exe']);
+    expect(fm.modals.isOpen('uploadfile')).toBe(true);
+  });
+
+  it('compressAsync: a failure resets the note and reloads', async () => {
+    await boot({ compressAsync: true });
+    failWith('compress', { body: { result: { error: 'no' } } });
+    select('a.txt', 'd.md');
+    fm.temp.tempModel.name = 'pack';
+    fm.api.asyncSuccess = true;
+    fm.compress();
+    await settle();
+    expect(fm.api.asyncSuccess).toBe(false);
+    expect(listRequests()).toHaveLength(1);
+  });
+
+  it('a failed reload does not replace the action error', async () => {
+    override = () => ({ body: { result: { error: 'denied' } } });
+    select('a.txt');
+    fm.remove();
+    await settle();
+    expect(fm.api.error).toBe('denied');
+  });
+});
+
 describe('error state shared with the dialogs', () => {
   it('uses one api instance whose state the dialogs show, apart from the navigators', async () => {
     select('a.txt', 'd.md');
-    override = () => ({ body: { result: { error: 'denied' } } });
+    override = (r) => ((r.body as { action: string }).action === 'remove' ? { body: { result: { error: 'denied' } } } : undefined);
     fm.remove();
     await settle();
     expect(fm.api.error).toBe('denied');
@@ -915,5 +1102,168 @@ describe('provide / use', () => {
     fm.query = 'q';
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toBe('1:q');
+  });
+});
+
+describe('destination chosen by row or by the current-folder button', () => {
+  const tree: Record<string, RawItem[]> = {
+    '/': [file('a.txt'), dir('b'), dir('my docs'), dir('\u00fcn\u00efc\u00f6d\u00e9')],
+    '/b': [file('x.txt'), dir('c')],
+    '/b/c': [file('y.txt'), dir('d e')],
+    '/z': [file('z.txt'), file('z.zip'), dir('zf')],
+  };
+
+  beforeEach(async () => {
+    override = (request) => {
+      const body = request.body as { action?: string; path?: string };
+      if (body.action === 'list') return { body: { result: tree[body.path || '/'] ?? [] } };
+      return undefined;
+    };
+    // The items to move live in a folder that is no destination of the cases below.
+    fm.navigator.currentPath = ['z'];
+    fm.navigator.refresh();
+    await settle();
+  });
+
+  /** Shows `shown` in the dialog and picks the folder named `name` in it. */
+  async function pickRow(shown: string[], name: string) {
+    fm.openNavigator(shown);
+    await settle();
+    fm.select(fm.selector.navigator.fileList.find((i) => i.model.name === name)!);
+  }
+
+  async function pickCurrent(shown: string[]) {
+    fm.openNavigator(shown);
+    await settle();
+    fm.selectCurrent();
+  }
+
+  // label, folder shown in the dialog, row to pick, segments of the picked folder, request path
+  const cases: Array<[string, string[], string | null, string[], string]> = [
+    ['root', [], null, [], '/'],
+    ['one level', [], 'b', ['b'], '/b'],
+    ['several levels', ['b'], 'c', ['b', 'c'], '/b/c'],
+    ['a name with spaces', [], 'my docs', ['my docs'], '/my docs'],
+    ['a non-ASCII name', [], '\u00fcn\u00efc\u00f6d\u00e9', ['\u00fcn\u00efc\u00f6d\u00e9'], '/\u00fcn\u00efc\u00f6d\u00e9'],
+    ['spaces below several levels', ['b', 'c'], 'd e', ['b', 'c', 'd e'], '/b/c/d e'],
+  ];
+
+  const moveBody = () => requests.find((r) => (r.body as { action: string }).action === 'move')!.body;
+
+  it.each(cases)('stores the same segments and sends the same path for %s', async (_label, shown, row, segments, path) => {
+    // By row (the root has no row) and by the button on the folder itself.
+    const ways: Array<() => Promise<void>> = [() => pickCurrent(segments)];
+    if (row !== null) ways.unshift(() => pickRow(shown, row));
+    for (const way of ways) {
+      requests.length = 0;
+      select('z.txt');
+      await way();
+      expect(fm.selectedModalPath).toEqual(segments);
+      fm.move();
+      await settle();
+      expect(moveBody()).toMatchObject({ newPath: path });
+    }
+  });
+
+  it('sends the same destination for copy, compress and extract', async () => {
+    const body = (action: string) => requests.find((r) => (r.body as { action: string }).action === action)!.body;
+    select('z.txt');
+    fm.modal('copy');
+    await pickRow(['b'], 'c');
+    fm.copy();
+    await settle();
+    expect(body('copy')).toMatchObject({ newPath: '/b/c' });
+
+    select('z.txt');
+    fm.modal('compress');
+    fm.temp.tempModel.name = 'pack';
+    await pickRow(['b'], 'c');
+    fm.compress();
+    await settle();
+    expect(body('compress')).toMatchObject({ destination: '/b/c' });
+
+    select('z.zip');
+    fm.modal('extract');
+    fm.temp.tempModel.name = 'unpacked';
+    await pickRow([], 'b');
+    fm.extract();
+    await settle();
+    expect(body('extract')).toMatchObject({ destination: '/b' });
+  });
+
+  it('shows the destination of a file selection with its name and of a folder without', async () => {
+    await pickRow(['b'], 'c');
+    select('z.txt');
+    expect(fm.getSelectedPath()).toBe('/b/c/z.txt');
+    select('zf');
+    expect(fm.getSelectedPath()).toBe('/b/c');
+    await pickCurrent([]);
+    select('z.txt');
+    expect(fm.getSelectedPath()).toBe('/z.txt');
+    select('zf');
+    expect(fm.getSelectedPath()).toBe('/');
+    await pickRow([], 'my docs');
+    expect(fm.getSelectedPath()).toBe('/my docs');
+  });
+
+  it('stores the root as an empty array when a row has no segments', () => {
+    fm.select(makeItem(dir(''), []));
+    expect(fm.selectedModalPath).toEqual([]);
+    expect(fm.getSelectedPath()).toBe('/');
+  });
+
+  describe('move into the folder the item is in is refused', () => {
+    const movesSent = () => requests.filter((r) => (r.body as { action: string }).action === 'move');
+
+    // Item in the root: its folder is the root, which a row can only denote through an empty path.
+    const inRoot = async () => {
+      fm.navigator.currentPath = [];
+      fm.navigator.refresh();
+      await settle();
+      select('a.txt');
+    };
+
+    it('for an item in the root, by the current-folder button', async () => {
+      await inRoot();
+      await pickCurrent([]);
+      expect(fm.move()).toBe(false);
+      expect(fm.api.error).toBe('error_cannot_move_same_path');
+      expect(movesSent()).toEqual([]);
+    });
+
+    it('for an item in the root, by a row that denotes the root', async () => {
+      await inRoot();
+      fm.select(makeItem(dir(''), []));
+      expect(fm.move()).toBe(false);
+      expect(movesSent()).toEqual([]);
+    });
+
+    it('for an item in a nested folder, by the current-folder button', async () => {
+      fm.navigator.currentPath = ['b', 'c'];
+      fm.navigator.refresh();
+      await settle();
+      select('y.txt');
+      await pickCurrent(['b', 'c']);
+      expect(fm.move()).toBe(false);
+      expect(movesSent()).toEqual([]);
+    });
+
+    it('for an item in a nested folder, by the row of that folder', async () => {
+      fm.navigator.currentPath = ['b', 'c'];
+      fm.navigator.refresh();
+      await settle();
+      select('y.txt');
+      await pickRow(['b'], 'c');
+      expect(fm.move()).toBe(false);
+      expect(movesSent()).toEqual([]);
+    });
+
+    it('is allowed into another folder', async () => {
+      await inRoot();
+      await pickRow([], 'b');
+      expect(fm.move()).toBeUndefined();
+      await settle();
+      expect(movesSent()).toHaveLength(1);
+    });
   });
 });
