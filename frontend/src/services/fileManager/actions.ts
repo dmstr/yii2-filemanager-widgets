@@ -6,6 +6,7 @@
  */
 import { ref } from 'vue';
 import type { Item, RoleSelection } from '../../models/Item.ts';
+import { slug } from '../../utils/slug.ts';
 import { settled, type FileManagerContext } from './types.ts';
 
 export function createDialogActions(ctx: FileManagerContext) {
@@ -207,17 +208,17 @@ export function createDialogActions(ctx: FileManagerContext) {
   }
 
   function createFolder(): false | undefined {
-    const item = selection.singleSelection();
+    const item = selection.newFolder.value;
     if (!item) {
       return;
     }
-    const name = item.tempModel.name;
-    // Q-28: the slug is applied inside `api.createFolder`, after this check.
+    // The slug is what the request carries, so the checks run on it; the typed name stays in the field.
+    const name = slug(item.tempModel.name);
     if (!name || navigator.fileNameExists(name)) {
       return invalidName();
     }
     settled(
-      api.createFolder(item),
+      api.createFolder(item, name),
       () => {
         navigator.refresh();
         modal('newfolder', true);

@@ -644,10 +644,10 @@ describe('remove and move', () => {
 });
 
 describe('createFolder', () => {
-  it('checks the typed name before slugging (Q-28), posts the slug and closes', async () => {
+  it('posts the slug of the typed name and closes', async () => {
     fm.modal('newfolder');
-    const phantom = fm.prepareNewFolder();
-    phantom.tempModel.name = 'New Folder';
+    const draft = fm.prepareNewFolder();
+    draft.tempModel.name = 'New Folder';
     fm.createFolder();
     await settle();
     expect(requests[0]).toMatchObject({ url: '/api/createFolder', body: { action: 'createFolder', newPath: '/new-folder' } });
@@ -655,27 +655,46 @@ describe('createFolder', () => {
     expect(fm.modals.isOpen('newfolder')).toBe(false);
   });
 
-  it('an exact existing name is refused, a name that only slugs to an existing one is not (Q-28)', async () => {
-    const phantom = fm.prepareNewFolder();
-    phantom.tempModel.name = 'b';
-    expect(fm.createFolder()).toBe(false);
-    expect(fm.api.error).toBe(makeI18n().t('error_invalid_filename'));
+  it('refuses a name whose slug is an existing entry, before any request (Q-28)', async () => {
+    const draft = fm.prepareNewFolder();
+    for (const typed of ['b', 'B ', ' B!']) {
+      fm.api.error = '';
+      draft.tempModel.name = typed;
+      expect(fm.createFolder()).toBe(false);
+      expect(fm.api.error).toBe(makeI18n().t('error_invalid_filename'));
+    }
     expect(requests).toEqual([]);
-    phantom.tempModel.name = 'B ';
+    await settle();
+  });
+
+  it('refuses a name whose slug is empty or that is empty', async () => {
+    const draft = fm.prepareNewFolder();
+    for (const typed of ['', '   ', '!!!', '--']) {
+      draft.tempModel.name = typed;
+      expect(fm.createFolder()).toBe(false);
+    }
+    expect(requests).toEqual([]);
+    await settle();
+  });
+
+  it('keeps the typed name in the draft after the slug went out', async () => {
+    const draft = fm.prepareNewFolder();
+    draft.tempModel.name = 'My Folder';
     fm.createFolder();
     await settle();
-    expect(requests[0].body).toEqual({ action: 'createFolder', newPath: '/b' });
+    expect(requests[0].body).toEqual({ action: 'createFolder', newPath: '/my-folder' });
+    expect(draft.tempModel.name).toBe('My Folder');
   });
 
-  it('an empty name is refused', () => {
-    fm.prepareNewFolder();
-    expect(fm.createFolder()).toBe(false);
-    expect(requests).toEqual([]);
+  it('sends the path of the current folder', async () => {
+    fm.navigator.currentPath = ['b'];
+    fm.prepareNewFolder().tempModel.name = 'Sub Dir';
+    fm.createFolder();
+    await settle();
+    expect(requests[0].body).toEqual({ action: 'createFolder', newPath: '/b/sub-dir' });
   });
 
-  it('does nothing when the selection was reset meanwhile (Q-29)', async () => {
-    fm.prepareNewFolder();
-    fm.selectOrUnselect(null, { target: { hasAttribute: () => true } as unknown as EventTarget });
+  it('does nothing without a draft', async () => {
     expect(fm.createFolder()).toBeUndefined();
     await settle();
     expect(requests).toEqual([]);
@@ -950,7 +969,7 @@ describe('reload after a failed action', () => {
     ['copy', 'copy', () => { fm.selectedModalPath = ['elsewhere']; fm.copy(); }, 'copy'],
     ['move', 'move', () => { fm.selectedModalPath = ['elsewhere']; fm.move(); }, 'move'],
     ['remove', 'remove', () => fm.remove(), 'remove'],
-    ['createFolder', 'createFolder', () => { item('a.txt').tempModel.name = 'fresh'; fm.createFolder(); }, 'newfolder'],
+    ['createFolder', 'createFolder', () => { fm.prepareNewFolder().tempModel.name = 'fresh'; fm.createFolder(); }, 'newfolder'],
     ['compress', 'compress', () => { fm.temp.tempModel.name = 'pack'; fm.compress(); }, 'compress'],
     ['extract', 'extract', () => { fm.temp.tempModel.name = 'out'; fm.extract(); }, 'extract'],
   ];

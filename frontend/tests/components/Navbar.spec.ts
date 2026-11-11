@@ -105,12 +105,16 @@ describe('navbar controls', () => {
     expect(app.fm.fileList).toHaveLength(sampleFiles.length);
   });
 
-  it('opens the new folder dialog state and the phantom selection from the more menu', async () => {
+  it.each([[0], [1], [3]])('opens the new folder dialog from the more menu without touching a selection of %i items', async (count) => {
     app = await mountWidget();
+    app.fm.fileList.slice(0, count).forEach((item, i) => app.fm.selectOrUnselect(item, i ? { ctrlKey: true } : undefined));
+    const before = [...app.fm.temps];
     await app.wrapper.find('#more').trigger('click');
     await app.wrapper.find('#more ~ ul li').trigger('click');
     expect(app.fm.modals.isOpen('newfolder')).toBe(true);
-    expect(app.fm.temps).toHaveLength(1);
+    expect(app.fm.newFolder).not.toBeNull();
+    expect(app.fm.temps).toHaveLength(count);
+    expect(app.fm.temps).toEqual(before);
   });
 });
 

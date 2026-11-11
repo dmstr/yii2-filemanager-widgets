@@ -28,6 +28,8 @@ export type SelectedItems = Array<Item | undefined>;
 
 export function createSelection(config: FileManagerConfig, navigator: Navigator, fileList: Ref<Item[]>) {
   const temps = ref<SelectedItems>([]);
+  /** Draft of the open "new folder" dialog; kept apart from the selection so opening or cancelling the dialog leaves that untouched. */
+  const newFolder = ref<Item | null>(null);
 
   const singleSelection = (): Item | undefined => (temps.value.length === 1 ? temps.value[0] : undefined);
 
@@ -112,12 +114,12 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
   const selectionHas = (type: string): Item | undefined =>
     temps.value.find((item) => item && item.model.type === type);
 
-  /** Q-26: opening "new folder" selects a phantom item that is not in the list and stays selected after cancel. */
+  /** Starts a fresh draft for the current path, so a name abandoned in an earlier dialog never reappears. */
   function prepareNewFolder(): Item {
     const item = reactive(new Item(null, navigator.currentPath, config)) as Item;
-    replace([item]);
+    newFolder.value = item;
     return item;
   }
 
-  return { temps, temp, isSelected, selectOrUnselect, singleSelection, totalSelecteds, selectionHas, prepareNewFolder, replace };
+  return { temps, newFolder, temp, isSelected, selectOrUnselect, singleSelection, totalSelecteds, selectionHas, prepareNewFolder, replace };
 }

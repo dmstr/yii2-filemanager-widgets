@@ -87,7 +87,7 @@ const postCases: Array<{
     port: (a, m) => {
       const item = m()[0];
       item.tempModel.name = '  New Folder!  ';
-      return a.createFolder(item);
+      return a.createFolder(item, 'new-folder');
     },
   },
 ];
@@ -134,11 +134,11 @@ describe('POST requests match the recorded apiMiddleware', () => {
     expect(requests[0].body).toEqual({ action: 'copy', items: ['/docs/a.txt', '/docs/b c.txt'], newPath: '/t' });
   });
 
-  it('createFolder slugs tempModel.name in place (Q-28)', async () => {
+  it('createFolder sends the given name under the item path and leaves the typed name alone', async () => {
     const item = items()[0];
     item.tempModel.name = '  New Folder!  ';
-    await api.createFolder(item);
-    expect(item.tempModel.name).toBe('new-folder');
+    await api.createFolder(item, 'new-folder');
+    expect(item.tempModel.name).toBe('  New Folder!  ');
     expect(requests[0].body).toEqual({ action: 'createFolder', newPath: '/docs/new-folder' });
   });
 });
