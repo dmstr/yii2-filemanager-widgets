@@ -5,7 +5,7 @@
  * AngularJS swallowed it (Q-29: expressions on an empty selection; Q-03: permissions need exactly one item) they return without doing anything.
  */
 import { ref } from 'vue';
-import type { Item } from '../../models/Item.ts';
+import type { Item, RoleSelection } from '../../models/Item.ts';
 import { settled, type FileManagerContext } from './types.ts';
 
 export function createDialogActions(ctx: FileManagerContext) {
@@ -25,35 +25,50 @@ export function createDialogActions(ctx: FileManagerContext) {
     settled(api.edit(item), () => modal('edit', true));
   }
 
+  /** True while the open permissions dialog has no roles to show because loading them failed; the submit is disabled then. */
+  const permissionsLoadFailed = ref(false);
+
   /**
-   * Loads the roles, then opens the dialog. AngularJS quirk: the error set for a
-   * failed request is wiped again at once, because opening the dialog clears
-   * `api.error`; the dialog opens either way.
+   * Loads the roles, then opens the dialog. A failed load opens it as well,
+   * because its error bar is the only place an action error can be shown, but
+   * with empty role lists and with the submit disabled, so nothing of an earlier
+   * load is shown or saved for this item. The edited role lists start empty:
+   * the selectors fill them with the ticked roles of each loaded list, and a
+   * section without roles must not keep what an earlier edit left there.
    */
   function updatePermissions(): void {
     const item = selection.singleSelection();
     if (!item) {
       return;
     }
+    // `auth` is falsy for a failed request and for a response without roles.
+    const show = (auth: Partial<Record<'read' | 'update' | 'delete', unknown>> | undefined): void => {
+      const roles = (section: unknown) => (Array.isArray(section) ? (section as RoleSelection[]) : null);
+      item.model.authRead = roles(auth?.read);
+      item.model.authUpdate = roles(auth?.update);
+      item.model.authDelete = roles(auth?.delete);
+      item.tempModel.authRead = [];
+      item.tempModel.authUpdate = [];
+      item.tempModel.authDelete = [];
+      permissionsLoadFailed.value = !auth;
+      modal('changepermissions', false);
+      if (!auth) {
+        // Set after opening, which clears the error.
+        api.error = i18n.t('error_get_permissions');
+      }
+    };
     api
       .resolvePermissions(item.model.fullPath())
       .then(
-        (data) => {
-          item.model.authRead = data.auth.read;
-          item.model.authUpdate = data.auth.update;
-          item.model.authDelete = data.auth.delete;
-        },
-        () => {
-          api.error = i18n.t('error_get_permissions');
-        },
+        (data) => show(data?.auth || undefined),
+        () => show(undefined),
       )
-      .finally(() => modal('changepermissions', false))
       .catch((error: unknown) => console.error(error));
   }
 
   function changePermissions(): void {
     const item = selection.singleSelection();
-    if (!item) {
+    if (!item || permissionsLoadFailed.value) {
       return;
     }
     settled(api.changePermissions(item.tempModel), () => modal('changepermissions', true));
@@ -199,6 +214,7 @@ export function createDialogActions(ctx: FileManagerContext) {
   return {
     uploadFileList,
     edit,
+    permissionsLoadFailed,
     updatePermissions,
     changePermissions,
     rename,

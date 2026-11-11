@@ -1,4 +1,4 @@
-/** "en" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
+/** "en" translations, carried over verbatim from the AngularJS frontend of version 1.x; `error_get_permissions` was used there but missing from every table. */
 const messages: Record<string, string> = {
   "filemanager": "File Manager",
   "language": "Language",
@@ -80,6 +80,7 @@ const messages: Record<string, string> = {
   "error_creating_folder": "An error occurred creating the folder",
   "error_getting_content": "An error occurred getting the content of the file",
   "error_changing_perms": "An error occurred changing the permissions of the file",
+  "error_get_permissions": "An error occurred loading the permissions of the file or folder",
   "error_uploading_files": "An error occurred uploading files",
   "sure_to_start_compression_with": "Are you sure to compress",
   "owner": "Owner",

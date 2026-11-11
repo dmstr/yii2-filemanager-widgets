@@ -304,13 +304,52 @@ describe('permissions', () => {
     expect(fm.modals.isOpen('changepermissions')).toBe(true);
   });
 
-  it('a failed load opens the dialog anyway and its error is wiped again by opening it', async () => {
+  it('a failed load opens the dialog with its error, no roles and the submit blocked', async () => {
+    select('a.txt');
+    fm.updatePermissions();
+    await settle();
+    expect(fm.permissionsLoadFailed).toBe(false);
+    fm.modal('changepermissions', true);
+    item('a.txt').tempModel.authRead = [{ role: 'r', selected: true }];
     override = () => ({ status: 500, body: {} });
+    requests.length = 0;
+    fm.updatePermissions();
+    await settle();
+    expect(fm.modals.isOpen('changepermissions')).toBe(true);
+    expect(fm.api.error).toBe(makeI18n().t('error_get_permissions'));
+    expect(fm.permissionsLoadFailed).toBe(true);
+    const { model, tempModel } = item('a.txt');
+    expect([model.authRead, model.authUpdate, model.authDelete]).toEqual([null, null, null]);
+    expect([tempModel.authRead, tempModel.authUpdate, tempModel.authDelete]).toEqual([[], [], []]);
+    requests.length = 0;
+    fm.changePermissions();
+    await settle();
+    expect(requests).toEqual([]);
+  });
+
+  it('a response without roles counts as a failed load', async () => {
+    override = (request) => ((request.body as { action: string }).action === 'resolvePermissions' ? { body: {} } : undefined);
     select('a.txt');
     fm.updatePermissions();
     await settle();
     expect(fm.modals.isOpen('changepermissions')).toBe(true);
+    expect(fm.api.error).toBe(makeI18n().t('error_get_permissions'));
+    expect(fm.permissionsLoadFailed).toBe(true);
+  });
+
+  it('a successful load starts the edited role lists empty and unblocks the submit', async () => {
+    override = (request) => ((request.body as { action: string }).action === 'resolvePermissions' ? { status: 500, body: {} } : undefined);
+    select('a.txt');
+    fm.updatePermissions();
+    await settle();
+    override = undefined;
+    item('a.txt').tempModel.authUpdate = [{ role: 'stale', selected: true }];
+    fm.updatePermissions();
+    await settle();
+    expect(fm.permissionsLoadFailed).toBe(false);
     expect(fm.api.error).toBe('');
+    // Without a mounted dialog no selector fills them with the ticked roles.
+    expect(item('a.txt').tempModel.authUpdate).toEqual([]);
   });
 
   it('updatePermissions does nothing without exactly one item (Q-03)', async () => {
