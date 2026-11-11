@@ -325,6 +325,18 @@ describe('permissions', () => {
     expect(fm.modals.isOpen('changepermissions')).toBe(true);
   });
 
+  it('updatePermissions drops a name left behind by an abandoned rename', async () => {
+    select('a.txt');
+    item('a.txt').tempModel.name = 'abandoned.txt';
+    fm.updatePermissions();
+    await settle();
+    expect(item('a.txt').tempModel.name).toBe('a.txt');
+    requests.length = 0;
+    fm.changePermissions();
+    await settle();
+    expect(requests[0]).toMatchObject({ body: { action: 'changePermissions', path: '/a.txt', item: { name: 'a.txt' } } });
+  });
+
   it('a failed load opens the dialog with its error, no roles and the submit blocked', async () => {
     select('a.txt');
     fm.updatePermissions();

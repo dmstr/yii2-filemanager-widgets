@@ -69,6 +69,8 @@ export function createDialogActions(ctx: FileManagerContext) {
     // `auth` is falsy for a failed request and for a response without roles.
     const show = (auth: Partial<Record<'read' | 'update' | 'delete', unknown>> | undefined): void => {
       const roles = (section: unknown) => (Array.isArray(section) ? (section as RoleSelection[]) : null);
+      // The save sends the whole editable copy: drop a name another dialog left behind in it.
+      item.revert();
       item.model.authRead = roles(auth?.read);
       item.model.authUpdate = roles(auth?.update);
       item.model.authDelete = roles(auth?.delete);
