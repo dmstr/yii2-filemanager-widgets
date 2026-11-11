@@ -2,11 +2,6 @@
   "post": [
     { "name": "list", "url": "/api/list", "body": { "action": "list", "path": "/docs/x" } },
     {
-      "name": "list with recycle",
-      "url": "/api/list",
-      "body": { "action": "list", "path": "/docs", "recycle": true }
-    },
-    {
       "name": "copy",
       "url": "/api/copy",
       "body": { "action": "copy", "items": [ "/docs/a.txt", "/docs/b c.txt" ], "newPath": "/t" }

@@ -39,7 +39,7 @@ export function createDialogActions(ctx: FileManagerContext) {
    * clears the selection, which the dialogs render from.
    */
   const reloadAfterFailure = (): void => {
-    navigator.refresh(false, true);
+    navigator.refresh(true);
   };
 
   function edit(): void {
@@ -121,8 +121,8 @@ export function createDialogActions(ctx: FileManagerContext) {
     );
   }
 
-  function refreshLocation(recycle?: boolean): void {
-    navigator.refresh(recycle);
+  function refreshLocation(): void {
+    navigator.refresh();
   }
 
   /** The name check shared by copy, compress and extract. */

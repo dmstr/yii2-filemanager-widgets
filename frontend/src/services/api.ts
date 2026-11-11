@@ -72,7 +72,7 @@ export interface Api {
   error: string;
   /** Upload progress; unset until the first upload starts, as the AngularJS handler never initialised it. */
   progress: number | undefined;
-  list(path: string[], customHandler?: DeferredHandler, recycle?: boolean): Promise<ApiData>;
+  list(path: string[], customHandler?: DeferredHandler): Promise<ApiData>;
   copy(files: Selection, path: string[]): Promise<ApiData>;
   move(files: Selection, path: string[]): Promise<ApiData>;
   remove(files: Selection): Promise<ApiData>;
@@ -237,11 +237,11 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
     error: '',
     progress: undefined,
 
-    list(path, customHandler, recycle) {
+    list(path, customHandler) {
       return call(
         'POST',
         config.listUrl,
-        { action: 'list', path: getPath(path), recycle },
+        { action: 'list', path: getPath(path) },
         () => 'Unknown error listing, check the response',
         customHandler,
       );

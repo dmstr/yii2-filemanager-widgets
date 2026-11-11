@@ -55,7 +55,7 @@ const {
           <div class="navbar-collapse">
             <div class="navbar-form navbar-right text-right">
 
-              <button class="btn btn-flat btn-sm" :title="t('refresh')" @click="fm.refreshLocation(true)">
+              <button class="btn btn-flat btn-sm" :title="t('refresh')" @click="fm.refreshLocation()">
                 <i class="glyphicon glyphicon-refresh"></i>
               </button>
 
