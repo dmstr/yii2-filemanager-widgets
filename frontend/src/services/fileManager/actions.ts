@@ -84,6 +84,12 @@ export function createDialogActions(ctx: FileManagerContext) {
     return !!(navigator.fileNameExists(name) && destination.validateSamePath(item)) || !name;
   }
 
+  /** The first item stands for the selection; a leading hole in it (shift-click) skips the check. */
+  function destinationIsItemsFolder(): boolean {
+    const anyItem = selection.singleSelection() || selection.temps.value[0];
+    return !!anyItem && destination.validateSamePath(anyItem);
+  }
+
   function copy(): false | undefined {
     const item = selection.singleSelection();
     if (item && nameInvalid(item.tempModel.name.trim(), item)) {
@@ -144,8 +150,7 @@ export function createDialogActions(ctx: FileManagerContext) {
   }
 
   function move(): false | undefined {
-    const anyItem = selection.singleSelection() || selection.temps.value[0];
-    if (anyItem && destination.validateSamePath(anyItem)) {
+    if (destinationIsItemsFolder()) {
       api.error = i18n.t('error_cannot_move_same_path');
       return false;
     }
