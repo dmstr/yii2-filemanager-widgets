@@ -12,7 +12,7 @@ const { t } = useI18n();
 /** `ng-model="singleSelection().tempModel.name"` (Q-29 without a single selection). */
 const name = tempModelField(() => fm.singleSelection(), 'name');
 
-/** Empty without a single selection, like the other dialogs (the AngularJS expression printed the text "false", Q-52). */
+/** Empty without a single selection, like the other dialogs. */
 const selectedName = (): string => fm.singleSelection()?.model.name ?? '';
 </script>
 
