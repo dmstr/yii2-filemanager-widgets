@@ -18,6 +18,7 @@ afterEach(() => {
   wrapper?.unmount();
   wrapper = undefined;
   vi.useRealTimers();
+  vi.restoreAllMocks();
   document.body.className = '';
   document.body.removeAttribute('style');
 });
@@ -65,6 +66,24 @@ const escape = (target: Element): void => {
 const click = (target: Element): void => {
   target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 };
+
+/**
+ * jsdom has no layout (its body is 0px wide, so it always overflows); simulates
+ * a page whose body overflows the window, or with `false` one that fits, and a
+ * scrollbar 50px wide (260-268, 295-302). Returns the restore function.
+ */
+function fakeScrollbar(overflowing = true): () => void {
+  const clientWidth = vi.spyOn(document.body, 'clientWidth', 'get').mockReturnValue(overflowing ? 1009 : 1024);
+  const offsetWidth = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
+    return this.className === 'modal-scrollbar-measure' ? 50 : 0;
+  });
+  const innerWidth = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1024);
+  return () => {
+    clientWidth.mockRestore();
+    offsetWidth.mockRestore();
+    innerWidth.mockRestore();
+  };
+}
 
 describe('BaseModal markup', () => {
   it('renders the AngularJS frame, the size class and passes attributes to the .modal element', () => {
@@ -135,12 +154,7 @@ describe('BaseModal show and hide', () => {
 
   it('restores the body padding it added for the scrollbar', async () => {
     const { fm } = mountDialogs();
-    // jsdom has no layout; simulate a page with a 15px scrollbar (260-268, 295-302).
-    const clientWidth = vi.spyOn(document.body, 'clientWidth', 'get').mockReturnValue(1009);
-    const offsetWidth = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
-      return this.className === 'modal-scrollbar-measure' ? 50 : 0;
-    });
-    const innerWidth = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1024);
+    const restore = fakeScrollbar();
     document.body.style.paddingRight = '3px';
     fm.modals.open('move');
     await nextTick();
@@ -154,9 +168,129 @@ describe('BaseModal show and hide', () => {
     // 287 and 253-258
     expect(document.body.style.paddingRight).toBe('3px');
     expect(document.getElementById('move')!.style.paddingRight).toBe('');
-    clientWidth.mockRestore();
-    offsetWidth.mockRestore();
-    innerWidth.mockRestore();
+    restore();
+  });
+});
+
+// Bootstrap applied and undid the body state per dialog, which broke with stacked dialogs.
+describe('BaseModal page state', () => {
+  const isModalOpen = (): boolean => document.body.classList.contains('modal-open');
+
+  it.each([
+    ['without a scrollbar', false, '3px'],
+    ['with a scrollbar', true, '53px'],
+  ])('keeps the body class and padding while any of two dialogs is open, closed in either order, %s', async (_, scrollbar, padded) => {
+    const { fm } = mountDialogs();
+    const restore = fakeScrollbar(scrollbar);
+    document.body.style.paddingRight = '3px';
+    for (const [first, second] of [['selector', 'move'], ['move', 'selector']]) {
+      fm.modals.open('move');
+      await nextTick();
+      expect(isModalOpen()).toBe(true);
+      expect(document.body.style.paddingRight).toBe(padded);
+      fm.modals.open('selector');
+      await nextTick();
+      expect(document.body.style.paddingRight).toBe(padded);
+      fm.modals.close(first);
+      await nextTick();
+      expect(isModalOpen()).toBe(true);
+      expect(document.body.style.paddingRight).toBe(padded);
+      fm.modals.close(second);
+      await nextTick();
+      expect(isModalOpen()).toBe(false);
+      expect(document.body.style.paddingRight).toBe('3px');
+    }
+    restore();
+  });
+
+  it('does not grow the padding over three rounds of stacked dialogs closed lower first', async () => {
+    const { fm } = mountDialogs();
+    const restore = fakeScrollbar();
+    for (let round = 0; round < 3; round++) {
+      fm.modals.open('move');
+      await nextTick();
+      fm.modals.open('selector');
+      await nextTick();
+      expect(document.body.style.paddingRight).toBe('50px');
+      fm.modals.close('move');
+      await nextTick();
+      expect(isModalOpen()).toBe(true);
+      fm.modals.close('selector');
+      await nextTick();
+      expect(isModalOpen()).toBe(false);
+      expect(document.body.style.paddingRight).toBe('');
+    }
+    restore();
+  });
+
+  it('compensates fixed navbars once and restores their inline padding exactly', async () => {
+    const { fm } = mountDialogs();
+    const restore = fakeScrollbar();
+    const top = document.createElement('nav');
+    top.className = 'navbar-fixed-top';
+    top.style.paddingRight = '7px';
+    const bottom = document.createElement('nav');
+    bottom.className = 'navbar-fixed-bottom';
+    document.body.append(top, bottom);
+    fm.modals.open('move');
+    await nextTick();
+    expect(top.style.paddingRight).toBe('57px');
+    expect(bottom.style.paddingRight).toBe('50px');
+    fm.modals.open('selector');
+    await nextTick();
+    expect(top.style.paddingRight).toBe('57px');
+    fm.modals.close('move');
+    await nextTick();
+    expect(top.style.paddingRight).toBe('57px');
+    fm.modals.close('selector');
+    await nextTick();
+    expect(top.style.paddingRight).toBe('7px');
+    expect(bottom.style.paddingRight).toBe('');
+    top.remove();
+    bottom.remove();
+    restore();
+  });
+
+  it('leaves the inline padding of body and navbars alone when there is no scrollbar', async () => {
+    const { fm } = mountDialogs();
+    const restore = fakeScrollbar(false);
+    document.body.style.paddingRight = '3px';
+    const top = document.createElement('nav');
+    top.className = 'navbar-fixed-top';
+    top.style.paddingRight = '7px';
+    document.body.append(top);
+    fm.modals.open('move');
+    await nextTick();
+    fm.modals.close('move');
+    await nextTick();
+    expect(document.body.style.paddingRight).toBe('3px');
+    expect(top.style.paddingRight).toBe('7px');
+    fm.modals.open('move');
+    await nextTick();
+    expect(document.body.style.paddingRight).toBe('3px');
+    expect(top.style.paddingRight).toBe('7px');
+    fm.modals.close('move');
+    await nextTick();
+    expect(top.style.paddingRight).toBe('7px');
+    top.remove();
+    restore();
+  });
+
+  it('keeps each dialog its own backdrop and inline padding', async () => {
+    const { fm, move, selector } = mountDialogs();
+    const restore = fakeScrollbar();
+    fm.modals.open('move');
+    await nextTick();
+    fm.modals.open('selector');
+    await nextTick();
+    expect(backdrops()).toHaveLength(2);
+    expect(move.style.paddingRight).toBe('50px');
+    fm.modals.close('move');
+    await nextTick();
+    expect(backdrops()).toHaveLength(1);
+    expect(move.style.paddingRight).toBe('');
+    expect(selector.style.display).toBe('block');
+    restore();
   });
 });
 
@@ -334,7 +468,7 @@ describe('BaseModal focus', () => {
 });
 
 describe('BaseModal stacked dialogs (Q-32)', () => {
-  it('reproduces Bootstrap with the selector on top of the move dialog', async () => {
+  it('shows the selector on top of the move dialog', async () => {
     const { fm, move, selector } = mountDialogs();
     fm.modals.open('move');
     await nextTick();
@@ -349,8 +483,8 @@ describe('BaseModal stacked dialogs (Q-32)', () => {
     await nextTick();
     expect(fm.modals.stack).toEqual(['move']);
     expect(backdrops()).toHaveLength(1);
-    // 174: the hide of the upper dialog removes `modal-open` although `move` is still open
-    expect(document.body.classList.contains('modal-open')).toBe(false);
+    // Unlike Bootstrap (174), `modal-open` stays while `move` is still open.
+    expect(document.body.classList.contains('modal-open')).toBe(true);
     expect(move.style.display).toBe('block');
     expect(move.classList.contains('in')).toBe(true);
 
@@ -435,5 +569,38 @@ describe('BaseModal unmount', () => {
     vi.advanceTimersByTime(200);
     expect(focus).not.toHaveBeenCalled();
     remove.mockRestore();
+  });
+
+  it('restores the page state and stops listening for Escape when unmounted with dialogs open', async () => {
+    const { fm } = mountDialogs();
+    const restore = fakeScrollbar();
+    document.body.style.paddingRight = '3px';
+    const top = document.createElement('nav');
+    top.className = 'navbar-fixed-top';
+    top.style.paddingRight = '7px';
+    document.body.append(top);
+    fm.modals.open('move');
+    await nextTick();
+    fm.modals.open('selector');
+    await nextTick();
+    const remove = vi.spyOn(window, 'removeEventListener');
+    wrapper!.unmount();
+    wrapper = undefined;
+    expect(document.body.classList.contains('modal-open')).toBe(false);
+    expect(document.body.style.paddingRight).toBe('3px');
+    expect(top.style.paddingRight).toBe('7px');
+    expect(remove).toHaveBeenCalledWith('keydown', expect.any(Function), true);
+    top.remove();
+    restore();
+
+    // A widget mounted afterwards starts from a clean page state.
+    const next = mountDialogs();
+    next.fm.modals.open('move');
+    await nextTick();
+    expect(document.body.classList.contains('modal-open')).toBe(true);
+    next.fm.modals.close('move');
+    await nextTick();
+    expect(document.body.classList.contains('modal-open')).toBe(false);
+    expect(document.body.style.paddingRight).toBe('3px');
   });
 });
