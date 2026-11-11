@@ -63,7 +63,7 @@ describe('MoveModal', () => {
     app.fm.api.inprocess = true;
     await rendered(app);
     const disabled = app.wrapper.findAll('button').filter((b) => b.attributes('disabled') !== undefined);
-    expect(disabled.length).toBe(3); // selector close, Cancel, Move
+    expect(disabled.length).toBe(2); // Cancel, Move
     expect(cross().attributes('disabled')).toBeUndefined();
   });
 
