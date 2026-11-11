@@ -110,6 +110,11 @@ describe('Breadcrumb', () => {
     expect(crumbs()[0].text()).toBe('My files');
   });
 
+  it('shows the default root name when no name is configured', async () => {
+    app = await mountWidget({ reply });
+    expect(crumbs()[0].text()).toBe('/');
+  });
+
   it('links intermediate folders cut to 8 characters and shows the last one as text cut to 12', async () => {
     app = await mountWidget({ reply });
     await goDown(['alpha', 'nested-folder-with-a-long-name']);
