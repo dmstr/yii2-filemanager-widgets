@@ -1,0 +1,18 @@
+[
+  { "input": "", "result": "" },
+  { "input": "  ", "result": "" },
+  { "input": "New Folder", "result": "new-folder" },
+  { "input": "  Trim me  ", "result": "trim-me" },
+  { "input": "Ünïcödé Näme", "result": "n-c-d-n-me" },
+  { "input": "--a--b--", "result": "a-b" },
+  { "input": "a  b", "result": "a-b" },
+  { "input": "A_B.c", "result": "a-b-c" },
+  { "input": "UPPER-lower-123", "result": "upper-lower-123" },
+  { "input": "\u00a0nbsp\u00a0", "result": "nbsp" },
+  { "input": "\ufefffeff", "result": "feff" },
+  { "input": "tab\tname", "result": "tab-name" },
+  { "input": "/..//etc", "result": "etc" },
+  { "input": null, "result": "" },
+  { "input": { "$$": "undefined" }, "result": "" },
+  { "input": 123, "result": "123" }
+]

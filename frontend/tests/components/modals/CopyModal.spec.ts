@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import CopyModal from '../../../src/components/modals/CopyModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, rendered, select, text, visibleText, type MountedModal } from './helpers.ts';
+import { diffAgainstRecorded, isHidden, item, recordedContent, mountModal, rendered, select, text, visibleText, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -18,9 +18,9 @@ const type = async (value: string) => {
 };
 
 describe('CopyModal', () => {
-  it('has the structure of the legacy template', () => {
+  it('has the structure of the recorded template', () => {
     app = mountModal(CopyModal);
-    expect(diffAgainstLegacy(legacyContent('copy'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
+    expect(diffAgainstRecorded(recordedContent('copy'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
   });
 
   it('shows the name field for a single selection', async () => {

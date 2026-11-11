@@ -1,0 +1,627 @@
+{
+  "tree": {
+    "/": [
+      {
+        "name": "b",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      },
+      {
+        "name": "A",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      },
+      {
+        "name": "c",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      },
+      {
+        "name": "readme.txt",
+        "type": "file",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      }
+    ],
+    "/b": [
+      {
+        "name": "z",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      },
+      {
+        "name": "Y",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      },
+      {
+        "name": "x.md",
+        "type": "file",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      }
+    ],
+    "/b/z": [
+      {
+        "name": "q",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      },
+      {
+        "name": "p",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      }
+    ],
+    "/b/Y": [],
+    "/A": [
+      {
+        "name": "a1",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      },
+      {
+        "name": "B2",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      }
+    ],
+    "/c": [
+      {
+        "name": "only-file.txt",
+        "type": "file",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      }
+    ],
+    "/b/z/q": [
+      {
+        "name": "deep",
+        "type": "dir",
+        "size": 10,
+        "date": "2021-03-04 05:06:07",
+        "rights": "rw-r--r--"
+      }
+    ]
+  },
+  "walks": [
+    {
+      "label": "going down",
+      "visits": [ [], [ "b" ], [ "b", "z" ], [ "b", "z", "q" ] ],
+      "trees": [
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [
+                  { "name": "b/Y", "nodes": [] },
+                  {
+                    "name": "b/z",
+                    "nodes": [ { "name": "b/z/p", "nodes": [] }, { "name": "b/z/q", "nodes": [] } ]
+                  }
+                ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [
+                  { "name": "b/Y", "nodes": [] },
+                  {
+                    "name": "b/z",
+                    "nodes": [
+                      { "name": "b/z/p", "nodes": [] },
+                      { "name": "b/z/q", "nodes": [ { "name": "b/z/q/deep", "nodes": [] } ] }
+                    ]
+                  }
+                ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "label": "down and up again",
+      "visits": [ [], [ "b" ], [ "b", "z" ], [ "b" ], [] ],
+      "trees": [
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [
+                  { "name": "b/Y", "nodes": [] },
+                  {
+                    "name": "b/z",
+                    "nodes": [ { "name": "b/z/p", "nodes": [] }, { "name": "b/z/q", "nodes": [] } ]
+                  }
+                ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "label": "a sibling branch",
+      "visits": [ [], [ "b" ], [ "b", "z" ], [], [ "A" ], [ "A", "a1" ] ],
+      "trees": [
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [
+                  { "name": "b/Y", "nodes": [] },
+                  {
+                    "name": "b/z",
+                    "nodes": [ { "name": "b/z/p", "nodes": [] }, { "name": "b/z/q", "nodes": [] } ]
+                  }
+                ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              {
+                "name": "A",
+                "nodes": [ { "name": "A/a1", "nodes": [] }, { "name": "A/B2", "nodes": [] } ]
+              },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              {
+                "name": "A",
+                "nodes": [ { "name": "A/a1", "nodes": [] }, { "name": "A/B2", "nodes": [] } ]
+              },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "label": "jumping back to a folder",
+      "visits": [ [], [ "b" ], [ "b", "z" ], [ "b", "Y" ], [ "b", "z" ] ],
+      "trees": [
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [
+                  { "name": "b/Y", "nodes": [] },
+                  {
+                    "name": "b/z",
+                    "nodes": [ { "name": "b/z/p", "nodes": [] }, { "name": "b/z/q", "nodes": [] } ]
+                  }
+                ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [
+                  { "name": "b/Y", "nodes": [] },
+                  {
+                    "name": "b/z",
+                    "nodes": [ { "name": "b/z/p", "nodes": [] }, { "name": "b/z/q", "nodes": [] } ]
+                  }
+                ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [
+                  { "name": "b/Y", "nodes": [] },
+                  {
+                    "name": "b/z",
+                    "nodes": [ { "name": "b/z/p", "nodes": [] }, { "name": "b/z/q", "nodes": [] } ]
+                  }
+                ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "label": "revisiting everything",
+      "visits": [ [], [ "b" ], [], [ "c" ], [], [ "A" ], [ "b" ], [ "b", "z" ], [] ],
+      "trees": [
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              {
+                "name": "A",
+                "nodes": [ { "name": "A/a1", "nodes": [] }, { "name": "A/B2", "nodes": [] } ]
+              },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [
+                  { "name": "b/Y", "nodes": [] },
+                  {
+                    "name": "b/z",
+                    "nodes": [ { "name": "b/z/p", "nodes": [] }, { "name": "b/z/q", "nodes": [] } ]
+                  }
+                ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "label": "an empty folder",
+      "visits": [ [], [ "b" ], [ "b", "Y" ], [ "b" ] ],
+      "trees": [
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              {
+                "name": "b",
+                "nodes": [ { "name": "b/Y", "nodes": [] }, { "name": "b/z", "nodes": [] } ]
+              },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "label": "a folder with files only",
+      "visits": [ [], [ "c" ], [] ],
+      "trees": [
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ],
+        [
+          {
+            "name": "",
+            "nodes": [
+              { "name": "A", "nodes": [] },
+              { "name": "b", "nodes": [] },
+              { "name": "c", "nodes": [] }
+            ]
+          }
+        ]
+      ]
+    }
+  ],
+  "failedListError": { "afterFailure": "denied", "afterNextHandler": "denied" }
+}

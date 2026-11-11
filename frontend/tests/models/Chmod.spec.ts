@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Chmod } from '../../src/models/Chmod.ts';
-import { legacyModels } from '../utils/legacy.ts';
+import { loadFixture } from '../utils/fixtures.ts';
 
-const { Chmod: LegacyChmod } = legacyModels({});
+/** Recorded calls of the `chmod` service of the AngularJS 1.x frontend: the input and the code or the error message. */
+const recorded = loadFixture<Array<{ input: unknown; expected: string }>>('models/chmod.json');
 
 describe('Chmod', () => {
   it.each([
@@ -39,7 +40,7 @@ describe('Chmod', () => {
     expect(new Chmod('755').toCode('d', '!')).toBe('drwxr-xr-x!');
   });
 
-  it('throws the legacy message for invalid input', () => {
+  it('throws the message of the AngularJS service for invalid input', () => {
     expect(() => new Chmod('999')).toThrow('Invalid chmod input data (999)');
     expect(() => new Chmod('rwxrwx')).toThrow('Invalid chmod input data (rwxrwx)');
   });
@@ -53,15 +54,9 @@ describe('Chmod', () => {
     expect(() => new Chmod('77777')).toThrow();
   });
 
-  it('matches the legacy service over a table of inputs', () => {
-    const inputs: unknown[] = ['644', '0755', 644, 755, '1777', 'rwxr-xr-x', 'drwxr-xr-x', '---------', 'rwsrwsrwt', '', 0, null, undefined, '999', 'abc', ' 6 4 4 ', '9755', 'rwxrwxrwxx', '1e2', true];
-    for (const input of inputs) {
-      let expected: string;
-      try {
-        expected = new LegacyChmod(input).toCode();
-      } catch (error) {
-        expected = (error as Error).message;
-      }
+  it('matches the recorded results of the service over a table of inputs', () => {
+    expect(recorded).toHaveLength(20);
+    for (const { input, expected } of recorded) {
       let actual: string;
       try {
         actual = new Chmod(input as string).toCode();

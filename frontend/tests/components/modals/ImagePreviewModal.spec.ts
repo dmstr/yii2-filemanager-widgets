@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ImagePreviewModal from '../../../src/components/modals/ImagePreviewModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, rendered, select, text, type MountedModal } from './helpers.ts';
+import { diffAgainstRecorded, isHidden, item, recordedContent, mountModal, rendered, select, text, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -11,9 +11,9 @@ const footerClose = () => app.wrapper.find('.modal-footer .btn-default');
 const cross = () => app.wrapper.find('button.close');
 
 describe('ImagePreviewModal', () => {
-  it('has the structure of the legacy template', () => {
+  it('has the structure of the recorded template', () => {
     app = mountModal(ImagePreviewModal);
-    expect(diffAgainstLegacy(legacyContent('imagepreview'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
+    expect(diffAgainstRecorded(recordedContent('imagepreview'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
   });
 
   it('renders title, alt and the close buttons for a single selection', async () => {

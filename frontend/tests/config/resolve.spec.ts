@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaults } from '../../src/config/defaults.ts';
 import { readGlobalConfig, resolveConfig } from '../../src/config/resolve.ts';
-import { angularMerge } from '../utils/legacy.ts';
+import { loadFixture } from '../utils/fixtures.ts';
 
 describe('resolveConfig', () => {
   it('yields the defaults for undefined input', () => {
@@ -22,7 +22,7 @@ describe('resolveConfig', () => {
     expect(resolveConfig(undefined).appName).toBe('angular-filemanager v1.5');
   });
 
-  it('has the legacy default values', () => {
+  it('has the default values of the AngularJS provider', () => {
     const config = resolveConfig(undefined);
     expect(config.defaultLang).toBe('en');
     expect(config.listUrl).toBe('bridges/php/handler.php');
@@ -119,21 +119,14 @@ describe('resolveConfig', () => {
     });
   });
 
-  describe('against the real angular.merge', () => {
-    const inputs: unknown[] = [
-      {},
-      { appName: 'x', allowedActions: { rename: false } },
-      { allowedActions: { customFileActions: { A: 'a', B: 'b' } } },
-      { pickCallback: undefined, sidebar: null },
-      { allowedActions: { changePermissions: false, pickFolders: true }, hidePermissions: true },
-      { allowedActions: { customDirActions: ['x', 'y'] } },
-      { isImageFilePattern: /\.x$/gi },
-    ];
+  describe('against the recorded angular.merge results', () => {
+    /** `angular.merge(defaults, input)` of AngularJS 1.5.11, which the AngularJS 1.x frontend used, for each input. */
+    const recorded = loadFixture<Array<{ input: unknown; merged: unknown }>>('config/angular-merge.json');
 
-    it('produces the same configuration as the legacy integration', () => {
-      for (const input of inputs) {
-        const expected = angularMerge(createDefaults(), input);
-        expect(resolveConfig(input), JSON.stringify(input)).toEqual(expected);
+    it('produces the same configuration as the AngularJS integration', () => {
+      expect(recorded).toHaveLength(7);
+      for (const { input, merged } of recorded) {
+        expect(resolveConfig(input), JSON.stringify(input)).toEqual(merged);
       }
     });
   });

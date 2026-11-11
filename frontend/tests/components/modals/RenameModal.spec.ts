@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import RenameModal from '../../../src/components/modals/RenameModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, rendered, select, text, type MountedModal } from './helpers.ts';
+import { diffAgainstRecorded, isHidden, item, recordedContent, mountModal, rendered, select, text, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -15,12 +15,12 @@ const type = async (value: string) => {
 };
 
 describe('RenameModal', () => {
-  it('has the structure of the legacy template', async () => {
+  it('has the structure of the recorded template', async () => {
     app = mountModal(RenameModal);
-    // The helper empties legacy expressions; a selection of one hole renders the name empty as well.
+    // The helper empties the template expressions; a selection of one hole renders the name empty as well.
     app.fm.temps = [undefined];
     await rendered(app);
-    expect(diffAgainstLegacy(legacyContent('rename'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
+    expect(diffAgainstRecorded(recordedContent('rename'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
   });
 
   it('shows the old name and the editable name for a single selection', async () => {

@@ -1,21 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { fileExtension, formatDate, humanReadableFileSize, strLimit } from '../../src/utils/format.ts';
-import { legacyFilters } from './legacy.ts';
+import { loadFixture, outcomeOf, type Outcome } from './fixtures.ts';
 
-const cfg = { useBinarySizePrefixes: false };
-const legacy = legacyFilters(cfg);
+/** Recorded calls of the filters of the AngularJS 1.x frontend: the arguments and what each call returned. */
+const recorded = loadFixture<{
+  strLimit: Array<{ args: unknown[] } & Outcome>;
+  fileExtension: Array<{ args: unknown[] } & Outcome>;
+  humanReadableFileSize: Array<{ binary: boolean; size: number } & Outcome>;
+  formatDate: Array<{ args: unknown[] } & Outcome>;
+}>('utils/format.json');
+
+/** A recorded row without its inputs: just the outcome. */
+const outcomeRow = (row: Outcome): Outcome => ('throws' in row ? { throws: row.throws } : { result: row.result });
 
 describe('strLimit', () => {
-  const inputs = ['', 'a', 'abc', 'abcd', 'hello world', 'x'.repeat(40)];
-  const limits = [0, 1, 3, 4, 11, 30, -2, 2.7, NaN, Infinity];
-
-  it('matches the legacy filter over a table of inputs', () => {
-    for (const input of inputs) {
-      for (const limit of limits) {
-        expect(strLimit(input, limit), `${input}/${limit}`).toBe(legacy.strLimit(input, limit));
-        expect(strLimit(input, limit, '..'), `${input}/${limit}/..`).toBe(legacy.strLimit(input, limit, '..'));
-        expect(strLimit(input, limit, ''), `${input}/${limit}/empty`).toBe(legacy.strLimit(input, limit, ''));
-      }
+  it('matches the recorded results over a table of inputs', () => {
+    for (const row of recorded.strLimit) {
+      const [input, limit, suffix] = row.args as [string, number, string?];
+      expect(outcomeOf(() => (strLimit as (...args: unknown[]) => string)(...row.args)), `${input}/${limit}/${suffix ?? 'default'}`).toStrictEqual(outcomeRow(row));
     }
   });
 
@@ -26,9 +28,9 @@ describe('strLimit', () => {
 });
 
 describe('fileExtension', () => {
-  it('matches the legacy filter', () => {
-    for (const input of ['', 'readme', 'a.txt', 'a.jpeg', 'archive.tar.gz', '.htaccess', 'trailing.', 'a.b.c.d.markdown']) {
-      expect(fileExtension(input), input).toBe(legacy.fileExtension(input));
+  it('matches the recorded results', () => {
+    for (const row of recorded.fileExtension) {
+      expect(outcomeOf(() => fileExtension(row.args[0] as string)), String(row.args[0])).toStrictEqual(outcomeRow(row));
     }
   });
 
@@ -40,14 +42,9 @@ describe('fileExtension', () => {
 });
 
 describe('humanReadableFileSize', () => {
-  const sizes = [0, 1, 100, 102, 103, 1023, 1024, 1025, 1536, 1048576, 1572864, 1073741824, 1024 ** 4, 1024 ** 5 * 3, 1024 ** 8, 1024 ** 9, 1e30, -5, NaN];
-
-  it('matches the legacy filter for decimal and binary prefixes', () => {
-    for (const binary of [false, true]) {
-      cfg.useBinarySizePrefixes = binary;
-      for (const size of sizes) {
-        expect(humanReadableFileSize(size, binary), `${size}/${binary}`).toBe(legacy.humanReadableFileSize(size));
-      }
+  it('matches the recorded results for decimal and binary prefixes', () => {
+    for (const row of recorded.humanReadableFileSize) {
+      expect(outcomeOf(() => humanReadableFileSize(row.size, row.binary)), `${row.size}/${row.binary}`).toStrictEqual(outcomeRow(row));
     }
   });
 
@@ -72,10 +69,11 @@ describe('humanReadableFileSize', () => {
 });
 
 describe('formatDate', () => {
-  it('matches the legacy filter for valid dates, strings and numbers', () => {
-    const inputs: unknown[] = [new Date(2020, 0, 2, 3, 4, 5), new Date(0), new Date(Date.UTC(1999, 11, 31, 23, 59, 59)), 'text', 42, true];
-    for (const input of inputs) {
-      expect(formatDate(input), String(input)).toBe(legacy.formatDate(input));
+  it('matches the recorded results for valid dates, strings and numbers', () => {
+    const valid = recorded.formatDate.filter((row) => 'result' in row);
+    expect(valid).toHaveLength(6);
+    for (const row of valid) {
+      expect(outcomeOf(() => formatDate(row.args[0])), String(row.args[0])).toStrictEqual(outcomeRow(row));
     }
   });
 
@@ -83,9 +81,11 @@ describe('formatDate', () => {
     expect(formatDate(new Date(Date.UTC(2020, 5, 7, 8, 9, 10)))).toBe('2020-06-07 08:09:10');
   });
 
-  it('does not throw for an Invalid Date, where the legacy filter threw a RangeError', () => {
-    expect(() => legacy.formatDate(new Date(NaN)), 'legacy throws').toThrow(RangeError);
-    expect(formatDate(new Date(NaN))).toBe('');
+  it('does not throw for an Invalid Date, where the AngularJS filter threw a RangeError', () => {
+    const [row] = recorded.formatDate.filter((entry) => 'throws' in entry);
+    expect((row as { throws: { name: string } }).throws.name, 'recorded: the AngularJS filter threw').toBe('RangeError');
+    expect(Number.isNaN((row.args[0] as Date).getTime())).toBe(true);
+    expect(formatDate(row.args[0])).toBe('');
   });
 
   it('renders null and undefined as an empty string', () => {

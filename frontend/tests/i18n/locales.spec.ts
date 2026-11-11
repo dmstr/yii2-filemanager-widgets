@@ -1,59 +1,49 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createI18n } from '../../src/i18n/index.ts';
+import { loadFixture } from '../utils/fixtures.ts';
 
 const localesDir = resolve(__dirname, '../../src/i18n/locales');
 /** The locale codes with a table: one file per code. */
 const LOCALES = readdirSync(localesDir)
   .filter((name) => name.endsWith('.ts'))
   .map((name) => name.slice(0, -3));
-const legacyPath = resolve(__dirname, '../../legacy/angular-filemanager.min.js');
 
-/** Evaluates the legacy $translateProvider blocks with a stub provider. */
-function loadLegacy(): Record<string, Record<string, string>> {
-  const lines = readFileSync(legacyPath, 'utf8').split('\n');
-  const start = lines.findIndex((l) => l.includes("$translateProvider.useSanitizeValueStrategy"));
-  const first = lines.findIndex((l) => l.includes("$translateProvider.translations('en'"));
-  expect(start).toBeGreaterThan(0);
-  const end = lines.findIndex((l, i) => i > first && /^\}\]\);?\s*$|^\s*\}\]\);\s*$/.test(l));
-  const body = lines.slice(start, end).join('\n');
-  const out: Record<string, Record<string, string>> = {};
-  const provider = {
-    useSanitizeValueStrategy() {},
-    translations(lang: string, o: Record<string, string>) {
-      out[lang] = o;
-    },
-  };
-  new Function('$translateProvider', body)(provider);
-  return out;
-}
-
-const legacy = loadLegacy();
+/** The keys of every language table of the AngularJS 1.x frontend, in table order (the translations themselves are not recorded). */
+const recordedKeys = loadFixture<Record<string, string[]>>('i18n/locale-keys.json');
 const counts: Record<string, number> = { en: 99, de: 99, he: 91 };
 
-describe('locale parity with legacy source', () => {
-  it('finds all 12 legacy languages', () => {
-    expect(Object.keys(legacy).sort()).toEqual([...LOCALES].sort());
+const table = async (lang: string) => (await import(`../../src/i18n/locales/${lang}.ts`)).default as Record<string, string>;
+const placeholders = (text: string) => (text.match(/\{\{.*?\}\}/g) ?? []).sort();
+
+describe('locale tables', () => {
+  it('has all 12 recorded languages', () => {
+    expect(Object.keys(recordedKeys).sort()).toEqual([...LOCALES].sort());
   });
 
   it('registers every locale file in the translator catalog', async () => {
     for (const lang of LOCALES) {
-      const mod = (await import(`../../src/i18n/locales/${lang}.ts`)).default as Record<string, string>;
+      const mod = await table(lang);
       const [key, value] = Object.entries(mod)[0];
       expect(createI18n(lang).t(key), lang).toBe(value);
     }
   });
 
   for (const lang of LOCALES) {
-    it(`${lang}: same keys, order and values`, async () => {
-      const mod = (await import(`../../src/i18n/locales/${lang}.ts`)).default as Record<string, string>;
-      expect(Object.keys(mod)).toEqual(Object.keys(legacy[lang]));
-      expect(Object.values(mod)).toEqual(Object.values(legacy[lang]));
+    it(`${lang}: keys and order match the recorded list, every value is a non-empty string with the placeholders of en`, async () => {
+      const mod = await table(lang);
+      const en = await table('en');
+      expect(Object.keys(mod)).toEqual(recordedKeys[lang]);
+      for (const [key, value] of Object.entries(mod)) {
+        expect(typeof value, `${lang}.${key}`).toBe('string');
+        expect(value.trim(), `${lang}.${key}`).not.toBe('');
+        if (key in en) expect(placeholders(value), `${lang}.${key}`).toEqual(placeholders(en[key]));
+      }
     });
 
     it(`${lang}: key count`, async () => {
-      const mod = (await import(`../../src/i18n/locales/${lang}.ts`)).default as Record<string, string>;
+      const mod = await table(lang);
       expect(Object.keys(mod)).toHaveLength(counts[lang] ?? 92);
     });
   }

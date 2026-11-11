@@ -1,0 +1,22 @@
+[
+  { "input": "644", "expected": "rw-r--r--" },
+  { "input": "0755", "expected": "rwxr-xr-x" },
+  { "input": 644, "expected": "rw-r--r--" },
+  { "input": 755, "expected": "rwxr-xr-x" },
+  { "input": "1777", "expected": "rwxrwxrwx" },
+  { "input": "rwxr-xr-x", "expected": "rwxr-xr-x" },
+  { "input": "drwxr-xr-x", "expected": "rwxr-xr-x" },
+  { "input": "---------", "expected": "---------" },
+  { "input": "rwsrwsrwt", "expected": "rw-rw-rwx" },
+  { "input": "", "expected": "---------" },
+  { "input": 0, "expected": "---------" },
+  { "input": null, "expected": "---------" },
+  { "input": { "$$": "undefined" }, "expected": "---------" },
+  { "input": "999", "expected": "Invalid chmod input data (999)" },
+  { "input": "abc", "expected": "Invalid chmod input data (abc)" },
+  { "input": " 6 4 4 ", "expected": "Invalid chmod input data ( 6 4 4 )" },
+  { "input": "9755", "expected": "rwxr-xr-x" },
+  { "input": "rwxrwxrwxx", "expected": "rwxrwx-wx" },
+  { "input": "1e2", "expected": "Invalid chmod input data (1e2)" },
+  { "input": true, "expected": "Invalid chmod input data (true)" }
+]

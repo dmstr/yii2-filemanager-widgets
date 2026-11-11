@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import RemoveModal from '../../../src/components/modals/RemoveModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, rendered, select, text, visibleText, type MountedModal } from './helpers.ts';
+import { diffAgainstRecorded, isHidden, item, recordedContent, mountModal, rendered, select, text, visibleText, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -10,9 +10,9 @@ const cancel = () => app.wrapper.find('.modal-footer .btn-default');
 const submit = () => app.wrapper.find('button[type=submit]');
 
 describe('RemoveModal', () => {
-  it('has the structure of the legacy template', () => {
+  it('has the structure of the recorded template', () => {
     app = mountModal(RemoveModal);
-    expect(diffAgainstLegacy(legacyContent('remove'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
+    expect(diffAgainstRecorded(recordedContent('remove'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
   });
 
   it('renders for a single selection', async () => {

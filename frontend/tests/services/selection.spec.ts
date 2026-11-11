@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFileManager, type FileManager } from '../../src/services/fileManager.ts';
 import type { SelectEvent } from '../../src/services/fileManager/selection.ts';
-import { legacyController } from '../utils/legacy.ts';
+import { loadFixture } from '../utils/fixtures.ts';
 import { dir, file, flush, makeConfig, makeI18n, stubFetch } from './helpers.ts';
 
 const config = makeConfig();
@@ -116,7 +116,7 @@ describe('selectOrUnselect gestures', () => {
     expect(names(fm.temps)).toEqual(['f.zip', 'd.md', 'c.png']);
   });
 
-  it('keeps the hole of a shift range whose anchor is not in the displayed list, like the legacy code', () => {
+  it('keeps the hole of a shift range whose anchor is not in the displayed list, like the AngularJS code', () => {
     click('a.txt');
     fm.query = 'c';
     click('c.png', { shiftKey: true });
@@ -128,58 +128,48 @@ describe('selectOrUnselect gestures', () => {
   });
 });
 
-describe('selection gestures equal the legacy controller', () => {
-  /** A seeded random walk over all gesture kinds, compared step by step. */
-  it.each([1, 2, 3, 4, 5])('random sequence %i', (seed) => {
-    const { $scope, Item } = legacyController(config);
-    const oldItems = raws.map((raw) => new Item(raw, []));
-    $scope.fileList = oldItems;
-    $scope.$digest();
-    for (const item of [...oldItems, ...fm.fileList]) item.tempModel.name = 'dirty-' + item.model.name;
+describe('selection gestures equal the recorded AngularJS controller', () => {
+  interface RecordedStep {
+    /** Position of the clicked item in the list; the list length stands for a click on no item. */
+    index: number;
+    event: Partial<SelectEvent> & { prevent?: boolean };
+    temps: Array<string | undefined>;
+    /** One digit per item: 1 when selected. */
+    selected: string;
+    /** One digit per item: 1 when the dirty dialog input was reverted to the model, 0 when it was left alone. */
+    reverted: string;
+    single: string | undefined;
+  }
+  const recorded = loadFixture<{
+    walks: Array<{ seed: number; steps: RecordedStep[] }>;
+    summary: { selectedIndexes: number[]; totalSelecteds: unknown; hasDir: boolean; hasNope: boolean; hasSingleSelection: boolean };
+  }>('services/selection.json');
 
-    let state = seed * 7919;
-    const next = (limit: number) => ((state = (state * 1103515245 + 12345) & 0x7fffffff), state % limit);
+  /** The recorded seeded random walks over all gesture kinds, replayed step by step. */
+  it.each(recorded.walks.map((walk) => [walk.seed, walk] as const))('random sequence %i', (seed, walk) => {
+    expect(walk.steps).toHaveLength(400);
+    for (const item of fm.fileList) item.tempModel.name = 'dirty-' + item.model.name;
 
-    for (let step = 0; step < 400; step++) {
-      const index = next(raws.length + 1);
-      const kind = next(8);
-      const ev: Partial<SelectEvent> & { prevent?: boolean } = {};
-      if (kind === 1) ev.ctrlKey = true;
-      if (kind === 2) ev.metaKey = true;
-      if (kind === 3) ev.shiftKey = true;
-      if (kind === 4) ev.which = 3;
-      if (kind === 5) (ev.which = 3), (ev.ctrlKey = true);
-      if (kind === 6) (ev.which = 3), (ev.shiftKey = true);
-      if (kind === 7 && index === raws.length) ev.prevent = true;
-      const e = event(ev);
-
-      $scope.selectOrUnselect(index === raws.length ? null : oldItems[index], e);
-      $scope.$digest();
-      fm.selectOrUnselect(index === raws.length ? null : fm.fileList[index], e);
+    walk.steps.forEach((expected, step) => {
+      fm.selectOrUnselect(expected.index === raws.length ? null : fm.fileList[expected.index], event(expected.event));
 
       const label = `seed ${seed} step ${step}`;
-      expect(names(fm.temps), label).toEqual(names($scope.temps));
-      expect(fm.fileList.map((i) => fm.isSelected(i)), label).toEqual(oldItems.map((i) => $scope.isSelected(i)));
+      expect(names(fm.temps), label).toEqual(expected.temps);
+      expect(fm.fileList.map((i) => (fm.isSelected(i) ? '1' : '0')).join(''), label).toBe(expected.selected);
       // The watcher reverts a single selected item's tempModel: same visible effect.
-      expect(fm.fileList.map((i) => i.tempModel.name), label).toEqual(oldItems.map((i) => i.tempModel.name));
-      expect(fm.singleSelection()?.model.name, label).toEqual($scope.singleSelection() ? $scope.singleSelection().model.name : undefined);
+      expect(fm.fileList.map((i) => (i.tempModel.name === 'dirty-' + i.model.name ? '0' : i.tempModel.name === i.model.name ? '1' : '?')).join(''), label).toBe(expected.reverted);
+      expect(fm.singleSelection()?.model.name, label).toEqual(expected.single);
       // Dirty the inputs again so every replacement shows up as a revert.
-      for (const item of [...oldItems, ...fm.fileList]) item.tempModel.name = 'dirty-' + item.model.name;
-    }
+      for (const item of fm.fileList) item.tempModel.name = 'dirty-' + item.model.name;
+    });
   });
 
   it('totalSelecteds, selectionHas and singleSelection', () => {
-    const { $scope, Item } = legacyController(config);
-    const oldItems = raws.map((raw) => new Item(raw, []));
-    $scope.fileList = oldItems;
-    for (const i of [0, 1]) {
-      $scope.selectOrUnselect(oldItems[i], { ctrlKey: true, target: { hasAttribute: () => false } });
-      fm.selectOrUnselect(fm.fileList[i], event({ ctrlKey: true }));
-    }
-    expect(fm.totalSelecteds()).toEqual($scope.totalSelecteds());
-    expect(!!fm.selectionHas('dir')).toBe(!!$scope.selectionHas('dir'));
-    expect(!!fm.selectionHas('nope')).toBe(!!$scope.selectionHas('nope'));
-    expect(!!fm.singleSelection()).toBe(!!$scope.singleSelection());
+    for (const i of recorded.summary.selectedIndexes) fm.selectOrUnselect(fm.fileList[i], event({ ctrlKey: true }));
+    expect(fm.totalSelecteds()).toEqual(recorded.summary.totalSelecteds);
+    expect(!!fm.selectionHas('dir')).toBe(recorded.summary.hasDir);
+    expect(!!fm.selectionHas('nope')).toBe(recorded.summary.hasNope);
+    expect(!!fm.singleSelection()).toBe(recorded.summary.hasSingleSelection);
   });
 });
 
@@ -211,7 +201,7 @@ describe('temp (Q-25)', () => {
   });
 });
 
-describe('revert on replacement (legacy $watch)', () => {
+describe('revert on replacement (the AngularJS $watch)', () => {
   it('drops dialog input when the same item is selected again, but not on Ctrl-click additions', () => {
     fm.selectOrUnselect(fm.fileList[0]);
     fm.fileList[0].tempModel.name = 'typed';

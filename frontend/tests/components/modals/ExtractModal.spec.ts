@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ExtractModal from '../../../src/components/modals/ExtractModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, select, text, visibleText, type MountedModal } from './helpers.ts';
+import { diffAgainstRecorded, isHidden, item, recordedContent, mountModal, select, text, visibleText, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -14,9 +14,9 @@ const submit = () => app.wrapper.find('button[type=submit]');
 const nextTick = () => app.wrapper.vm.$nextTick();
 
 describe('ExtractModal', () => {
-  it('has the structure of the legacy template', () => {
+  it('has the structure of the recorded template', () => {
     app = mountModal(ExtractModal);
-    expect(diffAgainstLegacy(legacyContent('extract'), app.wrapper.find('.modal-content').element, app.t)).toBeNull();
+    expect(diffAgainstRecorded(recordedContent('extract'), app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });
 
   it('renders for a single selection', async () => {

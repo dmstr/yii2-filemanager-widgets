@@ -1,28 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { filterBy, filterByName, orderBy } from '../../src/services/fileManager/collection.ts';
-import { dir, file, makeItem } from './helpers.ts';
-import { legacyCollectionFilters } from '../utils/legacy.ts';
+import { makeItem } from './helpers.ts';
+import { loadFixture } from '../utils/fixtures.ts';
 
-const legacy = legacyCollectionFilters();
+/** What `filter` and `orderBy` of AngularJS 1.5.11 returned for these items; orderings are lists of positions in `items`. */
+const recorded = loadFixture<{
+  items: Parameters<typeof makeItem>[0][];
+  filter: Array<{ query: unknown; names: string[] }>;
+  filterExpression: { expression: object; names: string[] };
+  orderBy: Array<{ label: string; predicate: string[]; reverse: boolean; indices: number[] }>;
+  orderByArrays: Array<{ predicate: string[]; byReverse: Array<{ reverse: boolean; indices: number[] }> }>;
+  orderBySingle: { predicate: string; indices: number[] };
+  orderByFunction: { predicate: string; reverse: boolean; indices: number[] };
+}>('services/collection.json');
 
-const items = [
-  makeItem(file('b.txt', { size: 5, date: '2021-05-01 10:00:00' })),
-  makeItem(dir('Zeta', { size: 0, date: '2020-01-01 00:00:00' })),
-  makeItem(file('a.TXT', { size: 5, date: '2021-05-01 10:00:00' })),
-  makeItem(dir('alpha', { size: 0, date: '2022-01-01 00:00:00' })),
-  makeItem(file('A-Report.pdf', { size: 700, date: 'garbage' })),
-  makeItem(file('10.png', { size: 2000, date: '2019-12-31 23:59:59' })),
-  makeItem(file('9.png', { size: 2000 })),
-  makeItem(file('b.txt', { size: 99, date: '2021-05-01 10:00:00' })),
-  makeItem(file('file with space.md', { size: 12, date: '2021-02-02 02:02:02' })),
-];
+const items = recorded.items.map((raw) => makeItem(raw));
 const names = (list: Array<{ model: { name: string; size?: number | null } }>) => list.map((i) => i.model.name + ':' + i.model.size);
 
-describe('filterByName matches the AngularJS filter', () => {
-  const queries: unknown[] = ['', 'a', 'A', 'TXT', '.txt', 'report', '!a', '!', '!zzz', ' ', 'zzz', 'a.t', '%', undefined, null, 5, '1', 'ä'];
-  it.each(queries.map((q) => [String(q), q]))('query %s', (_label, query) => {
-    const expected = legacy.filter(items, { model: { name: query } });
-    expect(names(filterByName(items, query))).toEqual(names(expected));
+describe('filterByName matches the recorded AngularJS filter', () => {
+  it.each(recorded.filter.map((row) => [String(row.query), row] as const))('query %s', (_label, row) => {
+    expect(names(filterByName(items, row.query))).toEqual(row.names);
   });
 
   it('is a case-insensitive substring match', () => {
@@ -34,44 +31,29 @@ describe('filterByName matches the AngularJS filter', () => {
   });
 
   it('works on other expression shapes like the original', () => {
-    const expression = { model: { type: 'dir' } };
-    expect(names(filterBy(items, expression))).toEqual(names(legacy.filter(items, expression)));
+    expect(names(filterBy(items, recorded.filterExpression.expression))).toEqual(recorded.filterExpression.names);
   });
 });
 
-describe('orderBy matches the AngularJS orderBy', () => {
-  const columns = ['model.name', 'model.size', 'model.date', 'model.permissions', 'model.type', 'model.extension', ''];
-  const cases: Array<[string, string[], boolean]> = [];
-  for (const column of columns) {
-    for (const reverse of [false, true]) {
-      cases.push([`${column || '(empty)'} reverse=${reverse}`, ['model.type', column || 'model.name'], reverse]);
-    }
-  }
-  it.each(cases)('%s', (_label, predicate, reverse) => {
-    const expected = legacy.orderBy(items, predicate, reverse);
-    // Identity, not just names: ties must land on the same items.
-    expect(orderBy(items, predicate, reverse).map((i) => items.indexOf(i))).toEqual(expected.map((i: unknown) => items.indexOf(i as never)));
+describe('orderBy matches the recorded AngularJS orderBy', () => {
+  // Positions, not just names: ties must land on the same items.
+  const positions = (list: typeof items) => list.map((i) => items.indexOf(i));
+
+  it.each(recorded.orderBy.map((row) => [row.label, row] as const))('%s', (_label, row) => {
+    expect(positions(orderBy(items, row.predicate, row.reverse))).toEqual(row.indices);
   });
 
-  it.each([[['+model.name']], [['-model.name']], [['model.size', '-model.name']], [[]], [['model.name', 'model.size']]])(
-    'predicate array %j',
-    (predicate) => {
-      for (const reverse of [false, true]) {
-        expect(orderBy(items, predicate, reverse).map((i) => items.indexOf(i))).toEqual(
-          legacy.orderBy(items, predicate, reverse).map((i: unknown) => items.indexOf(i as never)),
-        );
-      }
-    },
-  );
+  it.each(recorded.orderByArrays.map((row) => [row.predicate, row] as const))('predicate array %j', (_predicate, row) => {
+    for (const { reverse, indices } of row.byReverse) {
+      expect(positions(orderBy(items, row.predicate, reverse))).toEqual(indices);
+    }
+  });
 
   it('accepts a single string and a function predicate', () => {
-    expect(orderBy(items, 'model.name').map((i) => items.indexOf(i))).toEqual(
-      legacy.orderBy(items, 'model.name').map((i: unknown) => items.indexOf(i as never)),
-    );
+    expect(positions(orderBy(items, recorded.orderBySingle.predicate))).toEqual(recorded.orderBySingle.indices);
+    expect(recorded.orderByFunction.predicate).toBe('nameLength');
     const byLength = (i: (typeof items)[number]) => i.model.name.length;
-    expect(orderBy(items, byLength, true).map((i) => items.indexOf(i))).toEqual(
-      legacy.orderBy(items, byLength, true).map((i: unknown) => items.indexOf(i as never)),
-    );
+    expect(positions(orderBy(items, byLength, recorded.orderByFunction.reverse))).toEqual(recorded.orderByFunction.indices);
   });
 
   it('puts folders first, and files first when reversed', () => {

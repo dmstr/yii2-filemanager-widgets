@@ -1,4 +1,4 @@
-/** Shared setup for the dialog specs: a mounted dialog on a real file manager state, selection helpers and a comparison with the legacy markup. */
+/** Shared setup for the dialog specs: a mounted dialog on a real file manager state, selection helpers and a comparison with the recorded markup of the AngularJS dialogs. */
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import { defineComponent, h, nextTick, reactive, type Component } from 'vue';
 import { provideConfig } from '../../../src/config/injection.ts';
@@ -7,7 +7,7 @@ import { provideI18n } from '../../../src/i18n/index.ts';
 import type { Item } from '../../../src/models/Item.ts';
 import { createFileManager, provideFileManager, type FileManager } from '../../../src/services/fileManager.ts';
 import { dir, file, makeConfig, makeI18n, makeItem } from '../../services/helpers.ts';
-import { legacyTemplate } from '../../utils/legacy.ts';
+import { loadFixtureText } from '../../utils/fixtures.ts';
 
 export { dir, file, makeItem };
 
@@ -68,9 +68,13 @@ export const isHidden = (el: Element): boolean => (el as HTMLElement).style.disp
 /** Waits for the render after a state change. */
 export const rendered = (app: MountedModal): Promise<void> => app.wrapper.vm.$nextTick();
 
-/** The `.modal-content` of a legacy dialog, from the template in the legacy bundle; `drop` removes subtrees (an `ng-if` branch that is not rendered). */
-export function legacyContent(id: string, drop: string[] = []): Element {
-  const content = legacyTemplate('modals.html').querySelector(`#${id} .modal-content`)!;
+/**
+ * The `.modal-content` of a dialog of the AngularJS 1.x frontend, from the recorded template
+ * (`modals.html`, the `$templateCache` entry as the frontend shipped it); `drop` removes subtrees
+ * (an `ng-if` branch that is not rendered).
+ */
+export function recordedContent(id: string, drop: string[] = []): Element {
+  const content = new DOMParser().parseFromString(loadFixtureText('components/modals.html'), 'text/html').querySelector(`#${id} .modal-content`)!;
   for (const selector of drop) {
     content.querySelectorAll(selector).forEach((el) => el.remove());
   }
@@ -80,16 +84,16 @@ export function legacyContent(id: string, drop: string[] = []): Element {
 const ignoredAttribute = (name: string): boolean => /^(ng-|ngf-|ngclipboard|data-|style$|disabled$|value$|isteven-multi-select$|input-model$|output-model$|button-label$|item-label$|tick-property$|output-properties$)/.test(name);
 
 /**
- * Own text of an element with whitespace collapsed. For legacy text the
+ * Own text of an element with whitespace collapsed. For recorded text the
  * `{{'key' | translate}}` filters are resolved; any other expression is
  * data and becomes a `\u0000` marker that matches whatever was rendered.
  */
-function ownText(el: Element, legacy: boolean, translate: (key: string) => string, emptyData: boolean): string {
+function ownText(el: Element, template: boolean, translate: (key: string) => string, emptyData: boolean): string {
   const raw = [...el.childNodes]
     .filter((n) => n.nodeType === Node.TEXT_NODE)
     .map((n) => n.textContent ?? '')
     .join('');
-  const resolved = legacy
+  const resolved = template
     ? raw
         .replace(/\{\{\s*(["'])(.+?)\1\s*\|\s*translate\s*\}\}/g, (_m, _q, key: string) => translate(key))
         .replace(/\{\{.*?\}\}/g, emptyData ? '' : '\u0000')
@@ -97,10 +101,10 @@ function ownText(el: Element, legacy: boolean, translate: (key: string) => strin
   return resolved.replace(/\s+/g, ' ').trim();
 }
 
-const textMatches = (legacyText: string, renderedText: string): boolean =>
-  new RegExp('^' + legacyText.split('\u0000').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$').test(renderedText);
+const textMatches = (templateText: string, renderedText: string): boolean =>
+  new RegExp('^' + templateText.split('\u0000').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$').test(renderedText);
 
-/** Attribute map; a legacy value with `{{...}}` becomes a pattern, because the rendered value is data. */
+/** Attribute map; a recorded value with `{{...}}` becomes a pattern, because the rendered value is data. */
 function attributes(el: Element): Record<string, string> {
   const result: Record<string, string> = {};
   for (const { name, value } of [...el.attributes]) {
@@ -115,32 +119,32 @@ function attributes(el: Element): Record<string, string> {
   return result;
 }
 
-const matchesPattern = (legacyValue: string, renderedValue: string, emptyData: boolean): boolean =>
-  new RegExp('^' + legacyValue.split(/\{\{.*?\}\}/).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(emptyData ? '' : '.*') + '$').test(renderedValue);
+const matchesPattern = (templateValue: string, renderedValue: string, emptyData: boolean): boolean =>
+  new RegExp('^' + templateValue.split(/\{\{.*?\}\}/).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(emptyData ? '' : '.*') + '$').test(renderedValue);
 
 /**
  * Compares tag, attributes (without `ng-*`, `ngf-*`, `data-*`, `style`, `disabled`, `value`), own
- * text and children of a rendered dialog with its legacy template. `ng-include` wrappers compare
+ * text and children of a rendered dialog with its recorded template. `ng-include` wrappers compare
  * only the wrapper (the partials belong to other components), the `isteven-multi-select` element
  * only its class and tag, and one `ng-repeat` child is cloned to the number of rendered rows.
- * A legacy `{{expression}}` is data and matches any rendered text or attribute value; with
+ * A recorded `{{expression}}` is data and matches any rendered text or attribute value; with
  * `emptyData` it must render as the empty string (a dialog with an empty selection). Returns the
  * first difference as a path, or `null` when equal.
  */
-export function diffAgainstLegacy(
-  legacy: Element,
+export function diffAgainstRecorded(
+  template: Element,
   rendered: Element,
   translate: (key: string) => string,
   options: { emptyData?: boolean } = {},
   path = '',
 ): string | null {
   const emptyData = !!options.emptyData;
-  const here = `${path}/${legacy.tagName.toLowerCase()}`;
-  if (legacy.tagName !== rendered.tagName) return `${here}: tag ${rendered.tagName}`;
-  if (legacy.hasAttribute('isteven-multi-select')) {
+  const here = `${path}/${template.tagName.toLowerCase()}`;
+  if (template.tagName !== rendered.tagName) return `${here}: tag ${rendered.tagName}`;
+  if (template.hasAttribute('isteven-multi-select')) {
     return rendered.classList.contains('permission-multi-select-button') ? null : `${here}: lost class permission-multi-select-button`;
   }
-  const a = attributes(legacy);
+  const a = attributes(template);
   const b = attributes(rendered);
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   for (const key of keys) {
@@ -148,15 +152,15 @@ export function diffAgainstLegacy(
       return `${here}: attribute ${key} is ${JSON.stringify(b[key])} instead of ${JSON.stringify(a[key])}`;
     }
   }
-  if (legacy.hasAttribute('ng-include')) return null;
-  const rawLegacy = [...legacy.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join('');
+  if (template.hasAttribute('ng-include')) return null;
+  const rawTemplate = [...template.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join('');
   // `{{key | translate}}` of an API-provided key: the rendered text is the translated key.
-  if (!/\{\{\s*\w+\s*\|\s*translate\s*\}\}/.test(rawLegacy)) {
-    const textA = ownText(legacy, true, translate, emptyData);
+  if (!/\{\{\s*\w+\s*\|\s*translate\s*\}\}/.test(rawTemplate)) {
+    const textA = ownText(template, true, translate, emptyData);
     const textB = ownText(rendered, false, translate, emptyData);
     if (!textMatches(textA, textB)) return `${here}: text "${textB}" instead of "${textA.replace(/\u0000/g, '{...}')}"`;
   }
-  let childrenA = [...legacy.children];
+  let childrenA = [...template.children];
   const childrenB = [...rendered.children];
   const repeatAt = childrenA.findIndex((c) => c.hasAttribute('ng-repeat'));
   if (repeatAt !== -1) {
@@ -165,7 +169,7 @@ export function diffAgainstLegacy(
   }
   if (childrenA.length !== childrenB.length) return `${here}: ${childrenB.length} children instead of ${childrenA.length}`;
   for (let i = 0; i < childrenA.length; i++) {
-    const diff = diffAgainstLegacy(childrenA[i], childrenB[i], translate, options, `${here}[${i}]`);
+    const diff = diffAgainstRecorded(childrenA[i], childrenB[i], translate, options, `${here}[${i}]`);
     if (diff) return diff;
   }
   return null;

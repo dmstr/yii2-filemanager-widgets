@@ -2,23 +2,23 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isReactive } from 'vue';
 import { Item, type RawItem } from '../../src/models/Item.ts';
 import { createNavigator, type TreeNode } from '../../src/services/navigator.ts';
-import { legacyNavigator } from '../utils/legacy.ts';
+import { loadFixture } from '../utils/fixtures.ts';
 import { dir, file, flush, makeConfig, makeI18n, stubFetch, type FakeReply, type RecordedRequest } from './helpers.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
 const config = makeConfig();
 
-/** Folder contents by request path; the same table feeds the port (through fetch) and the legacy navigator. */
-const tree: Record<string, RawItem[]> = {
-  '/': [dir('b'), dir('A'), dir('c'), file('readme.txt')],
-  '/b': [dir('z'), dir('Y'), file('x.md')],
-  '/b/z': [dir('q'), dir('p')],
-  '/b/Y': [],
-  '/A': [dir('a1'), dir('B2')],
-  '/c': [file('only-file.txt')],
-  '/b/z/q': [dir('deep')],
-};
+/**
+ * Recorded runs of the `fileNavigator` of the AngularJS 1.x frontend: the folder contents by request path
+ * (the port gets them through fetch), and for each sequence of folder visits the tree after every visit.
+ */
+const recorded = loadFixture<{
+  tree: Record<string, RawItem[]>;
+  walks: Array<{ label: string; visits: string[][]; trees: unknown[] }>;
+  failedListError: { afterFailure: string; afterNextHandler: string };
+}>('services/navigator.json');
+const tree = recorded.tree;
 
 function setup(reply?: (request: RecordedRequest) => FakeReply) {
   const requests = stubFetch(
@@ -112,15 +112,17 @@ describe('refresh', () => {
     expect(nav.fileList.map((i) => i.model.name)).toEqual(['ok']);
   });
 
-  it('the legacy navigator keeps a failed error, which is what Q-02 fixes', () => {
-    const { FileNavigator } = legacyNavigator(config);
-    const old = new FileNavigator();
-    old.deferredHandler({ result: { error: 'denied' } }, { reject: () => {}, resolve: () => {} }, 200);
-    expect(old.error).toBe('denied');
-    old.refresh = FileNavigator.prototype.refresh;
-    // `refresh` never resets the error, so the next handler call still sees it.
-    old.deferredHandler({ result: [] }, { reject: () => {}, resolve: () => {} }, 200);
-    expect(old.error).toBe('denied');
+  it('the AngularJS navigator kept a failed error, which is what Q-02 fixes', async () => {
+    // Recorded: after a failed list the next successful handler call still saw the error.
+    expect(recorded.failedListError).toEqual({ afterFailure: 'denied', afterNextHandler: 'denied' });
+    let fail = true;
+    const { nav } = setup(() => (fail ? { body: { result: { error: 'denied' } } } : { body: { result: [] } }));
+    await nav.refresh().catch(() => {});
+    expect(nav.error).toBe(recorded.failedListError.afterFailure);
+    fail = false;
+    await nav.refresh();
+    expect(nav.error).not.toBe(recorded.failedListError.afterNextHandler);
+    expect(nav.error).toBe('');
   });
 });
 
@@ -179,21 +181,15 @@ describe('navigation', () => {
 });
 
 describe('buildTree', () => {
-  /** Walks the same folder visits through the port and through the legacy navigator. */
+  /** Walks the folder visits through the port. */
   async function walk(visits: string[][]) {
     const { nav } = setup();
-    const { FileNavigator, Item: LegacyItem } = legacyNavigator(config);
-    const old = new FileNavigator();
-    const snapshots: Array<{ port: unknown; legacy: unknown; path: string[] }> = [];
+    const snapshots: Array<{ port: unknown; path: string[] }> = [];
     for (const path of visits) {
-      // Port: navigate by setting the path and refreshing, as upDir/goTo/folderClick do.
+      // Navigate by setting the path and refreshing, as upDir/goTo/folderClick do.
       nav.currentPath = path;
       await nav.refresh();
-      // Legacy: same list, then buildTree for the same path string.
-      old.currentPath = path;
-      old.fileList = (tree['/' + path.join('/')] || []).map((raw) => new LegacyItem(raw, path));
-      old.buildTree(path.join('/'));
-      snapshots.push({ port: strip(nav.history), legacy: strip(old.history), path });
+      snapshots.push({ port: strip(nav.history), path });
     }
     return snapshots;
   }
@@ -205,18 +201,12 @@ describe('buildTree', () => {
     ]);
   });
 
-  it.each([
-    ['going down', [[], ['b'], ['b', 'z'], ['b', 'z', 'q']]],
-    ['down and up again', [[], ['b'], ['b', 'z'], ['b'], []]],
-    ['a sibling branch', [[], ['b'], ['b', 'z'], [], ['A'], ['A', 'a1']]],
-    ['jumping back to a folder', [[], ['b'], ['b', 'z'], ['b', 'Y'], ['b', 'z']]],
-    ['revisiting everything', [[], ['b'], [], ['c'], [], ['A'], ['b'], ['b', 'z'], []]],
-    ['an empty folder', [[], ['b'], ['b', 'Y'], ['b']]],
-    ['a folder with files only', [[], ['c'], []]],
-  ] as Array<[string, string[][]]>)('equals the legacy tree after %s', async (_label, visits) => {
-    for (const { port, legacy, path } of await walk(visits)) {
-      expect(port, 'after visiting /' + path.join('/')).toEqual(legacy);
-    }
+  it.each(recorded.walks.map((entry) => [entry.label, entry] as const))('equals the recorded AngularJS tree after %s', async (_label, entry) => {
+    const snapshots = await walk(entry.visits);
+    expect(snapshots).toHaveLength(entry.trees.length);
+    snapshots.forEach(({ port, path }, step) => {
+      expect(port, 'after visiting /' + path.join('/')).toEqual(entry.trees[step]);
+    });
   });
 
   it('prunes branches that are not on the visited path', async () => {

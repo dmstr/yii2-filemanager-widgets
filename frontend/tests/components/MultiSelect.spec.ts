@@ -1,12 +1,13 @@
 /**
- * MultiSelect against the real `isteven-multi-select` 4.0.0 directive: both
- * are driven through the same DOM events and compared after every step
- * (rendered tree, button label, output model, input flags, focused element).
+ * MultiSelect against the recorded behaviour of the `isteven-multi-select` 4.0.0
+ * directive: the component is driven through the same DOM events the directive
+ * was and compared after every step with the recorded state (rendered tree,
+ * button label, output model, input flags, focused element).
  */
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MultiSelect, { type MultiSelectItem } from '../../src/components/MultiSelect.vue';
-import { legacyMultiSelect } from '../utils/legacy.ts';
+import { loadFixture } from '../utils/fixtures.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Any = any;
@@ -23,21 +24,6 @@ const settle = async () => {
   await new Promise((resolve) => setTimeout(resolve, 0));
   await new Promise((resolve) => setTimeout(resolve, 0));
 };
-
-function legacyDriver(input: Any, output?: Any): Driver {
-  const legacy = legacyMultiSelect(input, output);
-  return {
-    root: legacy.element,
-    output: () => legacy.scope.output,
-    input: () => legacy.scope.input,
-    setInput: async (value) => {
-      legacy.scope.input = value;
-      legacy.digest();
-      await settle();
-    },
-    destroy: legacy.destroy,
-  };
-}
 
 function vueDriver(input: Any, output?: Any): Driver & { wrapper: VueWrapper } {
   let parentOutput = output;
@@ -119,33 +105,52 @@ function state(d: Driver, checked: boolean) {
   };
 }
 
+/** One line per node of a `shape` tree, indented by depth: tag, then every recorded field, then the children. */
+function describeShape(node: unknown, depth = 0): string[] {
+  const pad = '  '.repeat(depth);
+  if (typeof node === 'string') return [pad + JSON.stringify(node)];
+  const { tag, children, ...fields } = node as { tag: string; children: unknown[] } & Record<string, unknown>;
+  const head = [tag.toLowerCase(), ...Object.entries(fields).map(([name, value]) => `${name}=${JSON.stringify(value)}`)].join(' ');
+  return [pad + head, ...children.flatMap((child) => describeShape(child, depth + 1))];
+}
+
+/** The state of the directive after mount and after every step of a scenario; `dom` is an index into `doms`. */
+interface RecordedState {
+  dom: number;
+  output: string | undefined;
+  input: string | undefined;
+  active: number[] | null;
+}
+const recorded = loadFixture<{ doms: string[][]; scenarios: Record<string, RecordedState[]> }>('components/multi-select.json');
+
 type Step = (d: Driver) => unknown;
 
 /**
- * Runs the same steps on the directive and on the component and compares the
- * state after mount and after every step. Returns the component's driver
+ * Runs the steps of the running test on the component and compares the state
+ * after mount and after every step with the one recorded from the directive
+ * (the scenario is the full name of the test). Returns the component's driver
  * states for additional assertions.
  */
-async function parity(fixture: () => Any, steps: Step[], options: { checked?: boolean; output?: () => Any } = {}) {
+async function replay(fixture: () => Any, steps: Step[], options: { checked?: boolean; output?: () => Any } = {}) {
   const checked = options.checked ?? true;
-  const run = async (make: (input: Any, output?: Any) => Driver) => {
-    const d = make(fixture(), options.output?.());
+  const scenario = expect.getState().currentTestName!;
+  const expected = recorded.scenarios[scenario];
+  if (!expected) throw new Error(`no recording for: ${scenario}`);
+  const d = vueDriver(fixture(), options.output?.());
+  await settle();
+  const states = [state(d, checked)];
+  for (const step of steps) {
+    await step(d);
     await settle();
-    const states = [state(d, checked)];
-    for (const step of steps) {
-      await step(d);
-      await settle();
-      states.push(state(d, checked));
-    }
-    d.destroy();
-    return states;
-  };
-  const legacy = await run(legacyDriver);
-  const vue = await run(vueDriver);
-  for (let i = 0; i < legacy.length; i++) {
-    expect(vue[i], `state after step ${i}`).toEqual(legacy[i]);
+    states.push(state(d, checked));
   }
-  return vue;
+  d.destroy();
+  expect(states).toHaveLength(expected.length);
+  for (let i = 0; i < expected.length; i++) {
+    const { dom, ...rest } = states[i];
+    expect({ ...rest, dom: describeShape(dom) }, `state after step ${i}`).toEqual({ ...expected[i], dom: recorded.doms[expected[i].dom] });
+  }
+  return states;
 }
 
 const $ = (d: Driver, selector: string) => d.root.querySelector(selector) as HTMLElement;
@@ -191,11 +196,11 @@ afterEach(() => {
 
 describe('MultiSelect rendering', () => {
   it('renders the directive tree, button label and output model for a mixed selection', async () => {
-    const [initial] = await parity(roles, []);
+    const [initial] = await replay(roles, []);
     expect(initial.output).toBe('[{"role":"Admin","selected":true},{"role":"Guest","selected":true}]');
   });
 
-  it('has no whitespace between the helper buttons, like the directive (the parity check drops blank text)', () => {
+  it('has no whitespace between the helper buttons, like the directive (the recorded states drop blank text)', () => {
     const d = vueDriver(roles(), []);
     const line = helper(d, 0).parentElement!;
     expect(Array.from(line.childNodes).map((node) => node.nodeName)).toEqual(['BUTTON', 'BUTTON', 'BUTTON']);
@@ -203,27 +208,27 @@ describe('MultiSelect rendering', () => {
   });
 
   it('shows "None Selected" with the caret when nothing is ticked', async () => {
-    await parity(() => roles().map((item) => ({ ...item, selected: false })), []);
+    await replay(() => roles().map((item) => ({ ...item, selected: false })), []);
   });
 
   it('renders an empty array like the directive', async () => {
-    await parity(() => [], [toggle]);
+    await replay(() => [], [toggle]);
   });
 
   it('keeps the empty button of an undefined input model and opens an empty list', async () => {
-    await parity(() => undefined, [toggle, toggle]);
+    await replay(() => undefined, [toggle, toggle]);
   });
 
   it('keeps the empty button of an undefined input model while the parent holds an output array', async () => {
-    await parity(() => undefined, [toggle], { output: () => [] });
+    await replay(() => undefined, [toggle], { output: () => [] });
   });
 
   it('does not open for a null input model', async () => {
-    await parity(() => null, [toggle, (d) => click($(d, '.clearButton'))]);
+    await replay(() => null, [toggle, (d) => click($(d, '.clearButton'))]);
   });
 
   it('reduces the output to role and selected in the input key order, only for selected === true', async () => {
-    const vue = await parity(
+    const vue = await replay(
       () => [
         { selected: true, role: 'B', id: 7 },
         { role: 'A', selected: 1 },
@@ -235,7 +240,7 @@ describe('MultiSelect rendering', () => {
   });
 
   it('gives a falsy role an empty label', async () => {
-    await parity(
+    await replay(
       () => [
         { role: '', selected: true },
         { role: 'A', selected: true },
@@ -247,17 +252,17 @@ describe('MultiSelect rendering', () => {
 
 describe('MultiSelect opening and closing', () => {
   it('toggles show on the layer, buttonClicked on the span and moves focus to the filter and back', async () => {
-    await parity(roles, [toggle, toggle, toggle]);
+    await replay(roles, [toggle, toggle, toggle]);
   });
 
   it('closes on a click outside and keeps buttonClicked on the span', async () => {
-    const vue = await parity(roles, [toggle, () => click(document.body), toggle, toggle]);
+    const vue = await replay(roles, [toggle, () => click(document.body), toggle, toggle]);
     const span = (n: number) => ((vue[n].dom as Any).children[0] as Any).class;
     expect([span(1), span(2), span(4)]).toEqual(['buttonClicked inlineBlock multiSelect', 'buttonClicked inlineBlock multiSelect', 'inlineBlock multiSelect']);
   });
 
   it('stays open on clicks inside the layer', async () => {
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       (d) => click($(d, '.checkBoxContainer')),
       (d) => click($(d, '.helperContainer')),
@@ -267,7 +272,7 @@ describe('MultiSelect opening and closing', () => {
   });
 
   it('closes on a click on the host element outside the span', async () => {
-    await parity(roles, [toggle, (d) => click(d.root)]);
+    await replay(roles, [toggle, (d) => click(d.root)]);
   });
 
   it('removes its document listeners on unmount', async () => {
@@ -287,7 +292,7 @@ describe('MultiSelect opening and closing', () => {
 
 describe('MultiSelect items', () => {
   it('toggles an item on a click on the row and on the label, and marks the row with multiSelectFocus', async () => {
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       (d) => click(row(d, 1)),
       (d) => click($$(d, '.multiSelectItem span')[0]),
@@ -299,18 +304,18 @@ describe('MultiSelect items', () => {
   it('toggles an item on a click on its checkbox and focuses it', async () => {
     // The hidden checkbox's `checked` differs after a direct click: the directive's preventDefault
     // lets the browser restore the old state after AngularJS has set the new one. Compared below without it.
-    await parity(roles, [toggle, (d) => click($$(d, '.checkbox')[1]), (d) => click($$(d, '.checkbox')[0])], {
+    await replay(roles, [toggle, (d) => click($$(d, '.checkbox')[1]), (d) => click($$(d, '.checkbox')[0])], {
       checked: false,
     });
   });
 
   it('ticks the input items in place and shows them ticked on the next open', async () => {
-    const vue = await parity(roles, [toggle, (d) => click(row(d, 3)), toggle, toggle]);
+    const vue = await replay(roles, [toggle, (d) => click(row(d, 3)), toggle, toggle]);
     expect(vue[vue.length - 1].input).toContain('{"role":"Reviewer","selected":true}');
   });
 
   it('removes multiSelectFocus of the current tab index on mouseleave of any row', async () => {
-    const vue = await parity(roles, [toggle, (d) => click(row(d, 0)), (d) => leave(row(d, 2))]);
+    const vue = await replay(roles, [toggle, (d) => click(row(d, 0)), (d) => leave(row(d, 2))]);
     expect(JSON.stringify(vue[2].dom)).toContain('multiSelectFocus');
     expect(JSON.stringify(vue[3].dom)).not.toContain('multiSelectFocus');
   });
@@ -318,7 +323,7 @@ describe('MultiSelect items', () => {
 
 describe('MultiSelect helpers', () => {
   it('selects all, none and resets to the state of the last input model', async () => {
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       (d) => click(helper(d, 0)),
       (d) => click(helper(d, 1)),
@@ -328,7 +333,7 @@ describe('MultiSelect helpers', () => {
   });
 
   it('applies select all, none and reset to the filtered items only', async () => {
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       (d) => type(d, 'e'),
       (d) => type(d, 'er'),
@@ -346,7 +351,7 @@ describe('MultiSelect helpers', () => {
   });
 
   it('keeps the reset backup across closing and reopening', async () => {
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       (d) => click(row(d, 0)),
       toggle,
@@ -359,7 +364,7 @@ describe('MultiSelect helpers', () => {
 
 describe('MultiSelect filter', () => {
   it('filters case-insensitively by substring, trims, keeps input order and clears with the button', async () => {
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       (d) => type(d, 'E'),
       (d) => type(d, 'ER'),
@@ -371,7 +376,7 @@ describe('MultiSelect filter', () => {
 
   it('matches every row through the hidden properties the directive puts on the items', async () => {
     // `0` hits the spacing property, `obj`/`C` hit ng-repeat's `$$hashKey` ("object:<uid>").
-    const vue = await parity(roles, [
+    const vue = await replay(roles, [
       toggle,
       (d) => type(d, 'obj'),
       (d) => type(d, 'Admin'),
@@ -382,17 +387,17 @@ describe('MultiSelect filter', () => {
   });
 
   it('clears the filter on reopen but not on close', async () => {
-    await parity(roles, [toggle, (d) => type(d, 'gu'), toggle, () => click(document.body), toggle]);
+    await replay(roles, [toggle, (d) => type(d, 'gu'), toggle, () => click(document.body), toggle]);
   });
 
   it('keeps a filter left over from closing through the button', async () => {
-    await parity(roles, [toggle, (d) => type(d, 'ad'), toggle, (d) => click(row(d, 0))]);
+    await replay(roles, [toggle, (d) => type(d, 'ad'), toggle, (d) => click(row(d, 0))]);
   });
 });
 
 describe('MultiSelect input model replaced from outside', () => {
   it('rebuilds list, label, output and reset backup', async () => {
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       (d) => click(row(d, 1)),
       (d) =>
@@ -406,15 +411,15 @@ describe('MultiSelect input model replaced from outside', () => {
   });
 
   it('keeps the stale list and label when the input model becomes undefined', async () => {
-    await parity(roles, [toggle, (d) => type(d, 'ed'), toggle, (d) => d.setInput(undefined), toggle, (d) => click(helper(d, 0))]);
+    await replay(roles, [toggle, (d) => type(d, 'ed'), toggle, (d) => d.setInput(undefined), toggle, (d) => click(helper(d, 0))]);
   });
 
   it('keeps the stale list and label when the input model becomes null and refuses to open', async () => {
-    await parity(roles, [(d) => d.setInput(null), toggle]);
+    await replay(roles, [(d) => d.setInput(null), toggle]);
   });
 
   it('follows the filter that is active while the input model is replaced', async () => {
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       (d) => type(d, 'e'),
       () => click(document.body),
@@ -432,24 +437,25 @@ describe('MultiSelect keyboard', () => {
     for (const code of [40, 39, 9, 40, 40, 40, 40, 40, 38, 37]) steps.push(() => key(code));
     steps.push(() => key(9, true));
     steps.push(() => key(9, true));
-    await parity(roles, steps);
+    await replay(roles, steps);
   });
 
   it('wraps backwards from the first helper to the last checkbox', async () => {
-    await parity(roles, [toggle, () => key(38), () => key(38), () => key(38), () => key(38), () => key(38)]);
+    await replay(roles, [toggle, () => key(38), () => key(38), () => key(38), () => key(38), () => key(38)]);
   });
 
   it('closes on Escape, blurs and focuses the button', async () => {
     const prevented: boolean[] = [];
-    await parity(roles, [toggle, () => key(40), () => key(40), () => prevented.push(key(27).defaultPrevented), () => key(40)]);
-    expect(prevented).toEqual([true, true]);
+    await replay(roles, [toggle, () => key(40), () => key(40), () => prevented.push(key(27).defaultPrevented), () => key(40)]);
+    // Escape is intercepted; the directive did the same.
+    expect(prevented).toEqual([true]);
   });
 
   it('leaves Space, Enter and other keys to the browser', async () => {
     // Space on a focused checkbox or button clicks it natively; jsdom does not synthesise that click,
     // so only the "not intercepted" part is comparable here.
     const prevented: boolean[] = [];
-    await parity(roles, [
+    await replay(roles, [
       toggle,
       () => key(40),
       () => key(40),
@@ -457,21 +463,21 @@ describe('MultiSelect keyboard', () => {
       () => prevented.push(key(13).defaultPrevented),
       () => prevented.push(key(65).defaultPrevented),
     ]);
-    expect(prevented).toEqual([false, false, false, false, false, false]);
+    expect(prevented).toEqual([false, false, false]);
   });
 
   it('does not listen while closed', async () => {
     const prevented: boolean[] = [];
-    await parity(roles, [toggle, toggle, () => prevented.push(key(40).defaultPrevented)]);
-    expect(prevented).toEqual([false, false]);
+    await replay(roles, [toggle, toggle, () => prevented.push(key(40).defaultPrevented)]);
+    expect(prevented).toEqual([false]);
   });
 
   it('runs a row click and the keyboard on the same tab index', async () => {
-    await parity(roles, [toggle, (d) => click(row(d, 2)), () => key(40), () => key(38), () => key(38)]);
+    await replay(roles, [toggle, (d) => click(row(d, 2)), () => key(40), () => key(38), () => key(38)]);
   });
 
   it('drops the focus class when the filter removes the row', async () => {
-    await parity(roles, [toggle, () => key(40), () => key(40), (d) => type(d, 'gu'), (d) => click($(d, '.clearButton'))]);
+    await replay(roles, [toggle, () => key(40), () => key(40), (d) => type(d, 'gu'), (d) => click($(d, '.clearButton'))]);
   });
 });
 
@@ -487,7 +493,7 @@ describe('MultiSelect labels as text', () => {
   });
 
   it('renders ordinary role names exactly like the directive', async () => {
-    await parity(
+    await replay(
       () => [
         { role: 'R&D', selected: true },
         { role: 'Team Lead', selected: false },

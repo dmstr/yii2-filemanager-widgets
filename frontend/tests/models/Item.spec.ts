@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isReactive, reactive } from 'vue';
 import { createDefaults } from '../../src/config/defaults.ts';
 import { Item, type RawItem } from '../../src/models/Item.ts';
-import { legacyModels } from '../utils/legacy.ts';
+import { loadFixture, localTime } from '../utils/fixtures.ts';
 
 const config = createDefaults();
 const make = (raw: RawItem | null | undefined, path?: string[], cfg = config) => new Item(raw, path, cfg);
@@ -21,7 +21,7 @@ const fileflyEntry: RawItem = {
 };
 
 describe('Item construction', () => {
-  it('uses the legacy defaults for an empty model', () => {
+  it('uses the defaults of the AngularJS factory for an empty model', () => {
     const item = make({}, []);
     expect(item.model).toMatchObject({ name: '', thumbnail: '', preview: '', urls: [], extension: '', path: [], type: 'file', size: 0, content: '' });
     expect(item.model.perms.toCode()).toBe('---------');
@@ -59,7 +59,7 @@ describe('Item construction', () => {
     expect(item.model.perms.toCode()).toBe('rw-r--r--');
   });
 
-  it('keeps the legacy size for a missing raw model', () => {
+  it('keeps the size of the AngularJS factory for a missing raw model', () => {
     expect(make(null).model.size).toBeNull();
     expect(make(undefined).model.size).toBeUndefined();
   });
@@ -74,7 +74,7 @@ describe('Item construction', () => {
     expect(() => make({ rights: 'nope' })).toThrow('Invalid chmod input data (nope)');
   });
 
-  it('does not carry the dropped legacy members', () => {
+  it('does not carry the members dropped from the AngularJS factory', () => {
     const item = make(fileflyEntry) as unknown as Record<string, unknown>;
     expect(item.update).toBeUndefined();
     expect(item.isCompressible).toBeUndefined();
@@ -231,45 +231,53 @@ describe('reactive()', () => {
   });
 });
 
-describe('legacy comparison', () => {
-  const legacyConfig = createDefaults();
-  const { Item: LegacyItem } = legacyModels(legacyConfig);
+describe('recorded results of the AngularJS factory', () => {
+  /** What the `item` factory of the AngularJS 1.x frontend built for each raw model and path of the table. */
+  interface RecordedModel {
+    name: string;
+    urls: unknown;
+    path: string[];
+    type: string;
+    size: unknown;
+    /** The date as its local-time fields. */
+    date: string;
+    perms: string;
+    fullPath: string;
+  }
+  const recorded = loadFixture<{
+    raws: (RawItem | null | undefined)[];
+    paths: (string[] | undefined)[];
+    results: Array<
+      Array<{ model: RecordedModel; tempModel: RecordedModel } & Record<'isFolder' | 'isEditable' | 'isImage' | 'isExtractable' | 'isSelectable', boolean>>
+    >;
+  }>('models/item.json');
 
-  const raws: (RawItem | null | undefined)[] = [
-    undefined,
-    null,
-    {},
-    fileflyEntry,
-    { name: 'dir', type: 'dir', rights: '0755', size: 0 },
-    { name: 'a.zip', size: '10', date: '2020-01-02 03:04:05', rights: 'drwxr-xr-x' },
-    { name: 'noDate' },
-  ];
-  const paths: (string[] | undefined)[] = [undefined, [], ['a'], ['a', '', 'b'], ['a/', 'b/']];
-
-  it('produces the same models and predicate results as the legacy factory', () => {
-    for (const raw of raws) {
-      for (const path of paths) {
-        const legacy = new LegacyItem(raw, path);
+  it('produces the same models and predicate results', () => {
+    expect(recorded.raws).toHaveLength(7);
+    expect(recorded.paths).toHaveLength(5);
+    recorded.raws.forEach((raw, rawIndex) => {
+      recorded.paths.forEach((path, pathIndex) => {
+        const expected = recorded.results[rawIndex][pathIndex];
         const item = make(raw, path);
         const label = JSON.stringify([raw, path]);
         for (const key of ['model', 'tempModel'] as const) {
-          const l = legacy[key];
+          const l = expected[key];
           const m = item[key];
           expect(m.name, label).toBe(l.name);
           expect(m.urls, label).toEqual(l.urls);
           expect(m.path, label).toEqual(l.path);
           expect(m.type, label).toBe(l.type);
           expect(m.size, label).toEqual(l.size);
-          expect(String(m.date), label).toBe(String(l.date));
-          expect(m.perms.toCode(), label).toBe(l.perms.toCode());
-          expect(m.fullPath(), label).toBe(l.fullPath());
+          expect(localTime(m.date), label).toBe(l.date);
+          expect(m.perms.toCode(), label).toBe(l.perms);
+          expect(m.fullPath(), label).toBe(l.fullPath);
         }
-        expect(item.isFolder(), label).toBe(legacy.isFolder());
-        expect(item.isEditable(), label).toBe(legacy.isEditable());
-        expect(item.isImage(), label).toBe(legacy.isImage());
-        expect(item.isExtractable(), label).toBe(legacy.isExtractable());
-        expect(item.isSelectable(), label).toBe(legacy.isSelectable());
-      }
-    }
+        expect(item.isFolder(), label).toBe(expected.isFolder);
+        expect(item.isEditable(), label).toBe(expected.isEditable);
+        expect(item.isImage(), label).toBe(expected.isImage);
+        expect(item.isExtractable(), label).toBe(expected.isExtractable);
+        expect(item.isSelectable(), label).toBe(expected.isSelectable);
+      });
+    });
   });
 });

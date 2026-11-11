@@ -1,0 +1,258 @@
+{
+  "items": [
+    {
+      "name": "b.txt",
+      "type": "file",
+      "size": 5,
+      "date": "2021-05-01 10:00:00",
+      "rights": "rw-r--r--"
+    },
+    {
+      "name": "Zeta",
+      "type": "dir",
+      "size": 0,
+      "date": "2020-01-01 00:00:00",
+      "rights": "rw-r--r--"
+    },
+    {
+      "name": "a.TXT",
+      "type": "file",
+      "size": 5,
+      "date": "2021-05-01 10:00:00",
+      "rights": "rw-r--r--"
+    },
+    {
+      "name": "alpha",
+      "type": "dir",
+      "size": 0,
+      "date": "2022-01-01 00:00:00",
+      "rights": "rw-r--r--"
+    },
+    {
+      "name": "A-Report.pdf",
+      "type": "file",
+      "size": 700,
+      "date": "garbage",
+      "rights": "rw-r--r--"
+    },
+    {
+      "name": "10.png",
+      "type": "file",
+      "size": 2000,
+      "date": "2019-12-31 23:59:59",
+      "rights": "rw-r--r--"
+    },
+    {
+      "name": "9.png",
+      "type": "file",
+      "size": 2000,
+      "date": "2021-03-04 05:06:07",
+      "rights": "rw-r--r--"
+    },
+    {
+      "name": "b.txt",
+      "type": "file",
+      "size": 99,
+      "date": "2021-05-01 10:00:00",
+      "rights": "rw-r--r--"
+    },
+    {
+      "name": "file with space.md",
+      "type": "file",
+      "size": 12,
+      "date": "2021-02-02 02:02:02",
+      "rights": "rw-r--r--"
+    }
+  ],
+  "filter": [
+    {
+      "query": "",
+      "names": [
+        "b.txt:5",
+        "Zeta:0",
+        "a.TXT:5",
+        "alpha:0",
+        "A-Report.pdf:700",
+        "10.png:2000",
+        "9.png:2000",
+        "b.txt:99",
+        "file with space.md:12"
+      ]
+    },
+    {
+      "query": "a",
+      "names": [ "Zeta:0", "a.TXT:5", "alpha:0", "A-Report.pdf:700", "file with space.md:12" ]
+    },
+    {
+      "query": "A",
+      "names": [ "Zeta:0", "a.TXT:5", "alpha:0", "A-Report.pdf:700", "file with space.md:12" ]
+    },
+    { "query": "TXT", "names": [ "b.txt:5", "a.TXT:5", "b.txt:99" ] },
+    { "query": ".txt", "names": [ "b.txt:5", "a.TXT:5", "b.txt:99" ] },
+    { "query": "report", "names": [ "A-Report.pdf:700" ] },
+    { "query": "!a", "names": [ "b.txt:5", "10.png:2000", "9.png:2000", "b.txt:99" ] },
+    { "query": "!", "names": [] },
+    {
+      "query": "!zzz",
+      "names": [
+        "b.txt:5",
+        "Zeta:0",
+        "a.TXT:5",
+        "alpha:0",
+        "A-Report.pdf:700",
+        "10.png:2000",
+        "9.png:2000",
+        "b.txt:99",
+        "file with space.md:12"
+      ]
+    },
+    { "query": " ", "names": [ "file with space.md:12" ] },
+    { "query": "zzz", "names": [] },
+    { "query": "a.t", "names": [ "a.TXT:5" ] },
+    { "query": "%", "names": [] },
+    {
+      "query": { "$$": "undefined" },
+      "names": [
+        "b.txt:5",
+        "Zeta:0",
+        "a.TXT:5",
+        "alpha:0",
+        "A-Report.pdf:700",
+        "10.png:2000",
+        "9.png:2000",
+        "b.txt:99",
+        "file with space.md:12"
+      ]
+    },
+    { "query": null, "names": [] },
+    { "query": 5, "names": [] },
+    { "query": "1", "names": [ "10.png:2000" ] },
+    { "query": "ä", "names": [] }
+  ],
+  "filterExpression": { "expression": { "model": { "type": "dir" } }, "names": [ "Zeta:0", "alpha:0" ] },
+  "orderBy": [
+    {
+      "label": "model.name reverse=false",
+      "predicate": [ "model.type", "model.name" ],
+      "reverse": false,
+      "indices": [ 3, 1, 5, 6, 4, 2, 0, 7, 8 ]
+    },
+    {
+      "label": "model.name reverse=true",
+      "predicate": [ "model.type", "model.name" ],
+      "reverse": true,
+      "indices": [ 8, 7, 0, 2, 4, 6, 5, 1, 3 ]
+    },
+    {
+      "label": "model.size reverse=false",
+      "predicate": [ "model.type", "model.size" ],
+      "reverse": false,
+      "indices": [ 1, 3, 0, 2, 8, 7, 4, 5, 6 ]
+    },
+    {
+      "label": "model.size reverse=true",
+      "predicate": [ "model.type", "model.size" ],
+      "reverse": true,
+      "indices": [ 6, 5, 4, 7, 8, 2, 0, 3, 1 ]
+    },
+    {
+      "label": "model.date reverse=false",
+      "predicate": [ "model.type", "model.date" ],
+      "reverse": false,
+      "indices": [ 1, 3, 5, 8, 6, 0, 2, 4, 7 ]
+    },
+    {
+      "label": "model.date reverse=true",
+      "predicate": [ "model.type", "model.date" ],
+      "reverse": true,
+      "indices": [ 7, 4, 2, 0, 6, 8, 5, 3, 1 ]
+    },
+    {
+      "label": "model.permissions reverse=false",
+      "predicate": [ "model.type", "model.permissions" ],
+      "reverse": false,
+      "indices": [ 1, 3, 0, 2, 4, 5, 6, 7, 8 ]
+    },
+    {
+      "label": "model.permissions reverse=true",
+      "predicate": [ "model.type", "model.permissions" ],
+      "reverse": true,
+      "indices": [ 8, 7, 6, 5, 4, 2, 0, 3, 1 ]
+    },
+    {
+      "label": "model.type reverse=false",
+      "predicate": [ "model.type", "model.type" ],
+      "reverse": false,
+      "indices": [ 1, 3, 0, 2, 4, 5, 6, 7, 8 ]
+    },
+    {
+      "label": "model.type reverse=true",
+      "predicate": [ "model.type", "model.type" ],
+      "reverse": true,
+      "indices": [ 8, 7, 6, 5, 4, 2, 0, 3, 1 ]
+    },
+    {
+      "label": "model.extension reverse=false",
+      "predicate": [ "model.type", "model.extension" ],
+      "reverse": false,
+      "indices": [ 1, 3, 0, 2, 4, 5, 6, 7, 8 ]
+    },
+    {
+      "label": "model.extension reverse=true",
+      "predicate": [ "model.type", "model.extension" ],
+      "reverse": true,
+      "indices": [ 8, 7, 6, 5, 4, 2, 0, 3, 1 ]
+    },
+    {
+      "label": "(empty) reverse=false",
+      "predicate": [ "model.type", "model.name" ],
+      "reverse": false,
+      "indices": [ 3, 1, 5, 6, 4, 2, 0, 7, 8 ]
+    },
+    {
+      "label": "(empty) reverse=true",
+      "predicate": [ "model.type", "model.name" ],
+      "reverse": true,
+      "indices": [ 8, 7, 0, 2, 4, 6, 5, 1, 3 ]
+    }
+  ],
+  "orderByArrays": [
+    {
+      "predicate": [ "+model.name" ],
+      "byReverse": [
+        { "reverse": false, "indices": [ 5, 6, 4, 2, 3, 0, 7, 8, 1 ] },
+        { "reverse": true, "indices": [ 1, 8, 7, 0, 3, 2, 4, 6, 5 ] }
+      ]
+    },
+    {
+      "predicate": [ "-model.name" ],
+      "byReverse": [
+        { "reverse": false, "indices": [ 1, 8, 0, 7, 3, 2, 4, 6, 5 ] },
+        { "reverse": true, "indices": [ 5, 6, 4, 2, 3, 7, 0, 8, 1 ] }
+      ]
+    },
+    {
+      "predicate": [ "model.size", "-model.name" ],
+      "byReverse": [
+        { "reverse": false, "indices": [ 1, 3, 0, 2, 8, 7, 4, 6, 5 ] },
+        { "reverse": true, "indices": [ 5, 6, 4, 7, 8, 2, 0, 3, 1 ] }
+      ]
+    },
+    {
+      "predicate": [],
+      "byReverse": [
+        { "reverse": false, "indices": [ 0, 1, 2, 3, 4, 5, 6, 7, 8 ] },
+        { "reverse": true, "indices": [ 8, 7, 6, 5, 4, 3, 2, 1, 0 ] }
+      ]
+    },
+    {
+      "predicate": [ "model.name", "model.size" ],
+      "byReverse": [
+        { "reverse": false, "indices": [ 5, 6, 4, 2, 3, 0, 7, 8, 1 ] },
+        { "reverse": true, "indices": [ 1, 8, 7, 0, 3, 2, 4, 6, 5 ] }
+      ]
+    }
+  ],
+  "orderBySingle": { "predicate": "model.name", "indices": [ 5, 6, 4, 2, 3, 0, 7, 8, 1 ] },
+  "orderByFunction": { "predicate": "nameLength", "reverse": true, "indices": [ 8, 4, 5, 7, 6, 3, 2, 0, 1 ] }
+}

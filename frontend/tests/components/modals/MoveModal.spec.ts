@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MoveModal from '../../../src/components/modals/MoveModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, rendered, select, text, visibleText, type MountedModal } from './helpers.ts';
+import { diffAgainstRecorded, isHidden, item, recordedContent, mountModal, rendered, select, text, visibleText, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -11,9 +11,9 @@ const submit = () => app.wrapper.find('button[type=submit]');
 const selectorClose = () => app.wrapper.find('.panel .modal-footer .btn-default');
 
 describe('MoveModal', () => {
-  it('has the structure of the legacy template', () => {
+  it('has the structure of the recorded template', () => {
     app = mountModal(MoveModal);
-    expect(diffAgainstLegacy(legacyContent('move'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
+    expect(diffAgainstRecorded(recordedContent('move'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
   });
 
   it('renders the path selector for single, multiple and empty selections', async () => {

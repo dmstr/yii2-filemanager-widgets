@@ -1,0 +1,76 @@
+{
+  "table": [
+    {
+      "name": "flat strings",
+      "data": { "action": "download", "path": "/a/b.txt" },
+      "result": "action=download&path=%2Fa%2Fb.txt"
+    },
+    {
+      "name": "spaces",
+      "data": { "path": "/my folder/a b.txt" },
+      "result": "path=%2Fmy%20folder%2Fa%20b.txt"
+    },
+    {
+      "name": "reserved characters",
+      "data": { "path": "/a&b=c?d#e+f%g/ü ß 'x' (y)*!~" },
+      "result": "path=%2Fa%26b%3Dc%3Fd%23e%2Bf%25g%2F%C3%BC%20%C3%9F%20'x'%20(y)*!~"
+    },
+    {
+      "name": "unicode",
+      "data": { "path": "/日本語/ファイル.txt" },
+      "result": "path=%2F%E6%97%A5%E6%9C%AC%E8%AA%9E%2F%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB.txt"
+    },
+    {
+      "name": "array of strings",
+      "data": {
+        "action": "downloadMultiple",
+        "items": [ "/a.txt", "/b c.txt" ],
+        "toFilename": "12345-x.zip"
+      },
+      "result": "action=downloadMultiple&items%5B%5D=%2Fa.txt&items%5B%5D=%2Fb%20c.txt&toFilename=12345-x.zip"
+    },
+    { "name": "empty array", "data": { "items": [] }, "result": "" },
+    { "name": "empty string", "data": { "path": "" }, "result": "path=" },
+    {
+      "name": "undefined and null values",
+      "data": { "a": { "$$": "undefined" }, "b": null, "c": "x" },
+      "result": "a=&b=&c=x"
+    },
+    {
+      "name": "numbers and booleans",
+      "data": { "n": 1, "f": 1.5, "t": true, "z": 0 },
+      "result": "n=1&f=1.5&t=true&z=0"
+    },
+    {
+      "name": "array with undefined",
+      "data": { "items": [ "/a", { "$$": "undefined" } ] },
+      "result": "items%5B%5D=%2Fa&items%5B%5D="
+    },
+    {
+      "name": "nested object",
+      "data": { "a": { "b": "c", "d": [ "e", "f" ] } },
+      "result": "a%5Bb%5D=c&a%5Bd%5D%5B%5D=e&a%5Bd%5D%5B%5D=f"
+    },
+    {
+      "name": "array of objects",
+      "data": { "a": [ { "b": 1 }, { "c": 2 } ] },
+      "result": "a%5B0%5D%5Bb%5D=1&a%5B1%5D%5Bc%5D=2"
+    },
+    {
+      "name": "function value",
+      "data": { "a": { "$$": "function", "returns": "called" } },
+      "result": "a=called"
+    },
+    { "name": "key needing encoding", "data": { "a b&c": "x" }, "result": "a%20b%26c=x" },
+    { "name": "empty object", "data": {}, "result": "" }
+  ],
+  "extra": [
+    {
+      "name": "name/value pairs",
+      "data": [ { "name": "a", "value": "1 2" }, { "name": "b", "value": { "$$": "undefined" } } ],
+      "result": "a=1%202&b="
+    },
+    { "name": "null", "data": null, "result": "" },
+    { "name": "undefined", "data": { "$$": "undefined" }, "result": "" }
+  ]
+}

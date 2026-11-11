@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApi, type Api } from '../../src/services/api.ts';
-import { legacyApi } from '../utils/legacy.ts';
+import { loadFixture, localizeDates } from '../utils/fixtures.ts';
 import { dir, file, flush, makeConfig, makeI18n, makeItem, stubFetch, stubXhr, type FakeReply, type RecordedRequest } from './helpers.ts';
 
 const config = makeConfig();
@@ -22,25 +22,28 @@ afterEach(() => {
 });
 
 const items = () => [makeItem(file('a.txt'), ['docs']), makeItem(file('b c.txt'), ['docs'])];
-const legacyItems = (Item: new (raw: object, path: string[]) => unknown) => [
-  new Item(file('a.txt'), ['docs']),
-  new Item(file('b c.txt'), ['docs']),
-];
 
-/** Every POST method, run with identical input against the legacy code and the port. */
+/** What the `apiMiddleware` of the AngularJS 1.x frontend sent for the same calls (dates in local-time fields, see `localizeDates`). */
+const recorded = loadFixture<{
+  post: Array<{ name: string; url: string; body: unknown }>;
+  urls: { getUrl: string; getPreviewUrl: string; getPreviewUrlOfPreviewItem: string; downloadMultipleWithoutTimestamp: string };
+  upload: { fieldNames: string[]; destination: string; url: string };
+  emptyUpload: { calls: number; settled: boolean; inprocess: boolean };
+}>('services/api.json');
+
+/** Every POST method, run with the input of the recording and compared with the recorded request. */
 const postCases: Array<{
   name: string;
   url: string;
   port: (api: Api, make: typeof items) => Promise<unknown>;
-  legacy: (middleware: any, make: () => any[]) => void;
 }> = [
-  { name: 'list', url: '/api/list', port: (a) => a.list(['docs', 'x']), legacy: (m) => m.list(['docs', 'x']) },
-  { name: 'list with recycle', url: '/api/list', port: (a) => a.list(['docs'], undefined, true), legacy: (m) => m.list(['docs'], undefined, true) },
-  { name: 'copy', url: '/api/copy', port: (a, m) => a.copy(m(), ['t']), legacy: (m, make) => m.copy(make(), ['t']) },
-  { name: 'copy of one item', url: '/api/copy', port: (a, m) => a.copy([m()[0]], ['t', 'u']), legacy: (m, make) => m.copy([make()[0]], ['t', 'u']) },
-  { name: 'move', url: '/api/move', port: (a, m) => a.move(m(), ['t']), legacy: (m, make) => m.move(make(), ['t']) },
-  { name: 'remove', url: '/api/remove', port: (a, m) => a.remove(m()), legacy: (m, make) => m.remove(make()) },
-  { name: 'getContent', url: '/api/getContent', port: (a, m) => a.getContent(m()[0]), legacy: (m, make) => m.getContent(make()[0]) },
+  { name: 'list', url: '/api/list', port: (a) => a.list(['docs', 'x']) },
+  { name: 'list with recycle', url: '/api/list', port: (a) => a.list(['docs'], undefined, true) },
+  { name: 'copy', url: '/api/copy', port: (a, m) => a.copy(m(), ['t']) },
+  { name: 'copy of one item', url: '/api/copy', port: (a, m) => a.copy([m()[0]], ['t', 'u']) },
+  { name: 'move', url: '/api/move', port: (a, m) => a.move(m(), ['t']) },
+  { name: 'remove', url: '/api/remove', port: (a, m) => a.remove(m()) },
+  { name: 'getContent', url: '/api/getContent', port: (a, m) => a.getContent(m()[0]) },
   {
     name: 'edit',
     url: '/api/edit',
@@ -48,11 +51,6 @@ const postCases: Array<{
       const item = m()[0];
       item.tempModel.content = 'new text';
       return a.edit(item);
-    },
-    legacy: (m, make) => {
-      const item = make()[0];
-      item.tempModel.content = 'new text';
-      m.edit(item);
     },
   },
   {
@@ -63,14 +61,9 @@ const postCases: Array<{
       item.tempModel.name = 'renamed.txt';
       return a.rename(item);
     },
-    legacy: (m, make) => {
-      const item = make()[0];
-      item.tempModel.name = 'renamed.txt';
-      m.rename(item);
-    },
   },
-  { name: 'compress', url: '/api/compress', port: (a, m) => a.compress(m(), 'pack', ['t']), legacy: (m, make) => m.compress(make(), 'pack', ['t']) },
-  { name: 'extract', url: '/api/extract', port: (a, m) => a.extract(m()[0], 'out', ['t']), legacy: (m, make) => m.extract(make()[0], 'out', ['t']) },
+  { name: 'compress', url: '/api/compress', port: (a, m) => a.compress(m(), 'pack', ['t']) },
+  { name: 'extract', url: '/api/extract', port: (a, m) => a.extract(m()[0], 'out', ['t']) },
   {
     name: 'changePermissions',
     url: '/api/permissions',
@@ -78,11 +71,6 @@ const postCases: Array<{
       const item = m()[0];
       item.tempModel.authRead = [{ role: 'admin', selected: true }];
       return a.changePermissions(item.tempModel);
-    },
-    legacy: (m, make) => {
-      const item = make()[0];
-      item.tempModel.authRead = [{ role: 'admin', selected: true }];
-      m.changePermissions(item.tempModel);
     },
   },
   {
@@ -93,28 +81,21 @@ const postCases: Array<{
       item.tempModel.name = '  New Folder!  ';
       return a.createFolder(item);
     },
-    legacy: (m, make) => {
-      const item = make()[0];
-      item.tempModel.name = '  New Folder!  ';
-      m.createFolder(item);
-    },
   },
 ];
 
-describe('POST requests match the legacy apiMiddleware', () => {
-  it.each(postCases)('$name', async ({ url, port, legacy }) => {
-    const old = legacyApi(config);
-    legacy(old.middleware, () => legacyItems(old.Item) as never[]);
-    old.flush();
+describe('POST requests match the recorded apiMiddleware', () => {
+  it.each(postCases)('$name', async ({ name, url, port }) => {
+    const old = recorded.post.find((entry) => entry.name === name);
+    if (!old) throw new Error(`no recording for ${name}`);
     await port(api, items);
 
-    expect(old.calls).toHaveLength(1);
     expect(requests).toHaveLength(1);
     expect(requests[0].url).toBe(url);
-    expect(requests[0].url).toBe(old.calls[0].url);
+    expect(requests[0].url).toBe(old.url);
     expect(requests[0].method).toBe('POST');
     // Same fields in the same order, not just equal objects.
-    expect(JSON.stringify(requests[0].body)).toBe(JSON.stringify(old.calls[0].data));
+    expect(JSON.stringify(localizeDates(requests[0].body))).toBe(JSON.stringify(old.body));
     expect(requests[0].headers).toEqual({
       Accept: 'application/json, text/plain, */*',
       'Content-Type': 'application/json;charset=utf-8',
@@ -138,34 +119,31 @@ describe('POST requests match the legacy apiMiddleware', () => {
   });
 });
 
-describe('URLs match the legacy apiMiddleware', () => {
+describe('URLs match the recorded apiMiddleware', () => {
   const urlConfig = makeConfig({ downloadFileUrl: '/filefly/api?scope=x', downloadMultipleUrl: '/dl/multi' });
 
   it('getUrl and getPreviewUrl, including the doubled ? of a handler URL with a query (Q-36)', () => {
-    const old = legacyApi(urlConfig);
     const local = createApi(urlConfig, i18n);
     const raw = file('my file & more.txt');
     const withPreview = file('p.png', { preview: '/previews/p.png' });
-    expect(local.getUrl(makeItem(raw, ['a b']))).toBe(old.middleware.getUrl(new old.Item(raw, ['a b'])));
+    expect(local.getUrl(makeItem(raw, ['a b']))).toBe(recorded.urls.getUrl);
     expect(local.getUrl(makeItem(raw, ['a b']))).toBe('/filefly/api?scope=x?action=download&path=%2Fa%20b%2Fmy%20file%20%26%20more.txt');
     expect(local.getPreviewUrl(makeItem(withPreview))).toBe('/previews/p.png');
-    expect(local.getPreviewUrl(makeItem(raw, ['a b']))).toBe(old.middleware.getPreviewUrl(new old.Item(raw, ['a b'])));
+    expect(recorded.urls.getPreviewUrlOfPreviewItem).toBe('/previews/p.png');
+    expect(local.getPreviewUrl(makeItem(raw, ['a b']))).toBe(recorded.urls.getPreviewUrl);
   });
 
   it('downloadMultiple URL', () => {
-    const old = legacyApi(urlConfig);
     const local = createApi(urlConfig, i18n);
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
     vi.setSystemTime(new Date('2021-03-04T05:06:07.890Z'));
     local.downloadMultiple(items());
     vi.useRealTimers();
-    old.middleware.downloadMultiple(legacyItems(old.Item) as never[]);
-    expect(open).toHaveBeenCalledTimes(2);
+    expect(open).toHaveBeenCalledTimes(1);
     const mine = open.mock.calls[0][0] as string;
-    const theirs = open.mock.calls[1][0] as string;
     expect(mine).toMatch(/^\/dl\/multi\?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa\.txt&items%5B%5D=%2Fdocs%2Fb%20c\.txt&toFilename=\d{5}-angular-filemanager\.zip$/);
-    // The timestamp prefix depends on the clock; everything else is identical.
-    expect(mine.replace(/toFilename=\d+/, '')).toBe(theirs.replace(/toFilename=\d+/, ''));
+    // The timestamp prefix depends on the clock; everything else is identical to the recording.
+    expect(mine.replace(/toFilename=\d+/, '')).toBe(recorded.urls.downloadMultipleWithoutTimestamp);
   });
 });
 
@@ -354,7 +332,7 @@ describe('upload', () => {
 
   it('sends destination and file-n as multipart form data with the AngularJS headers', async () => {
     const Xhr = stubXhr();
-    // The legacy handler never initialised it: the hidden upload block renders "... %" until the first upload.
+    // The AngularJS handler never initialised it: the hidden upload block renders "... %" until the first upload.
     expect(api.progress).toBeUndefined();
     const promise = api.upload(files(), ['docs']);
     const xhr = Xhr.instances[0];
@@ -371,12 +349,15 @@ describe('upload', () => {
     expect(api.inprocess).toBe(false);
   });
 
-  it('matches the legacy field names', () => {
-    const old = legacyApi(config);
-    old.middleware.upload([{ name: 'one.txt' }, { name: 'two.txt' }], ['docs']);
-    expect(Object.keys(old.calls[0].data)).toEqual(['destination', 'file-0', 'file-1']);
-    expect(old.calls[0].data.destination).toBe('/docs');
-    expect(old.calls[0].url).toBe('/api/upload');
+  it('matches the recorded field names', async () => {
+    const Xhr = stubXhr();
+    const promise = api.upload(files(), ['docs']);
+    const xhr = Xhr.instances[0];
+    expect([...xhr.sent!.keys()]).toEqual(recorded.upload.fieldNames);
+    expect(xhr.sent!.get('destination')).toBe(recorded.upload.destination);
+    expect(xhr.url).toBe(recorded.upload.url);
+    xhr.respond(200, { result: {} });
+    await promise;
   });
 
   it('reports progress as the percentage minus one and resets it afterwards (Q-34)', async () => {
@@ -424,7 +405,7 @@ describe('upload', () => {
     expect(api.inprocess).toBe(false);
   });
 
-  it('with an empty file list sends nothing and never settles while inprocess stays true (legacy edge case)', async () => {
+  it('with an empty file list sends nothing and never settles while inprocess stays true (carried over from the AngularJS frontend)', async () => {
     const Xhr = stubXhr();
     const settled = vi.fn();
     api.upload([], ['docs']).then(settled, settled);
@@ -435,13 +416,13 @@ describe('upload', () => {
     expect(api.progress).toBe(0);
   });
 
-  it('the legacy code does the same for an empty list', async () => {
-    const old = legacyApi(config);
+  it('the AngularJS code did the same for an empty list', async () => {
+    const Xhr = stubXhr();
     const settled = vi.fn();
-    old.middleware.upload([], ['docs']).then(settled, settled);
-    old.flush();
-    expect(old.calls).toHaveLength(0);
-    expect(settled).not.toHaveBeenCalled();
-    expect(old.middleware.apiHandler.inprocess).toBe(true);
+    api.upload([], ['docs']).then(settled, settled);
+    await flush();
+    expect(Xhr.instances).toHaveLength(recorded.emptyUpload.calls);
+    expect(settled.mock.calls.length > 0).toBe(recorded.emptyUpload.settled);
+    expect(api.inprocess).toBe(recorded.emptyUpload.inprocess);
   });
 });

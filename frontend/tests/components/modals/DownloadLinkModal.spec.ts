@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import DownloadLinkModal from '../../../src/components/modals/DownloadLinkModal.vue';
 import { copyToClipboard } from '../../../src/components/modals/copyToClipboard.ts';
-import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, select, text, type MountedModal } from './helpers.ts';
+import { diffAgainstRecorded, isHidden, item, recordedContent, mountModal, select, text, type MountedModal } from './helpers.ts';
 
 vi.mock('../../../src/components/modals/copyToClipboard.ts', () => ({ copyToClipboard: vi.fn(() => Promise.resolve(true)) }));
 
@@ -16,10 +16,10 @@ const lastCopied = () => {
   const calls = vi.mocked(copyToClipboard).mock.calls;
   return calls[calls.length - 1][0];
 };
-/** The legacy template keeps the ids `afm-*-link`; the bundle renders `filemanager-*-link`, so the legacy side is mapped. */
-function withRenamedIds(legacy: Element): Element {
-  legacy.querySelectorAll('[id^="afm-"]').forEach((el) => el.setAttribute('id', el.id.replace(/^afm-/, 'filemanager-')));
-  return legacy;
+/** The recorded template keeps the ids `afm-*-link`; the component renders `filemanager-*-link`, so the recorded side is mapped. */
+function withRenamedIds(template: Element): Element {
+  template.querySelectorAll('[id^="afm-"]').forEach((el) => el.setAttribute('id', el.id.replace(/^afm-/, 'filemanager-')));
+  return template;
 }
 const labels = () => app.wrapper.findAll('.modal-body label.radio').map((l) => l.text());
 
@@ -41,21 +41,21 @@ function showCustom(urls: Record<string, string>): void {
 }
 
 describe('DownloadLinkModal', () => {
-  it('has the structure of the legacy template, default URL branch', async () => {
+  it('has the structure of the recorded template, default URL branch', async () => {
     app = mountModal(DownloadLinkModal);
     showDefault();
     await nextTick();
-    const legacy = withRenamedIds(legacyContent('downloadlink', ['[ng-if="showCustomUrls"]']));
-    expect(diffAgainstLegacy(legacy, app.wrapper.find('.modal-content').element, app.t)).toBeNull();
+    const template = withRenamedIds(recordedContent('downloadlink', ['[ng-if="showCustomUrls"]']));
+    expect(diffAgainstRecorded(template, app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });
 
-  it('has the structure of the legacy template, custom URL branch', async () => {
+  it('has the structure of the recorded template, custom URL branch', async () => {
     app = mountModal(DownloadLinkModal);
     showCustom({ image: 'http://x/i.png', thumb: 'http://x/t.png' });
     await nextTick();
-    const legacy = withRenamedIds(legacyContent('downloadlink', ['[ng-if="showDefaultUrls"]']));
-    // The default-URL wrapper is an ng-if in legacy, so the path field is followed by the repeat rows only.
-    expect(diffAgainstLegacy(legacy, app.wrapper.find('.modal-content').element, app.t)).toBeNull();
+    const template = withRenamedIds(recordedContent('downloadlink', ['[ng-if="showDefaultUrls"]']));
+    // The default-URL wrapper is an ng-if in the template, so the path field is followed by the repeat rows only.
+    expect(diffAgainstRecorded(template, app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });
 
   it('renders the three default fields with their values and ids', async () => {
@@ -130,7 +130,7 @@ describe('DownloadLinkModal', () => {
     expect(order).toEqual(['copy', 'downloadLink']);
   });
 
-  it('clears the dialog error when a copy button is clicked, as the legacy re-submit did', async () => {
+  it('clears the dialog error when a copy button is clicked, as the re-submit of the AngularJS dialog did', async () => {
     app = mountModal(DownloadLinkModal);
     const a = item('a.txt');
     await select(app.fm, a);
@@ -169,7 +169,7 @@ describe('DownloadLinkModal', () => {
     expect(buttons[0].attributes('disabled')).toBeUndefined();
   });
 
-  it('has no error bar, as in legacy', () => {
+  it('has no error bar, as in the AngularJS dialog', () => {
     app = mountModal(DownloadLinkModal);
     expect(app.wrapper.find('.label-danger').exists()).toBe(false);
     expect(isHidden(app.wrapper.find('.modal-body').element)).toBe(false);
