@@ -7,6 +7,7 @@ import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import BaseModal from '../../../src/components/modals/BaseModal.vue';
+import MultiSelect from '../../../src/components/MultiSelect.vue';
 import { provideConfig } from '../../../src/config/injection.ts';
 import { provideI18n } from '../../../src/i18n/index.ts';
 import { createFileManager, provideFileManager, type FileManager } from '../../../src/services/fileManager.ts';
@@ -56,7 +57,10 @@ function mountDialogs(attrs: Record<string, unknown> = {}): { fm: FileManager; m
 
 const backdrops = (): Element[] => [...document.body.querySelectorAll(':scope > .modal-backdrop')];
 const escape = (target: Element): void => {
-  target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+  const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+  // jsdom drops `keyCode` from the init dictionary; MultiSelect reads only that.
+  Object.defineProperty(event, 'keyCode', { value: 27 });
+  target.dispatchEvent(event);
 };
 const click = (target: Element): void => {
   target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -186,39 +190,111 @@ describe('BaseModal dismiss gestures', () => {
     expect(fm.modals.isOpen('move')).toBe(false);
   });
 
-  it('closes on Escape pressed inside the dialog only', async () => {
-    const { fm, move } = mountDialogs();
-    fm.modals.open('move');
-    await nextTick();
-    // 152-160: the handler sits on the dialog element, a key on body never reaches it
-    escape(document.body);
-    await nextTick();
-    expect(fm.modals.isOpen('move')).toBe(true);
-    escape(move.querySelector('input')!);
-    await nextTick();
-    expect(fm.modals.isOpen('move')).toBe(false);
-  });
-
-  it('handles Escape before handlers on document, which still run (Q-45)', async () => {
-    const { fm, move } = mountDialogs();
-    fm.modals.open('move');
-    await nextTick();
-    const seen: boolean[] = [];
-    const onDocument = (): void => {
-      seen.push(fm.modals.isOpen('move'));
-    };
-    document.addEventListener('keydown', onDocument);
-    escape(move.querySelector('input')!);
-    document.removeEventListener('keydown', onDocument);
-    expect(seen).toEqual([false]);
-  });
-
   it('ignores Escape and clicks while hidden', async () => {
     const { fm, move } = mountDialogs();
     const close = vi.spyOn(fm.modals, 'close');
     escape(move);
+    escape(document.body);
     click(move);
     expect(close).not.toHaveBeenCalled();
+  });
+});
+
+// Bootstrap bound Escape to the dialog element, which only saw the key while the focus was inside it.
+describe('BaseModal Escape', () => {
+  it.each([
+    ['an element inside the dialog', (move: HTMLElement) => move.querySelector('a.change')!],
+    ['a text field of the dialog', (move: HTMLElement) => move.querySelector('input')!],
+    ['the dialog element', (move: HTMLElement) => move],
+    ['body', () => document.body],
+    ['an element of the page outside the dialog', () => document.getElementById('outside')!],
+  ])('closes the open dialog with the key on %s', async (_, target) => {
+    const { fm, move } = mountDialogs();
+    const outside = document.createElement('button');
+    outside.id = 'outside';
+    document.body.appendChild(outside);
+    fm.modals.open('move');
+    await nextTick();
+    escape(target(move));
+    await nextTick();
+    expect(fm.modals.isOpen('move')).toBe(false);
+    expect(move.style.display).toBe('none');
+    outside.remove();
+  });
+
+  it('closes the dialog even when a handler on the way stops the event', async () => {
+    const { fm, move } = mountDialogs();
+    fm.modals.open('move');
+    await nextTick();
+    const stop = (event: Event): void => event.stopPropagation();
+    document.body.addEventListener('keydown', stop);
+    escape(document.body);
+    document.body.removeEventListener('keydown', stop);
+    await nextTick();
+    expect(fm.modals.isOpen('move')).toBe(false);
+  });
+
+  it('ignores other keys', async () => {
+    const { fm } = mountDialogs();
+    fm.modals.open('move');
+    await nextTick();
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+    await nextTick();
+    expect(fm.modals.isOpen('move')).toBe(true);
+  });
+
+  it('does nothing and listens to nothing while no dialog is open', async () => {
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const { fm, move } = mountDialogs();
+    const close = vi.spyOn(fm.modals, 'close');
+    escape(document.body);
+    expect(close).not.toHaveBeenCalled();
+    expect(add).not.toHaveBeenCalledWith('keydown', expect.any(Function), true);
+    fm.modals.open('move');
+    await nextTick();
+    expect(add).toHaveBeenCalledWith('keydown', expect.any(Function), true);
+    escape(move);
+    await nextTick();
+    expect(remove).toHaveBeenCalledWith('keydown', expect.any(Function), true);
+    close.mockClear();
+    escape(document.body);
+    expect(close).not.toHaveBeenCalled();
+    add.mockRestore();
+    remove.mockRestore();
+  });
+
+  it('lets an open role list close itself first, and closes the dialog on the next Escape', async () => {
+    const config = makeConfig();
+    const i18n = makeI18n();
+    const fm = createFileManager(config, i18n);
+    const Host = defineComponent({
+      setup() {
+        provideConfig(config);
+        provideI18n(i18n);
+        provideFileManager(fm);
+        return () =>
+          h(BaseModal, { id: 'changepermissions' }, {
+            default: () => [h(MultiSelect, { inputModel: [{ role: 'Admin', selected: true }, { role: 'Guest', selected: false }] })],
+          });
+      },
+    });
+    wrapper = mount(Host, { attachTo: document.body });
+    fm.modals.open('changepermissions');
+    await nextTick();
+    const dialog = document.getElementById('changepermissions')!;
+    click(dialog.querySelector('.multiSelect > button')!);
+    await nextTick();
+    expect(dialog.querySelector('.checkboxLayer.show')).not.toBeNull();
+
+    escape(document.activeElement ?? document.body);
+    await nextTick();
+    expect(dialog.querySelector('.checkboxLayer.show')).toBeNull();
+    expect(fm.modals.isOpen('changepermissions')).toBe(true);
+
+    escape(document.activeElement ?? document.body);
+    await nextTick();
+    expect(fm.modals.isOpen('changepermissions')).toBe(false);
   });
 });
 
@@ -284,20 +360,42 @@ describe('BaseModal stacked dialogs (Q-32)', () => {
     expect(document.body.classList.contains('modal-open')).toBe(false);
   });
 
-  it('closes the dialog that holds the focus on Escape, even the lower one', async () => {
+  it.each([
+    ['the lower dialog', (move: HTMLElement) => move.querySelector('a.change')!],
+    ['the upper dialog', (_: HTMLElement, selector: HTMLElement) => selector.querySelector('button.inner')!],
+    ['body', () => document.body],
+  ])('closes the topmost dialog only on Escape with the focus in %s, the next one on a second Escape', async (_, target) => {
     const { fm, move, selector } = mountDialogs();
     fm.modals.open('move');
     await nextTick();
     fm.modals.open('selector');
     await nextTick();
-    // The "change" link inside `move` keeps the focus: Escape reaches only `move` (152-160).
-    escape(move.querySelector('a.change')!);
+    escape(target(move, selector));
     await nextTick();
-    expect(fm.modals.stack).toEqual(['selector']);
-    escape(selector.querySelector('button')!);
+    expect(fm.modals.stack).toEqual(['move']);
+    expect(selector.style.display).toBe('none');
+    expect(move.style.display).toBe('block');
+    expect(backdrops()).toHaveLength(1);
+    escape(target(move, selector));
     await nextTick();
     expect(fm.modals.stack).toEqual([]);
     expect(backdrops()).toHaveLength(0);
+    // A third Escape finds no dialog.
+    escape(document.body);
+    await nextTick();
+    expect(fm.modals.stack).toEqual([]);
+  });
+
+  it('closes one dialog per Escape even before the closed one is hidden', async () => {
+    const { fm } = mountDialogs();
+    fm.modals.open('move');
+    await nextTick();
+    fm.modals.open('selector');
+    await nextTick();
+    escape(document.body);
+    expect(fm.modals.stack).toEqual(['move']);
+    escape(document.body);
+    expect(fm.modals.stack).toEqual([]);
   });
 
   it('drops the enforced focus of the lower dialog when the upper one closes (124)', async () => {

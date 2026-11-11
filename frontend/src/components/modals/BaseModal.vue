@@ -4,7 +4,8 @@
  * `focusin.bs.modal` handler on `document`, the `resize.bs.modal` handlers on
  * `window` (any hide removes all of them), jQuery's `padding-right` data on
  * fixed navbars, and, for the unmount cleanup only, the body state before the
- * first dialog opened.
+ * first dialog opened. Also the shown dialogs in the order they were shown,
+ * for Escape.
  */
 let focusinHandler: ((event: FocusEvent) => void) | null = null;
 const resizeHandlers = new Set<() => void>();
@@ -12,7 +13,53 @@ const fixedPadding = new WeakMap<HTMLElement, string>();
 let openCount = 0;
 let baselineBodyPad = '';
 
+interface ShownDialog {
+  el: HTMLElement;
+  /** Whether the dialog is the topmost open one of its file manager. */
+  isTop(): boolean;
+  close(): void;
+}
+const shownDialogs: ShownDialog[] = [];
+
 const FIXED_CONTENT = '.navbar-fixed-top, .navbar-fixed-bottom';
+
+/**
+ * Escape closes the topmost dialog wherever the focus is: dialogs without a
+ * focusable field leave it on the page, and in the stacked state it may sit
+ * in the lower dialog. The capture phase on `window` runs before any handler
+ * that could stop the event. An open role list (MultiSelect) closes itself
+ * through its own `keydown` handler on `document`, which still runs, so the
+ * dialog stays open for that key. The last shown dialog wins should several
+ * widgets on a page each have one open.
+ */
+function onEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' && event.keyCode !== 27) return;
+  for (let i = shownDialogs.length - 1; i >= 0; i--) {
+    const dialog = shownDialogs[i];
+    if (dialog.isTop()) {
+      if (!dialog.el.querySelector('.checkboxLayer.show')) {
+        dialog.close();
+      }
+      return;
+    }
+  }
+}
+
+function addShownDialog(dialog: ShownDialog): void {
+  if (shownDialogs.length === 0) {
+    window.addEventListener('keydown', onEscape, true);
+  }
+  shownDialogs.push(dialog);
+}
+
+function removeShownDialog(el: HTMLElement): void {
+  const index = shownDialogs.findIndex((dialog) => dialog.el === el);
+  if (index === -1) return;
+  shownDialogs.splice(index, 1);
+  if (shownDialogs.length === 0) {
+    window.removeEventListener('keydown', onEscape, true);
+  }
+}
 
 function onWindowResize(): void {
   resizeHandlers.forEach((handler) => handler());
@@ -62,9 +109,9 @@ function setPx(el: HTMLElement, value: number): void {
  * Reproduced on purpose (Q-32): every dialog appends its own backdrop, any
  * hide removes `modal-open` from `body`, resets the body padding to what it
  * was when that dialog opened, and drops the document-wide focus and resize
- * handlers, even while another dialog stays open. Escape is handled on the
- * dialog element, so it closes the dialog that contains the focus, and runs
- * before handlers on `document` (Q-45). The enforced focus calls `focus()` on
+ * handlers, even while another dialog stays open. Unlike the plugin, Escape
+ * is handled for the whole page and closes the topmost dialog only (see
+ * `onEscape`). The enforced focus calls `focus()` on
  * the `.modal` element, which has no `tabindex` in the AngularJS markup: it takes
  * the focus only where the browser treats it as focusable (Chromium does so
  * for a scroll container whose content overflows); otherwise the focus stays
@@ -191,6 +238,7 @@ function show(): void {
   el.scrollTop = 0;
   adjustDialog();
   isIn.value = true;
+  addShownDialog({ el, isTop: () => fm.modals.top === props.id, close });
   enforceFocus(el);
   el.focus();
 
@@ -210,6 +258,7 @@ function hide(): void {
   if (!isShown || !el) return;
   isShown = false;
   openCount--;
+  removeShownDialog(el);
 
   clearResizeHandlers();
   setFocusinHandler(null);
@@ -224,13 +273,6 @@ function hide(): void {
   el.style.paddingLeft = '';
   el.style.paddingRight = '';
   resetScrollbar();
-}
-
-// modal.js 152-160: bound to the dialog element, so only a key pressed inside it counts.
-function onKeydown(event: KeyboardEvent): void {
-  if (isShown && (event.key === 'Escape' || event.keyCode === 27)) {
-    close();
-  }
 }
 
 // modal.js 71-75
@@ -290,7 +332,6 @@ onBeforeUnmount(() => {
     ref="root"
     class="modal animated fadeIn"
     :class="{ in: isIn }"
-    @keydown="onKeydown"
     @mouseup="onMouseup"
     @click="onClick"
   >
