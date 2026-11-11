@@ -54,8 +54,17 @@ export function isSuccess(status: number): boolean {
  * Sends a request with same-origin credentials. Resolves for 2xx and rejects
  * with the same `{data, status}` shape for everything else; a network failure
  * rejects with `{data: null, status: -1}` like AngularJS reported it.
+ *
+ * With `responseType` `'blob'` the body of a 2xx response is handed over as a
+ * `Blob`, byte for byte, because reading binary data as text corrupts it; the
+ * body of a failed response is still read as text for the error handling.
  */
-export async function request(method: 'GET' | 'POST', url: string, body?: unknown): Promise<HttpResult> {
+export async function request(
+  method: 'GET' | 'POST',
+  url: string,
+  body?: unknown,
+  responseType: 'text' | 'blob' = 'text',
+): Promise<HttpResult> {
   const headers: Record<string, string> = { ...REQUEST_HEADERS };
   const init: RequestInit = { method, headers, credentials: 'same-origin' };
   if (method === 'POST') {
@@ -65,8 +74,12 @@ export async function request(method: 'GET' | 'POST', url: string, body?: unknow
   let result: HttpResult;
   try {
     const response = await fetch(url, init);
-    const text = await response.text();
-    result = { data: parseBody(text, response.headers.get('Content-Type')), status: response.status };
+    if (responseType === 'blob' && isSuccess(response.status)) {
+      result = { data: await response.blob(), status: response.status };
+    } else {
+      const text = await response.text();
+      result = { data: parseBody(text, response.headers.get('Content-Type')), status: response.status };
+    }
   } catch {
     throw { data: null, status: -1 } satisfies HttpResult;
   }
