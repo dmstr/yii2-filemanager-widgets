@@ -31,8 +31,7 @@ function dismiss(close: () => void): void {
         <h4 class="modal-title">{{ t('move') }}</h4>
       </div>
       <div class="modal-body">
-        <!-- Q-10: the selector's own close button only hides the dialog, no refresh -->
-        <PathSelector @close="close()" />
+        <PathSelector />
         <ErrorBar />
       </div>
       <div class="modal-footer">

@@ -11,7 +11,6 @@ const footerButtons = () => app.wrapper.findAll('form > .modal-footer button');
 const cancel = () => footerButtons()[0];
 const submit = () => app.wrapper.find('button[type=submit]');
 const cross = () => app.wrapper.find('button.close');
-const selectorClose = () => app.wrapper.find('.panel .modal-footer .btn-default');
 const type = async (value: string) => {
   (input().element as HTMLInputElement).value = value;
   await input().trigger('input');
@@ -59,8 +58,8 @@ describe('CopyModal', () => {
     expect(a.tempModel.name).toBe('');
   });
 
-  it('cross, Cancel and the selector close button only close, without a refresh', async () => {
-    for (const control of [cross, cancel, selectorClose]) {
+  it('cross and Cancel only close, without a refresh', async () => {
+    for (const control of [cross, cancel]) {
       app = mountModal(CopyModal);
       app.fm.modals.open('copy');
       app.fm.refreshLocation = vi.fn();
@@ -69,6 +68,12 @@ describe('CopyModal', () => {
       expect(app.fm.refreshLocation).not.toHaveBeenCalled();
       app.wrapper.unmount();
     }
+  });
+
+  it('has no second footer or close button inside the selector panel', () => {
+    app = mountModal(CopyModal);
+    expect(app.wrapper.find('.panel .modal-footer').exists()).toBe(false);
+    expect(app.wrapper.find('.panel button').exists()).toBe(false);
   });
 
   it('submits through the form and calls copy', async () => {
@@ -86,7 +91,7 @@ describe('CopyModal', () => {
     app.fm.api.inprocess = true;
     app.fm.api.error = 'Invalid name';
     await rendered(app);
-    for (const b of [cancel(), submit(), selectorClose()]) {
+    for (const b of [cancel(), submit()]) {
       expect(b.attributes('disabled')).toBeDefined();
     }
     expect(cross().attributes('disabled')).toBeUndefined();

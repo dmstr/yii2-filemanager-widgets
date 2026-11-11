@@ -7,8 +7,6 @@ afterEach(() => app?.wrapper.unmount());
 
 const cross = () => app.wrapper.find('button.close');
 const submit = () => app.wrapper.find('button[type=submit]');
-/** The close button inside the path selector panel (Q-10). */
-const selectorClose = () => app.wrapper.find('.panel .modal-footer .btn-default');
 
 describe('MoveModal', () => {
   it('has the structure of the recorded template', () => {
@@ -43,13 +41,10 @@ describe('MoveModal', () => {
     }
   });
 
-  it('closes without a refresh from the selector close button', async () => {
+  it('has no second footer or close button inside the selector panel', () => {
     app = mountModal(MoveModal);
-    app.fm.modals.open('move');
-    app.fm.refreshLocation = vi.fn();
-    await selectorClose().trigger('click');
-    expect(app.fm.refreshLocation).not.toHaveBeenCalled();
-    expect(app.fm.modals.isOpen('move')).toBe(false);
+    expect(app.wrapper.find('.panel .modal-footer').exists()).toBe(false);
+    expect(app.wrapper.find('.panel button').exists()).toBe(false);
   });
 
   it('submits through the form and calls move', async () => {
