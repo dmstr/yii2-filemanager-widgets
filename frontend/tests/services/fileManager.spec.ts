@@ -277,8 +277,8 @@ describe('image preview', () => {
 describe('edit', () => {
   it('posts the edited content and closes the dialog', async () => {
     select('d.md');
-    fm.singleSelection()!.tempModel.content = 'new';
     fm.modal('edit');
+    fm.singleSelection()!.tempModel.content = 'new';
     fm.edit();
     await settle();
     expect(requests[0]).toMatchObject({ url: '/api/edit', body: { action: 'edit', item: '/d.md', content: 'new' } });
@@ -1308,5 +1308,140 @@ describe('destination chosen by row or by the current-folder button', () => {
       await settle();
       expect(movesSent()).toHaveLength(1);
     });
+  });
+});
+
+describe('dialog input is reset when a dialog opens', () => {
+  const nameDialogs = [
+    ['rename', () => fm.modal('rename'), 'a.txt'],
+    ['copy', () => fm.modalWithPathSelector('copy'), 'a.txt'],
+    ['extract', () => fm.modal('extract'), 'e.zip'],
+  ] as const;
+
+  it.each(nameDialogs)('%s: abandoned input never reappears, and another item shows its own state', (id, open, name) => {
+    select(name);
+    open();
+    item(name).tempModel.name = 'typed';
+    fm.modal(id, true);
+    open();
+    expect(item(name).tempModel.name).toBe(name);
+    item(name).tempModel.name = 'typed again';
+    fm.modal(id, true);
+    select('d.md');
+    open();
+    expect(item('d.md').tempModel.name).toBe('d.md');
+    fm.modal(id, true);
+    select(name);
+    open();
+    expect(item(name).tempModel.name).toBe(name);
+  });
+
+  it('a right click on the selected item does not bring abandoned input back', () => {
+    select('a.txt');
+    fm.modal('rename');
+    item('a.txt').tempModel.name = 'typed';
+    fm.modal('rename', true);
+    fm.selectOrUnselect(item('a.txt'), { which: 3 });
+    fm.modal('rename');
+    expect(item('a.txt').tempModel.name).toBe('a.txt');
+  });
+
+  it('compress: the placeholder name is reset on open', () => {
+    select('a.txt', 'd.md');
+    fm.modalWithPathSelector('compress');
+    fm.temp.tempModel.name = 'typed';
+    fm.modal('compress', true);
+    fm.modalWithPathSelector('compress');
+    expect(fm.temp.tempModel.name).toBe('');
+  });
+
+  it('edit: abandoned content is replaced by the loaded server content', async () => {
+    select('d.md');
+    fm.openEditItem();
+    await settle();
+    item('d.md').tempModel.content = 'typed';
+    fm.modal('edit', true);
+    fm.openEditItem();
+    expect(item('d.md').tempModel.content).toBe('file text');
+    await settle();
+    expect(item('d.md').tempModel.content).toBe('file text');
+  });
+
+  it('a failed rename keeps the typed name, also after the reload that follows', async () => {
+    override = (r) => ((r.body as { action: string }).action === 'rename' ? { body: { result: { error: 'exists' } } } : undefined);
+    select('a.txt');
+    fm.modal('rename');
+    item('a.txt').tempModel.name = 'z.txt';
+    fm.rename();
+    await settle();
+    expect(actionsSent()).toEqual(['rename', 'list']);
+    expect(fm.modals.isOpen('rename')).toBe(true);
+    expect(fm.singleSelection()?.tempModel.name).toBe('z.txt');
+  });
+
+  it('a failed copy keeps the typed name', async () => {
+    override = (r) => ((r.body as { action: string }).action === 'copy' ? { body: { result: { error: 'no' } } } : undefined);
+    select('a.txt');
+    fm.modalWithPathSelector('copy');
+    item('a.txt').tempModel.name = 'fresh.txt';
+    fm.copy();
+    await settle();
+    expect(fm.modals.isOpen('copy')).toBe(true);
+    expect(fm.singleSelection()?.tempModel.name).toBe('fresh.txt');
+  });
+
+  it('a failed extract and a failed compress keep the typed name', async () => {
+    override = (r) => ((r.body as { action: string }).action !== 'list' ? { body: { result: { error: 'no' } } } : undefined);
+    select('e.zip');
+    fm.modalWithPathSelector('extract');
+    item('e.zip').tempModel.name = 'out';
+    fm.extract();
+    await settle();
+    expect(fm.modals.isOpen('extract')).toBe(true);
+    expect(fm.singleSelection()?.tempModel.name).toBe('out');
+    fm.modal('extract', true);
+    select('a.txt', 'd.md');
+    fm.modalWithPathSelector('compress');
+    fm.temp.tempModel.name = 'pack';
+    fm.compress();
+    await settle();
+    expect(fm.modals.isOpen('compress')).toBe(true);
+    expect(fm.temp.tempModel.name).toBe('pack');
+  });
+
+  it('a failed edit keeps the typed content', async () => {
+    select('d.md');
+    fm.openEditItem();
+    await settle();
+    override = (r) => ((r.body as { action: string }).action === 'edit' ? { body: { result: { error: 'no' } } } : undefined);
+    item('d.md').tempModel.content = 'typed';
+    fm.edit();
+    await settle();
+    expect(fm.modals.isOpen('edit')).toBe(true);
+    expect(fm.singleSelection()?.tempModel.content).toBe('typed');
+  });
+
+  it('a copy after an abandoned rename sends the real name', async () => {
+    select('a.txt');
+    fm.modal('rename');
+    item('a.txt').tempModel.name = 'abandoned.txt';
+    fm.modal('rename', true);
+    fm.modalWithPathSelector('copy');
+    fm.selectedModalPath = [];
+    // Same folder: the real name exists there, so the copy is refused instead of sending the abandoned name.
+    expect(fm.copy()).toBe(false);
+    fm.selectedModalPath = ['other'];
+    fm.copy();
+    await settle();
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/other' });
+  });
+
+  it('the move dialog path line shows the real name after an abandoned rename', () => {
+    select('a.txt');
+    fm.modal('rename');
+    item('a.txt').tempModel.name = 'abandoned.txt';
+    fm.modal('rename', true);
+    fm.modalWithPathSelector('move');
+    expect(fm.getSelectedPath()).toBe('/a.txt');
   });
 });
