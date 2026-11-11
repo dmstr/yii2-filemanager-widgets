@@ -129,9 +129,10 @@ describe('view state', () => {
     expect(fm.fileList[0].model.name).toBe('p.jpg');
   });
 
-  it('sorting by the missing model.permissions leaves the original order within the type (Q-06)', () => {
+  it('sorting by the permissions column keeps folders first and is no longer a no-op', () => {
     fm.setTemplate('main-table.html');
-    fm.order('model.permissions');
+    fm.order('permissions');
+    expect(fm.predicate).toEqual(['model.type', 'permissions']);
     expect(fm.fileList.map((i) => i.model.name)).toEqual(['b', 'a.txt', 'c.png', 'd.md', 'e.zip', 'p.jpg']);
   });
 

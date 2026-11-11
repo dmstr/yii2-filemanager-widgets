@@ -3,6 +3,7 @@
 import { useConfig } from '../config/injection.ts';
 import { useI18n } from '../i18n/index.ts';
 import { useFileManager } from '../services/fileManager.ts';
+import { PERMISSIONS_COLUMN, permissionsCode } from '../services/fileManager/view.ts';
 import { formatDate, strLimit } from '../utils/format.ts';
 import Spinner from './Spinner.vue';
 import { useFileSize } from './useFileSize.ts';
@@ -24,7 +25,6 @@ const sizeOf = useFileSize();
             <span v-show="fm.predicate[1] === 'model.name'" class="sortorder" :class="{ reverse: fm.reverse }"></span>
           </a>
         </th>
-        <!-- Q-07: hideSize hides only the header cell, never the body cells -->
         <th v-show="!config.hideSize" class="hidden-xs">
           <a href="" @click.prevent="fm.order('model.size')">
             {{ t('size') }}
@@ -38,10 +38,9 @@ const sizeOf = useFileSize();
           </a>
         </th>
         <th v-show="!config.hidePermissions" class="hidden-sm hidden-xs">
-          <!-- Q-06: sorts by `model.permissions`, which no item has -->
-          <a href="" @click.prevent="fm.order('model.permissions')">
+          <a href="" @click.prevent="fm.order(PERMISSIONS_COLUMN)">
             {{ t('permissions') }}
-            <span v-show="fm.predicate[1] === 'model.permissions'" class="sortorder" :class="{ reverse: fm.reverse }"></span>
+            <span v-show="fm.predicate[1] === PERMISSIONS_COLUMN" class="sortorder" :class="{ reverse: fm.reverse }"></span>
           </a>
         </th>
       </tr>
@@ -81,7 +80,7 @@ const sizeOf = useFileSize();
             {{ strLimit(item.model.name, 64) }}
           </a>
         </td>
-        <td class="hidden-xs">
+        <td v-show="!config.hideSize" class="hidden-xs">
           <span v-show="item.model.type !== 'dir' || config.showSizeForDirectories">
             {{ sizeOf(item.model.size) }}
           </span>
@@ -90,7 +89,7 @@ const sizeOf = useFileSize();
           {{ formatDate(item.model.date) }}
         </td>
         <td v-show="!config.hidePermissions" class="hidden-sm hidden-xs">
-          {{ item.model.perms.toCode(item.model.type === 'dir' ? 'd' : '-') }}
+          {{ permissionsCode(item) }}
         </td>
       </tr>
     </tbody>

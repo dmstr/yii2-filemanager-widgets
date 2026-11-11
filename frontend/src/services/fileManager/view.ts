@@ -21,6 +21,19 @@ export function createSortState() {
   return { reverse, predicate, order };
 }
 
+/** The permissions column's sort key; the table cell shows the same text. */
+export const PERMISSIONS_COLUMN = 'permissions';
+
+/** The text of the permissions column, e.g. `drwxr-xr-x`. */
+export const permissionsCode = (item: Item): string => item.model.perms.toCode(item.model.type === 'dir' ? 'd' : '-');
+
+/**
+ * The permissions live in an object on the item, so that column sorts by an
+ * accessor on the displayed text instead of by a property path.
+ */
+const sortKey = (column: string): string | ((item: Item) => string) =>
+  column === PERMISSIONS_COLUMN ? permissionsCode : column;
+
 export function createViewState(config: FileManagerConfig, navigator: Navigator) {
   const query = ref('');
   const sort = createSortState();
@@ -34,11 +47,14 @@ export function createViewState(config: FileManagerConfig, navigator: Navigator)
   /**
    * The list every view displays: filtered by name and sorted by type and the
    * chosen column, so switching views never reorders it and a shift-click
-   * range means the same in all of them. Sorting by `model.permissions` finds
-   * nothing to compare (Q-06).
+   * range means the same in all of them.
    */
   const fileList = computed<Item[]>(() =>
-    orderBy(filterByName(navigator.fileList, query.value), sort.predicate.value, sort.reverse.value),
+    orderBy(
+      filterByName(navigator.fileList, query.value),
+      sort.predicate.value.map(sortKey),
+      sort.reverse.value,
+    ),
   );
 
   return { query, ...sort, viewTemplate, setTemplate, fileList };
