@@ -15,6 +15,7 @@ Breaking changes:
 
 Fixes:
 
+- the widget properties `enableThumbnails` and `enableIconPreviewView` take effect; they were declared but never read, so the filefly settings of the same name did nothing
 - a failed folder listing no longer blocks all later refreshes until the page is reloaded
 - "Permissions" in the context menu only shows when exactly one item is selected (it raised a JavaScript error otherwise)
 - in the "copy link" dialog the copy buttons of custom URLs copy their own field instead of the download link

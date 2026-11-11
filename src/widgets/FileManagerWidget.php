@@ -43,11 +43,16 @@ class FileManagerWidget extends Widget
     public $template = '<angular-filemanager></angular-filemanager>';
 
     /**
+     * Show the thumbnail an item brings along instead of the generic image icon
+     * (preview view only). Off when null.
+     *
      * @var boolean|null
      */
     public $enableThumbnails;
 
     /**
+     * Offer the preview view as third view next to icons and table. Off when null.
+     *
      * @var boolean|null
      */
     public $enableIconPreviewView;
@@ -132,8 +137,9 @@ class FileManagerWidget extends Widget
             'downloadFilesByAjax' => true,
             'previewImagesInModal' => true,
             'enablePermissionsRecursive' => false,
-            'enableThumbnails' => false,
-            'enableIconPreviewView' => false,
+            // the widget properties set these two; `options` can still override them
+            'enableThumbnails' => (bool)$this->enableThumbnails,
+            'enableIconPreviewView' => (bool)$this->enableIconPreviewView,
 
             // File patterns
             'isEditableFilePattern' => '/\.(!)/i',
