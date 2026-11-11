@@ -38,7 +38,6 @@ const postCases: Array<{
   port: (api: Api, make: typeof items) => Promise<unknown>;
 }> = [
   { name: 'list', url: '/api/list', port: (a) => a.list(['docs', 'x']) },
-  { name: 'list with recycle', url: '/api/list', port: (a) => a.list(['docs'], undefined, true) },
   { name: 'copy', url: '/api/copy', port: (a, m) => a.copy(m(), ['t']) },
   {
     name: 'copy of one item',
@@ -167,7 +166,7 @@ describe('URLs match the recorded apiMiddleware', () => {
     vi.useRealTimers();
     expect(open).toHaveBeenCalledTimes(1);
     const mine = open.mock.calls[0][0] as string;
-    expect(mine).toMatch(/^\/dl\/multi\?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa\.txt&items%5B%5D=%2Fdocs%2Fb%20c\.txt&toFilename=\d{5}-angular-filemanager\.zip$/);
+    expect(mine).toMatch(/^\/dl\/multi\?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa\.txt&items%5B%5D=%2Fdocs%2Fb%20c\.txt&toFilename=\d{5}-filemanager\.zip$/);
     // The timestamp prefix depends on the clock; everything else is identical to the recording.
     expect(mine.replace(/toFilename=\d+/, '')).toBe(recorded.urls.downloadMultipleWithoutTimestamp);
   });
@@ -185,7 +184,7 @@ describe('GET URLs by handler URL shape', () => {
       zip: zip.replace(/toFilename=\d+/, 'toFilename=N'),
     };
   };
-  const zipParams = 'action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa.txt&items%5B%5D=%2Fdocs%2Fb%20c.txt&toFilename=N-angular-filemanager.zip';
+  const zipParams = 'action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa.txt&items%5B%5D=%2Fdocs%2Fb%20c.txt&toFilename=N-filemanager.zip';
 
   it('joins with ? for a plain handler URL, as before', () => {
     expect(build('/filefly/api')).toEqual({
@@ -311,7 +310,7 @@ describe('resolvePermissions', () => {
 });
 
 describe('download', () => {
-  it('opens a new window when saveAs is missing (Q-20) and returns its truthiness', () => {
+  it('opens a new window when saveAs is missing and returns its truthiness', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
     const item = items()[0];
     expect(api.download(item)).toBe(true);
@@ -342,36 +341,94 @@ describe('download', () => {
     expect(open).toHaveBeenCalledOnce();
   });
 
-  it('downloads by ajax when saveAs exists and saves the body', async () => {
+  // Bytes that are not valid UTF-8: reading them as text would replace them.
+  const binary = new Uint8Array([0xff, 0xd8, 0xff, 0x00, 0x80]);
+
+  const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer());
+
+  /** Replaces `fetch` with a binary reply; the shared stub only sends text or JSON. */
+  function stubBinaryFetch(status = 200) {
+    const urls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url);
+        return new Response(binary, { status, headers: { 'Content-Type': 'application/octet-stream' } });
+      }),
+    );
+    return urls;
+  }
+
+  it('downloads by ajax when saveAs exists and passes the response bytes unchanged', async () => {
     const saveAs = vi.fn();
     (window as unknown as Record<string, unknown>).saveAs = saveAs;
     const open = vi.spyOn(window, 'open');
-    reply = () => ({ body: 'file content', contentType: 'application/octet-stream' });
+    const urls = stubBinaryFetch();
     const result = api.download(items()[0]) as Promise<unknown>;
     expect(api.inprocess).toBe(true);
-    await expect(result).resolves.toBe('file content');
+    await result;
     await flush();
     expect(open).not.toHaveBeenCalled();
-    expect(requests[0]).toMatchObject({ method: 'GET', url: '/api/downloadFile?action=download&path=%2Fdocs%2Fa.txt' });
-    expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'a.txt');
+    expect(urls).toEqual(['/api/downloadFile?action=download&path=%2Fdocs%2Fa.txt']);
+    expect(saveAs).toHaveBeenCalledOnce();
+    expect(saveAs.mock.calls[0][1]).toBe('a.txt');
+    expect(await bytesOf(saveAs.mock.calls[0][0])).toEqual(binary);
     expect(api.inprocess).toBe(false);
   });
 
-  it('reports a failed ajax download with the translated default', async () => {
-    (window as unknown as Record<string, unknown>).saveAs = vi.fn();
-    reply = () => ({ status: 500, body: 'x', contentType: 'text/plain' });
-    await expect(api.download(items()[0]) as Promise<unknown>).rejects.toBe('x');
-    expect(api.error).toBe('Error 500 - Bridge response error, please check the API docs or this ajax response.');
-  });
-
-  it('downloadMultiple by ajax requests the bare URL without parameters (Q-20)', async () => {
+  it('reports a failed ajax download with the translated default and saves nothing', async () => {
     const saveAs = vi.fn();
     (window as unknown as Record<string, unknown>).saveAs = saveAs;
-    reply = () => ({ body: 'zip', contentType: 'application/zip' });
+    reply = () => ({ status: 500, body: 'x', contentType: 'text/plain' });
+    const result = api.download(items()[0]) as Promise<unknown>;
+    expect(api.inprocess).toBe(true);
+    await expect(result).rejects.toBe('x');
+    await flush();
+    expect(api.error).toBe('Error 500 - Bridge response error, please check the API docs or this ajax response.');
+    expect(saveAs).not.toHaveBeenCalled();
+    expect(api.inprocess).toBe(false);
+  });
+
+  it('does not save the error page of a failed binary response', async () => {
+    const saveAs = vi.fn();
+    (window as unknown as Record<string, unknown>).saveAs = saveAs;
+    stubBinaryFetch(404);
+    await expect(api.download(items()[0]) as Promise<unknown>).rejects.toBeDefined();
+    expect(saveAs).not.toHaveBeenCalled();
+    expect(api.error).not.toBe('');
+  });
+
+  it('downloadMultiple by ajax requests the URL with its parameters and passes the archive bytes', async () => {
+    const saveAs = vi.fn();
+    (window as unknown as Record<string, unknown>).saveAs = saveAs;
+    const urls = stubBinaryFetch();
     await (api.downloadMultiple(items()) as Promise<unknown>);
     await flush();
-    expect(requests[0]).toMatchObject({ method: 'GET', url: '/api/downloadMultiple' });
-    expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), expect.stringMatching(/^\d{5}-angular-filemanager\.zip$/));
+    expect(urls).toHaveLength(1);
+    expect(urls[0]).toMatch(
+      /^\/api\/downloadMultiple\?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa\.txt&items%5B%5D=%2Fdocs%2Fb%20c\.txt&toFilename=\d{5}-filemanager\.zip$/,
+    );
+    expect(saveAs).toHaveBeenCalledOnce();
+    expect(saveAs.mock.calls[0][1]).toBe(urls[0].match(/toFilename=(.*)$/)![1]);
+    expect(await bytesOf(saveAs.mock.calls[0][0])).toEqual(binary);
+  });
+
+  it('downloadMultiple opens the same URL in a new window without saveAs, with the option off or when forced', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    const expected = expect.stringMatching(/^\/api\/downloadMultiple\?action=downloadMultiple&items%5B%5D=.*&toFilename=\d{5}-filemanager\.zip$/);
+    api.downloadMultiple(items());
+    (window as unknown as Record<string, unknown>).saveAs = vi.fn();
+    createApi(makeConfig({ downloadFilesByAjax: false }), i18n).downloadMultiple(items());
+    api.downloadMultiple(items(), true);
+    expect(open).toHaveBeenCalledTimes(3);
+    for (const call of open.mock.calls) expect(call).toEqual([expected, '_blank', '']);
+    expect(requests).toHaveLength(0);
+  });
+
+  it('downloadMultiple uses a configured file name instead of the default', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    createApi(makeConfig({ downloadMultipleUrl: '/dl/multi', multipleDownloadFileName: 'mine.zip' }), i18n).downloadMultiple(items());
+    expect(open.mock.calls[0][0]).toMatch(/toFilename=\d{5}-mine\.zip$/);
   });
 
   it('downloadMultiple file name has the timestamp slice of Q-35', () => {
@@ -380,7 +437,7 @@ describe('download', () => {
     vi.setSystemTime(1234567890123);
     api.downloadMultiple(items());
     vi.useRealTimers();
-    expect(open.mock.calls[0][0]).toContain('toFilename=' + '1234567890123'.substr(8, 13) + '-angular-filemanager.zip');
+    expect(open.mock.calls[0][0]).toContain('toFilename=' + '1234567890123'.substr(8, 13) + '-filemanager.zip');
   });
 });
 

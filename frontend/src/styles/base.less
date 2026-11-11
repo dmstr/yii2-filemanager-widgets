@@ -257,13 +257,8 @@
   top: 4px;
   margin-right: .8em;
 }
-body {
-  font-size: 14px;
-  height: 100vh;
-}
-
-*,
-*:focus {
+// Pointer focus stays outline-free; keyboard focus keeps the Bootstrap focus styles
+*:focus:not(:focus-visible) {
   outline: 0!important;
 }
 
@@ -589,7 +584,7 @@ table th > a:focus {
   }
 
   /* The view should fill all available vertical space */
-  angular-filemanager > div,.row,.main,.sidebar {
+  .row,.main,.sidebar {
     height: 100%;
   }
 

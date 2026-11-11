@@ -57,13 +57,13 @@ describe('view switch buttons (F-05)', () => {
 });
 
 describe('navbar controls', () => {
-  it('refreshes with recycle: true and a tooltip that says so', async () => {
+  it('reloads the current folder with a plain list request', async () => {
     app = await mountWidget();
     const refresh = app.wrapper.find('nav .glyphicon-refresh').element.parentElement!;
     expect(refresh.getAttribute('title')).toBe('Refresh');
     refresh.click();
     await settle();
-    expect(app.requests[0].body).toMatchObject({ action: 'list', recycle: true });
+    expect(app.requests[0].body).toEqual({ action: 'list', path: '/' });
   });
 
   it('hides the search and the more dropdown groups according to the config', async () => {

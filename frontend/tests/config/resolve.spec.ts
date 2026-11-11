@@ -19,11 +19,14 @@ describe('resolveConfig', () => {
     a.allowedActions.upload = false;
     a.appName = 'changed';
     expect(resolveConfig(undefined).allowedActions.upload).toBe(true);
-    expect(resolveConfig(undefined).appName).toBe('angular-filemanager v1.5');
+    expect(resolveConfig(undefined).appName).toBe('/');
   });
 
   it('has the default values of the AngularJS provider', () => {
     const config = resolveConfig(undefined);
+    // Same as what the PHP widget sends when nothing is configured.
+    expect(config.appName).toBe('/');
+    expect(config.multipleDownloadFileName).toBe('filemanager.zip');
     expect(config.defaultLang).toBe('en');
     expect(config.listUrl).toBe('bridges/php/handler.php');
     expect(config.pickCallback).toBeNull();
@@ -125,9 +128,25 @@ describe('resolveConfig', () => {
 
     it('produces the same configuration as the AngularJS integration', () => {
       expect(recorded).toHaveLength(7);
+      // The recordings merged over the AngularJS defaults, whose two project-name values were replaced on purpose
+      // (see the next test); every other key still has to match.
+      const renamed = { appName: ['angular-filemanager v1.5', '/'], multipleDownloadFileName: ['angular-filemanager.zip', 'filemanager.zip'] };
       for (const { input, merged } of recorded) {
-        expect(resolveConfig(input), JSON.stringify(input)).toEqual(merged);
+        const expected = { ...(merged as Record<string, unknown>) };
+        for (const [key, [was, now]] of Object.entries(renamed)) {
+          if (expected[key] === was) expected[key] = now;
+        }
+        expect(resolveConfig(input), JSON.stringify(input)).toEqual(expected);
       }
+    });
+
+    it('differs from the recordings only in the renamed defaults', () => {
+      const config = resolveConfig({}) as unknown as Record<string, unknown>;
+      const [first] = recorded.map((entry) => entry.merged as Record<string, unknown>);
+      expect(first.appName).toBe('angular-filemanager v1.5');
+      expect(first.multipleDownloadFileName).toBe('angular-filemanager.zip');
+      expect(config.appName).toBe('/');
+      expect(config.multipleDownloadFileName).toBe('filemanager.zip');
     });
   });
 });
