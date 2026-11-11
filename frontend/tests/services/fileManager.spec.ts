@@ -97,16 +97,22 @@ describe('refresh side effects', () => {
 });
 
 describe('view state', () => {
-  it('shows the navigator list filtered by name in every view and sorted only in the table (Q-23)', () => {
+  it('shows the same list in every view: filtered by name, folders first, then by the table sort state (Q-23)', () => {
+    const byName = ['b', 'a.txt', 'c.png', 'd.md', 'e.zip', 'p.jpg'];
     expect(fm.viewTemplate).toBe('main-icons.html');
-    expect(fm.fileList.map((i) => i.model.name)).toEqual(files.map((f) => f.name));
+    expect(fm.fileList.map((i) => i.model.name)).toEqual(byName);
     fm.query = 'A.TXT';
     expect(fm.fileList.map((i) => i.model.name)).toEqual(['a.txt']);
     fm.query = '';
     fm.setTemplate('main-table.html');
-    expect(fm.fileList.map((i) => i.model.name)).toEqual(['b', 'a.txt', 'c.png', 'd.md', 'e.zip', 'p.jpg']);
+    expect(fm.fileList.map((i) => i.model.name)).toEqual(byName);
     fm.setTemplate('main-icons-preview.html');
-    expect(fm.fileList.map((i) => i.model.name)).toEqual(files.map((f) => f.name));
+    expect(fm.fileList.map((i) => i.model.name)).toEqual(byName);
+    // The column and direction last chosen in the table apply to the icon views too (descending flips the type order as well).
+    fm.setTemplate('main-table.html');
+    fm.order('model.name');
+    fm.setTemplate('main-icons.html');
+    expect(fm.fileList.map((i) => i.model.name)).toEqual(['p.jpg', 'e.zip', 'd.md', 'c.png', 'a.txt', 'b']);
   });
 
   it('order() toggles the direction on the same column and resets it on a new one', () => {

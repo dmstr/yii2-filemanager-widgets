@@ -201,21 +201,53 @@ describe('icon content', () => {
     expect(app.wrapper.find('.iconset .glyphicon-picture').exists()).toBe(false);
   });
 
-  it('preview: Q-08 image with thumbnails on and no thumbnail gets no icon at all', async () => {
-    app = await open('preview', { config: { enableThumbnails: true }, files: [file('p.png', { thumbnail: '' })] });
-    expect(app.wrapper.find('.image-preview-thumbnail').exists()).toBe(false);
-    expect(app.wrapper.find('.iconset .glyphicon-picture').exists()).toBe(false);
-    expect(isShown(app.wrapper.find('.iconset .glyphicon-file').element)).toBe(false);
+  describe.each([true, false])('preview: enableThumbnails %s', (enableThumbnails) => {
+    const tile = async (raw: ReturnType<typeof file>) => {
+      app = await open('preview', { config: { enableThumbnails }, files: [raw] });
+      return app.wrapper.find('.col-120.preview');
+    };
+    const shown = (t: Awaited<ReturnType<typeof tile>>, selector: string) => t.find(selector).exists() && isShown(t.find(selector).element);
+
+    it('image with a thumbnail', async () => {
+      const t = await tile(file('p.png', { thumbnail: '/t/p.png' }));
+      expect(t.find('.image-preview-thumbnail').exists()).toBe(enableThumbnails);
+      expect(t.find('.glyphicon-picture').exists()).toBe(!enableThumbnails);
+      expect(shown(t, '.glyphicon-file')).toBe(false);
+      expect(shown(t, '.glyphicon-folder-open')).toBe(false);
+    });
+
+    it('image with an empty thumbnail gets the picture icon', async () => {
+      const t = await tile(file('p.png', { thumbnail: '' }));
+      expect(t.find('.image-preview-thumbnail').exists()).toBe(false);
+      expect(t.find('.glyphicon-picture').attributes('data-ext')).toBe('png');
+      expect(t.find('.glyphicon-picture').classes()).toContain('item-extension');
+      expect(shown(t, '.glyphicon-file')).toBe(false);
+    });
+
+    it.each(['', '/t/a.txt'])('non-image with thumbnail %j gets the file icon', async (thumbnail) => {
+      const t = await tile(file('a.txt', { thumbnail }));
+      expect(t.find('.image-preview-thumbnail').exists()).toBe(false);
+      expect(t.find('.glyphicon-picture').exists()).toBe(false);
+      expect(shown(t, '.glyphicon-file')).toBe(true);
+    });
+
+    it('folder gets only the folder icon', async () => {
+      const t = await tile(dir('d'));
+      expect(shown(t, '.glyphicon-folder-open')).toBe(true);
+      expect(t.find('.image-preview-thumbnail').exists()).toBe(false);
+      expect(t.find('.glyphicon-picture').exists()).toBe(false);
+      expect(shown(t, '.glyphicon-file')).toBe(false);
+    });
   });
 
   it('preview: image without thumbnails gets the picture glyph, other files the file glyph', async () => {
-    app = await open('preview', { config: { enableThumbnails: false }, files: [file('p.png'), file('a.txt')] });
+    app = await open('preview', { config: { enableThumbnails: false }, files: [file('a.txt'), file('p.png')] });
     const tiles = app.wrapper.findAll('.col-120.preview');
-    expect(tiles[0].find('.glyphicon-picture').attributes('data-ext')).toBe('png');
-    expect(isShown(tiles[0].find('.glyphicon-file').element)).toBe(false);
-    expect(tiles[1].find('.glyphicon-picture').exists()).toBe(false);
-    expect(isShown(tiles[1].find('.glyphicon-file').element)).toBe(true);
-    expect(tiles[1].find('.item-name').text()).toBe('a.txt');
+    expect(tiles[1].find('.glyphicon-picture').attributes('data-ext')).toBe('png');
+    expect(isShown(tiles[1].find('.glyphicon-file').element)).toBe(false);
+    expect(tiles[0].find('.glyphicon-picture').exists()).toBe(false);
+    expect(isShown(tiles[0].find('.glyphicon-file').element)).toBe(true);
+    expect(tiles[0].find('.item-name').text()).toBe('a.txt');
   });
 });
 
