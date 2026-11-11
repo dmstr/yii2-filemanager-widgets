@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Move dialog (`#move`) with the destination path selector. Port of the legacy modal markup. */
+/** Move dialog (`#move`) with the destination path selector. Port of the AngularJS modal markup. */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
 import BaseModal from './BaseModal.vue';
@@ -10,7 +10,7 @@ const fm = useFileManager();
 const { t } = useI18n();
 
 /**
- * Cross and Cancel: refresh first, then hide, because legacy bound
+ * Cross and Cancel: refresh first, then hide, because AngularJS bound
  * `ng-click` on the button and Bootstrap's dismiss handler delegated on the
  * modal element, which runs later in the bubbling order.
  */

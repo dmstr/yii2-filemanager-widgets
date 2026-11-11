@@ -42,7 +42,7 @@ export function useDropdown() {
   const root = ref<HTMLElement | null>(null);
   const toggle = ref<HTMLElement | null>(null);
   const open = ref(false);
-  // The legacy markup ships `aria-expanded="true"`; Bootstrap only rewrites it on open and on close of an open menu.
+  // The AngularJS markup ships `aria-expanded="true"`; Bootstrap only rewrites it on open and on close of an open menu.
   const expanded = ref<'true' | 'false'>('true');
 
   function close(): void {

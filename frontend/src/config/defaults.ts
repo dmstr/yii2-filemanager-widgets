@@ -3,7 +3,7 @@ import type { FileManagerConfig } from './types.ts';
 const HANDLER = 'bridges/php/handler.php';
 
 /**
- * A fresh copy of the legacy provider defaults (without the dead `tplPath`).
+ * A fresh copy of the AngularJS provider defaults (without the dead `tplPath`).
  * A function rather than a constant so that merging never mutates shared state.
  */
 export function createDefaults(): FileManagerConfig {

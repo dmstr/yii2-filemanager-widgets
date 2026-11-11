@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Edit dialog (`#edit`): large modal with a fullscreen toggle. The
- * toggle is local state, as `fullscreen` lived on the legacy scope and
+ * toggle is local state, as `fullscreen` lived on the AngularJS scope and
  * nothing else read it.
  */
 import { ref } from 'vue';

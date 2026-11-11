@@ -15,7 +15,7 @@ type Bag = Record<string, unknown>;
 
 /**
  * The deep merge of `angular.merge` as shipped with AngularJS 1.5.11, which
- * the legacy integration used. Plain objects merge recursively, arrays merge
+ * the AngularJS integration used. Plain objects merge recursively, arrays merge
  * index by index into an existing object or array, dates and regular
  * expressions are cloned, functions and primitives (including `undefined`
  * and `null`) are assigned. Non-object sources are ignored.

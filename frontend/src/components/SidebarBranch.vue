@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * One node of the folder tree and, recursively, its children. Port of the
- * legacy `folder-branch-item` template.
+ * AngularJS sidebar branch template.
  */
 import { useFileManager } from '../services/fileManager.ts';
 import type { TreeNode } from '../services/navigator.ts';
@@ -18,7 +18,7 @@ const fm = useFileManager();
       <span class="point">
         <i v-show="fm.isInThisPath(node.name)" class="glyphicon glyphicon-chevron-down"></i>
         <i v-show="!fm.isInThisPath(node.name)" class="glyphicon glyphicon-chevron-right"></i>
-        <!-- Vue drops the trailing whitespace of an element; the legacy markup has it and the icon spacing depends on it -->
+        <!-- Vue drops the trailing whitespace of an element; the AngularJS markup has it and the icon spacing depends on it -->
         {{ ' ' }}
       </span>
 

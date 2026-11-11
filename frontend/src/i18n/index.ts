@@ -1,6 +1,6 @@
 /**
  * Minimal translator replacing angular-translate 2.9.2 as configured in the
- * legacy app: no fallback language, no sanitizing. Which locale to start with
+ * AngularJS app: no fallback language, no sanitizing. Which locale to start with
  * is decided elsewhere and passed in.
  */
 import { inject, provide, ref, type InjectionKey, type Ref } from 'vue';

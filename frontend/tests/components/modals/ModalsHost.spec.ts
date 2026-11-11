@@ -8,7 +8,7 @@ import { createFileManager, provideFileManager } from '../../../src/services/fil
 import { makeConfig, makeI18n } from '../../services/helpers.ts';
 
 describe('ModalsHost', () => {
-  it('renders the thirteen dialogs in the order of the legacy modals.html, all hidden', () => {
+  it('renders the thirteen dialogs in the order of the AngularJS dialog templates, all hidden', () => {
     const config = makeConfig();
     const i18n = makeI18n();
     const fm = createFileManager(config, i18n);

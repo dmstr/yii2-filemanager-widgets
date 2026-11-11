@@ -1,7 +1,7 @@
 /**
  * State of the destination dialog used by move, copy, compress and extract:
  * its own navigator and sort state plus the chosen target path. Port of the
- * legacy `ModalFileManagerCtrl` and of the `$rootScope` values it shared.
+ * AngularJS `ModalFileManagerCtrl` and of the `$rootScope` values it shared.
  */
 import { computed, ref } from 'vue';
 import type { Item } from '../../models/Item.ts';
@@ -20,7 +20,7 @@ interface Deps {
 
 export function createDestination({ navigator, selectorNavigator, selection, modal }: Deps) {
   const sort = createSortState();
-  // Legacy `$rootScope.selectedModalPath`; a path array, `[]` is the root.
+  // AngularJS `$rootScope.selectedModalPath`; a path array, `[]` is the root.
   const selectedModalPath = ref<string[]>([]);
 
   /** The folder list of the dialog, sorted by its own state. The template shows the folders among them. */
@@ -66,7 +66,7 @@ export function createDestination({ navigator, selectorNavigator, selection, mod
     return modal(id);
   }
 
-  /** Legacy `validateSamePath`: does the item live in the chosen destination? */
+  /** AngularJS `validateSamePath`: does the item live in the chosen destination? */
   function validateSamePath(item: Item | undefined): boolean {
     const selectedPath = selectedModalPath.value.join('');
     const selectedItemsPath = item && item.model.path.join('');

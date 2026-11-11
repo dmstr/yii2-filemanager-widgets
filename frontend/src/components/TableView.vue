@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Table view of the current folder. Port of the legacy `main-table.html`. */
+/** Table view of the current folder. Port of the AngularJS table view. */
 import { useConfig } from '../config/injection.ts';
 import { useI18n } from '../i18n/index.ts';
 import { useFileManager } from '../services/fileManager.ts';

@@ -3,7 +3,7 @@
  * Path of a navigator as a Bootstrap breadcrumb. The navigator comes in as a
  * prop because the destination dialog shows the same breadcrumb for its own
  * navigator. Whether it is shown at all (`config.breadcrumb`) is decided by
- * the parent, as in the legacy navbar.
+ * the parent, as in the AngularJS navbar.
  */
 import { useConfig } from '../config/injection.ts';
 import type { Navigator } from '../services/navigator.ts';

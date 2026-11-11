@@ -1,8 +1,8 @@
-// Scope wrapper for the stylesheet: the legacy rules are nested under the
+// Scope wrapper for the stylesheet: the rules of the AngularJS frontend are nested under the
 // <hrzg-filemanager> element selector (not a class, so the specificity of every
 // rule stays what it was under the former <angular-filemanager> scope), then the
-// custom rules. `base.less` and `custom.less` are the former legacy stylesheets, kept
-// unmodified; `legacy/angular-filemanager-scoped.less` imports the same two files.
+// custom rules. `base.less` and `custom.less` are the stylesheets inherited from the
+// AngularJS frontend, kept unmodified.
 //
 // NOTE: the imported file contains one rule that names the old tag
 // (`angular-filemanager > div, ...` in a media query). Nested here it compiles

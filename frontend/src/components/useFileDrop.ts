@@ -1,6 +1,6 @@
 /**
  * Drop zone behaviour of the whole widget (F-70), ported from what the
- * legacy `ngf-drop` directive of ng-file-upload 12.2.13 did with
+ * AngularJS `ngf-drop` directive of ng-file-upload 12.2.13 did with
  * `ngf-drag-over-class="'upload-dragover'"` and `ngf-multiple="true"`:
  *
  * - every drag reacts, whatever it carries: the class is set on dragover,

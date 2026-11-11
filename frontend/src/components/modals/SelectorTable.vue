@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Folder table of the destination dialog. Port of the legacy
- * `main-table-modal.html`, bound to the dialog's own navigator and sort state.
+ * Folder table of the destination dialog. Port of the AngularJS
+ * folder table of that dialog, bound to the dialog's own navigator and sort state.
  */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';

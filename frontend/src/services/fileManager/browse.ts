@@ -1,7 +1,7 @@
 /**
  * Actions that open things rather than change files: the double-click
  * dispatcher, image preview, text editor, the link dialog, downloads and
- * custom actions. Port of that part of the legacy `FileManagerCtrl`.
+ * custom actions. Port of that part of the AngularJS `FileManagerCtrl`.
  */
 import { ref } from 'vue';
 import type { Item } from '../../models/Item.ts';
@@ -12,7 +12,7 @@ import { settled, type FileManagerContext } from './types.ts';
 export function createBrowseActions(ctx: FileManagerContext) {
   const { config, api, navigator, selection, modal } = ctx;
 
-  // State the link dialog shows; legacy kept it on the scope, unset until first use.
+  // State the link dialog shows; AngularJS kept it on the scope, unset until first use.
   const dlLink = ref('');
   const streamLink = ref('');
   const path = ref('');
@@ -48,7 +48,7 @@ export function createBrowseActions(ctx: FileManagerContext) {
   }
 
   /**
-   * Like the legacy function it previews the single selected item whatever
+   * Like the AngularJS function it previews the single selected item whatever
    * argument it gets; with nothing selected (Q-29) it does nothing.
    */
   function openImagePreview(): void {
@@ -119,7 +119,7 @@ export function createBrowseActions(ctx: FileManagerContext) {
   /**
    * One file downloads directly, several files as ZIP; a selection with a folder does nothing. The
    * Ajax branch is settled here and returns nothing: a promise returned to a template event handler
-   * would send its rejection to Vue's error handler, while the legacy handler stayed silent (the
+   * would send its rejection to Vue's error handler, while the AngularJS handler stayed silent (the
    * error is already on `api.error`).
    */
   function download(): boolean | undefined {

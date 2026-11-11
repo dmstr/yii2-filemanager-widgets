@@ -1,5 +1,5 @@
 /**
- * Port of jQuery 3's `$.param` for the shapes the legacy code passes to it:
+ * Port of jQuery 3's `$.param` for the shapes the AngularJS code passes to it:
  * flat objects with scalar values and arrays of scalars (`items[]=a`). Nested
  * objects and the `{name, value}` array form are supported as well because
  * jQuery treats them the same way.

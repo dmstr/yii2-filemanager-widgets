@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Image preview dialog (`#imagepreview`). Port of the legacy modal
+ * Image preview dialog (`#imagepreview`). Port of the AngularJS modal
  * markup; the image source and the loading flag come from the file manager
  * state instead of the jQuery calls of `openImagePreview`.
  */
@@ -15,7 +15,7 @@ const { t } = useI18n();
 const target = ref<HTMLImageElement | null>(null);
 
 /**
- * Legacy `.attr('src', url)` made the browser load (and fire `load`) even
+ * AngularJS `.attr('src', url)` made the browser load (and fire `load`) even
  * when the url had not changed, which is what clears the loading flag when
  * the same image is opened twice. A bound `src` that stays the same does
  * nothing, so the source is assigned again when the dialog opens over an

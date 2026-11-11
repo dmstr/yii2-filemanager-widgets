@@ -2,7 +2,7 @@ import type { FileManagerConfig } from '../config/types.ts';
 import { getQueryParam } from '../utils/query.ts';
 
 /**
- * The stored values are the legacy template file names so that existing
+ * The stored values are the AngularJS template file names so that existing
  * users keep the view they chose.
  */
 export const VIEW_NAMES = ['main-icons.html', 'main-table.html', 'main-icons-preview.html'] as const;
@@ -32,7 +32,7 @@ export function setItem(key: string, value: string): void {
 /**
  * Port of `initTemplate()`: the stored view, except that the preview view
  * falls back to the icon view while it is disabled (the stored value is left
- * untouched). A stored name that is none of the three views, which the legacy
+ * untouched). A stored name that is none of the three views, which the AngularJS
  * code would have tried to include as a missing template, also falls back.
  */
 export function initialView(config: Pick<FileManagerConfig, 'enableIconPreviewView'>): ViewName {

@@ -23,7 +23,7 @@ function mountBar() {
 }
 
 describe('ErrorBar', () => {
-  it('renders the include wrapper and the legacy error label', () => {
+  it('renders the include wrapper and the AngularJS error label', () => {
     const { wrapper } = mountBar();
     const root = wrapper.element as HTMLElement;
     expect(root.tagName).toBe('DIV');

@@ -1,6 +1,6 @@
 /**
  * Selection state and the click gestures that change it. Port of the
- * selection half of the legacy `FileManagerCtrl`.
+ * selection half of the AngularJS `FileManagerCtrl`.
  */
 import { computed, reactive, ref, type Ref } from 'vue';
 import type { FileManagerConfig } from '../../config/types.ts';
@@ -21,7 +21,7 @@ export type MultipleItem = Item & { multiple?: boolean };
 
 /**
  * The array may contain `undefined`: a shift-click whose anchor is not in the
- * displayed list walks from index -1 and the legacy code pushed that hole
+ * displayed list walks from index -1 and the AngularJS code pushed that hole
  * into the selection too.
  */
 export type SelectedItems = Array<Item | undefined>;
@@ -32,7 +32,7 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
   const singleSelection = (): Item | undefined => (temps.value.length === 1 ? temps.value[0] : undefined);
 
   /**
-   * Replaces the selection. The legacy `$watch('temps')` compared by
+   * Replaces the selection. The AngularJS `$watch('temps')` compared by
    * reference, so it fired exactly on replacement and, for a single item,
    * reverted its `tempModel`: input in a dialog is dropped by selecting the
    * item again, but not by a Ctrl-click that only adds to the array.
@@ -43,7 +43,7 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
   }
 
   /**
-   * Q-25: legacy `temp` was only refreshed when the selection was replaced; as
+   * Q-25: AngularJS `temp` was only refreshed when the selection was replaced; as
    * a computed it follows every change. A fresh placeholder (rights 644,
    * `multiple`) stands in unless exactly one item is selected.
    */

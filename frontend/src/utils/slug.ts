@@ -1,5 +1,5 @@
 /**
- * Port of the legacy `ApiHandler.prototype.slug`.
+ * Port of the AngularJS `ApiHandler.prototype.slug`.
  *
  * jQuery's `$.trim` is reproduced with its own pattern, and a `null` or
  * `undefined` input becomes an empty string as it did there.

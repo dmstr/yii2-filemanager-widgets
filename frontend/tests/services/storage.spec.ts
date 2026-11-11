@@ -44,7 +44,7 @@ describe('initialView', () => {
     expect(initialView(config)).toBe('main-icons.html');
   });
 
-  it('returns the stored view under the legacy key', () => {
+  it('returns the stored view under the AngularJS key', () => {
     window.localStorage.setItem('viewTemplate', 'main-table.html');
     expect(initialView(config)).toBe('main-table.html');
   });
@@ -66,7 +66,7 @@ describe('initialView', () => {
     expect(initialView(config)).toBe('main-icons.html');
   });
 
-  it('storeView writes the legacy file name', () => {
+  it('storeView writes the AngularJS file name', () => {
     storeView('main-table.html');
     expect(window.localStorage.getItem('viewTemplate')).toBe('main-table.html');
   });
@@ -109,7 +109,7 @@ describe('initialLocale', () => {
     expect(initialLocale({ defaultLang: 'de' }, '')).toBe('de');
   });
 
-  it('storeLocale writes the legacy key', () => {
+  it('storeLocale writes the AngularJS key', () => {
     storeLocale('pt');
     expect(window.localStorage.getItem('language')).toBe('pt');
   });

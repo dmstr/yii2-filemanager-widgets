@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Extract dialog (`#extract`). Port of the legacy modal markup; the
- * legacy `ng-init="singleSelection().emptyName()"` is dropped (Q-09: the method it calls never existed).
+ * Extract dialog (`#extract`). Port of the AngularJS modal markup; the
+ * AngularJS `ng-init="singleSelection().emptyName()"` is dropped (Q-09: the method it calls never existed).
  */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';

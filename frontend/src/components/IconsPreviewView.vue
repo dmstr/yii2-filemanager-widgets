@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Icon view with image thumbnails. Port of the legacy `main-icons-preview.html`. */
+/** Icon view with image thumbnails, carried over from the AngularJS frontend. */
 import { useConfig } from '../config/injection.ts';
 import { useI18n } from '../i18n/index.ts';
 import { useFileManager } from '../services/fileManager.ts';

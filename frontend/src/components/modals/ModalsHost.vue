@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Mounts every dialog once, in the legacy order of `modals.html`. The DOM
+ * Mounts every dialog once, in the order of the AngularJS dialog templates. The DOM
  * order matters: stacked dialogs share z-index 1050, so the later one in the
  * document is painted on top (the selector comes last).
  */

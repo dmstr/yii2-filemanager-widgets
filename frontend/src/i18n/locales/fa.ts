@@ -1,4 +1,4 @@
-/** Legacy "fa" translations, extracted verbatim from angular-filemanager.min.js. */
+/** "fa" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
 const messages: Record<string, string> = {
   "filemanager": "مدیریت فایل ها",
   "language": "زبان",

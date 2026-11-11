@@ -52,7 +52,7 @@ function setPx(el: HTMLElement, value: number): void {
 <script setup lang="ts">
 /**
  * Frame of every dialog and the replacement for Bootstrap 3.4.1's modal
- * plugin (`bootstrap/js/modal.js`). The legacy dialogs carry
+ * plugin (`bootstrap/js/modal.js`). The AngularJS dialogs carry
  * `modal animated fadeIn` but not `fade`, so the plugin ran every step
  * synchronously and without transitions; this component repeats those steps
  * in the same order. It is shown exactly while the modal manager has its id
@@ -65,16 +65,16 @@ function setPx(el: HTMLElement, value: number): void {
  * handlers, even while another dialog stays open. Escape is handled on the
  * dialog element, so it closes the dialog that contains the focus, and runs
  * before handlers on `document` (Q-45). The enforced focus calls `focus()` on
- * the `.modal` element, which has no `tabindex` in the legacy markup: it takes
+ * the `.modal` element, which has no `tabindex` in the AngularJS markup: it takes
  * the focus only where the browser treats it as focusable (Chromium does so
  * for a scroll container whose content overflows); otherwise the focus stays
- * where it is, as in legacy.
+ * where it is, as in the AngularJS frontend.
  */
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useFileManager } from '../../services/fileManager.ts';
 
 const props = defineProps<{
-  /** Legacy element id, also the key in the modal manager. */
+  /** Element id as in the AngularJS dialogs, also the key in the modal manager. */
   id: string;
   size?: 'lg';
 }>();
@@ -194,9 +194,9 @@ function show(): void {
   enforceFocus(el);
   el.focus();
 
-  // `shown.bs.modal` handler of the legacy bundle (lines 8-12): jQuery focuses
+  // `shown.bs.modal` handler of the AngularJS frontend: jQuery focuses
   // every `[autofocus]` element in turn, so the last focusable one wins. The
-  // timer is not cancelled by a hide, as in legacy.
+  // timer is not cancelled by a hide, as in the AngularJS frontend.
   const timer = setTimeout(() => {
     timers.delete(timer);
     el.querySelectorAll<HTMLElement>('[autofocus]').forEach((target) => target.focus());

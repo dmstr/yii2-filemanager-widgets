@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * Upload dialog (`#uploadfile`). Port of the legacy modal markup with
+ * Upload dialog (`#uploadfile`). Port of the AngularJS modal markup with
  * `ngf-select` replaced by a hidden file input.
  *
  * ng-file-upload put that input into a hidden `<label>` appended to
  * `document.body`, not into the dialog; it is teleported there as well so the
- * dialog's own markup stays identical to legacy.
+ * dialog's own markup stays identical to AngularJS.
  */
 import { ref } from 'vue';
 import { useConfig } from '../../config/injection.ts';
@@ -63,7 +63,7 @@ function rowKey(file: File): number {
   return key;
 }
 
-// The remove button's implicit submit never fired in legacy, because the click
+// The remove button's implicit submit never fired in the AngularJS frontend, because the click
 // removed the button before the event reached the form; hence `.prevent`.
 </script>
 

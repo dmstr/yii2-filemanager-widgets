@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Loading spinner; markup of the legacy `spinner.html`, animated by the existing stylesheet. */
+/** Loading spinner; markup of the AngularJS spinner, animated by the existing stylesheet. */
 </script>
 
 <template>

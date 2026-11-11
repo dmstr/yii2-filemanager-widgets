@@ -1,6 +1,6 @@
 /**
  * Folder navigation state: current path, the listed items and the lazily
- * grown folder tree. Port of the legacy `fileNavigator`; every navigator owns
+ * grown folder tree. Port of the AngularJS `fileNavigator`; every navigator owns
  * its API instance, so the main list and the destination dialog never share
  * loading or error state.
  */
@@ -93,7 +93,7 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
     const path = nav.currentPath.join('/');
     nav.requesting = true;
     nav.fileList = [];
-    // Q-02 fixed: the legacy navigator never cleared a failed list's error, so every later refresh failed too.
+    // Q-02 fixed: the AngularJS navigator never cleared a failed list's error, so every later refresh failed too.
     nav.error = '';
     const done = api
       .list(nav.currentPath, deferredHandler, recycle)
@@ -105,7 +105,7 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
       .finally(() => {
         nav.requesting = false;
       });
-    // Callers may ignore the outcome, as the legacy ones all did.
+    // Callers may ignore the outcome, as the AngularJS ones all did.
     done.catch(noop);
     return done;
   }

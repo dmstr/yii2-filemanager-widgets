@@ -1,6 +1,6 @@
 /**
  * Framework-level state of the whole file manager, without any UI: the port
- * of the legacy `FileManagerCtrl` and `ModalFileManagerCtrl`. The factory
+ * of the AngularJS `FileManagerCtrl` and `ModalFileManagerCtrl`. The factory
  * composes the concern modules under `fileManager/` and returns one reactive
  * object that components read and call (refs and computeds unwrap on it).
  */
@@ -26,7 +26,7 @@ export function createFileManager(config: FileManagerConfig, i18n: I18n) {
   const view = createViewState(config, navigator);
   const selection = createSelection(config, navigator, view.fileList);
 
-  /** Legacy `modal(id, hide)`: besides opening or closing it clears the dialog's error and async state. */
+  /** AngularJS `modal(id, hide)`: besides opening or closing it clears the dialog's error and async state. */
   function modal(id: string, hide?: boolean): true {
     if (hide) {
       modals.close(id);
@@ -50,7 +50,7 @@ export function createFileManager(config: FileManagerConfig, i18n: I18n) {
   };
 
   /**
-   * The legacy start-up after the language: the first listing. The language itself is resolved once
+   * The AngularJS start-up after the language: the first listing. The language itself is resolved once
    * by `main.ts` (`initialLocale`) before the translator is created, so the first render already
    * uses it.
    */

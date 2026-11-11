@@ -52,7 +52,7 @@ export interface ItemConfig {
 }
 
 /**
- * Legacy `parseMySQLDate`: splits on `-`, space and `:` and hands the pieces
+ * AngularJS `parseMySQLDate`: splits on `-`, space and `:` and hands the pieces
  * to the `Date` constructor. A missing or date-only value therefore yields an
  * Invalid Date rather than an error.
  */
@@ -62,7 +62,7 @@ function parseMySQLDate(mysqlDate: unknown): Date {
 }
 
 /**
- * Reproduces the legacy string building: `replace` with a pattern object
+ * Reproduces the AngularJS string building: `replace` with a pattern object
  * only collapses the first double slash, so slash-ended segments in the
  * middle can leave `//` behind.
  */
@@ -89,7 +89,7 @@ function buildModel(model: RawItem | null | undefined, path?: string[]): ItemMod
 }
 
 /**
- * A file or folder entry. Port of the legacy `item` factory.
+ * A file or folder entry. Port of the AngularJS `item` factory.
  *
  * `model` is the server state, `tempModel` the editable copy the modals
  * bind to; they start as independent deep copies of the same raw model.
@@ -108,7 +108,7 @@ export class Item {
 
   constructor(model: RawItem | null | undefined, path: string[] | undefined, config: ItemConfig) {
     this.config = config;
-    // The legacy factory built one raw model and copied it twice; building
+    // The AngularJS factory built one raw model and copied it twice; building
     // it twice gives the same independent copies.
     this.model = buildModel(model, path);
     this.tempModel = buildModel(model, path);

@@ -37,7 +37,7 @@ function visibleText(node: Node): string {
 }
 
 describe('SelectedFilesMsg', () => {
-  it('keeps the include wrapper span and the legacy structure', () => {
+  it('keeps the include wrapper span and the AngularJS structure', () => {
     const { wrapper } = mountMsg();
     const root = wrapper.element.firstElementChild as HTMLElement;
     expect(root.tagName).toBe('SPAN');

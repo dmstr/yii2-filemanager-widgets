@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Top bar: breadcrumb, refresh, search dropdown, the three view switch
- * buttons and the "more" dropdown. Port of the legacy `navbar.html` without
+ * buttons and the "more" dropdown. Port of the AngularJS navbar without
  * Bootstrap's JavaScript; the dropdowns open and close in Vue.
  */
 import { useConfig } from '../config/injection.ts';
@@ -15,7 +15,7 @@ const fm = useFileManager();
 const config = useConfig();
 const { t } = useI18n();
 
-// ng-model with the default ngTrim, like the legacy search field: the query is the trimmed text.
+// ng-model with the default ngTrim, like the AngularJS search field: the query is the trimmed text.
 const query = textModel(
   () => fm.query,
   (value) => {
@@ -55,7 +55,7 @@ const {
           <div class="navbar-collapse">
             <div class="navbar-form navbar-right text-right">
 
-              <!-- Q-05: the tooltip uses the key `icons`, kept for parity -->
+              <!-- Q-05: the tooltip uses the key `icons`, as in the AngularJS frontend -->
               <button class="btn btn-flat btn-sm" :title="t('icons')" @click="fm.refreshLocation(true)">
                 <i class="glyphicon glyphicon-refresh"></i>
               </button>
@@ -129,7 +129,7 @@ const {
                   <i class="glyphicon glyphicon-option-vertical"></i>
                 </button>
 
-                <!-- The links keep href="#" as in the legacy markup; .prevent matches legacy, where AngularJS's $location click handler cancelled the navigation (no hash change, no scrolling). -->
+                <!-- The links keep href="#" as in the AngularJS markup; .prevent matches the AngularJS behaviour, where the $location click handler cancelled the navigation (no hash change, no scrolling). -->
                 <ul class="dropdown-menu scrollable-menu animated fast fadeIn pull-right" role="menu" aria-labelledby="more" @keydown="onMoreKeydown">
                   <li v-show="config.allowedActions.createFolder" role="presentation" @click="fm.modal('newfolder') && fm.prepareNewFolder()">
                     <a href="#" role="menuitem" tabindex="-1" @click.prevent>

@@ -1,5 +1,5 @@
 /**
- * Reads one query parameter the way the legacy `getQueryParam` helper did.
+ * Reads one query parameter the way the AngularJS `getQueryParam` helper did.
  *
  * Kept as is on purpose: the first character is dropped whether or not it is
  * a `?`, values are not URL-decoded, the first match wins and an empty value

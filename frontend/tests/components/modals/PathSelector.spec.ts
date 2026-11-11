@@ -38,7 +38,7 @@ function visibleText(node: Node): string {
 }
 
 describe('PathSelector', () => {
-  it('renders the include wrapper and the legacy panel with its nested footer (Q-10)', () => {
+  it('renders the include wrapper and the AngularJS panel with its nested footer (Q-10)', () => {
     const { wrapper } = mountSelector();
     const root = wrapper.element as HTMLElement;
     expect(root.className).toBe('clearfix');
@@ -61,7 +61,7 @@ describe('PathSelector', () => {
     fm.temps = [selected];
     fm.selectedModalPath = ['docs', 'target'];
     await nextTick();
-    // The key `Selection` has no translation and renders raw, as in legacy.
+    // The key `Selection` has no translation and renders raw, as in the AngularJS frontend.
     expect(visibleText(wrapper.findAll('.like-code')[0].element)).toBe('Selection: a.txt');
     expect(squash(wrapper.findAll('.like-code')[1].text())).toBe('Destination: /docs/target/a.txt');
   });

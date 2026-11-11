@@ -8,7 +8,7 @@ import type { Navigator } from '../navigator.ts';
 import type { createDestination } from './destination.ts';
 import type { createSelection } from './selection.ts';
 
-/** Legacy `modal(id, hide)`: opens or closes a modal and clears the dialog error state. */
+/** AngularJS `modal(id, hide)`: opens or closes a modal and clears the dialog error state. */
 export type ModalFn = (id: string, hide?: boolean) => true;
 
 /** What the action modules need from the factory. */
@@ -26,7 +26,7 @@ export interface FileManagerContext {
 
 /**
  * Runs `ok` or `fail` once the promise settles and swallows the rejection.
- * The legacy controller registered no rejection handlers for most calls; the
+ * The AngularJS controller registered no rejection handlers for most calls; the
  * error is already on `api.error` by then.
  */
 export function settled<T>(promise: Promise<T>, ok: (value: T) => void, fail: (reason: unknown) => void = noop): void {

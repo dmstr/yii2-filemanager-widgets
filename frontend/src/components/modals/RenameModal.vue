@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Rename dialog (`#rename`). Port of the legacy modal markup. */
+/** Rename dialog (`#rename`). Port of the AngularJS modal markup. */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
 import { tempModelField, vTextModel } from '../modelTrim.ts';
@@ -13,7 +13,7 @@ const { t } = useI18n();
 const name = tempModelField(() => fm.singleSelection(), 'name');
 
 /**
- * Legacy `{{singleSelection() && singleSelection().model.name}}`: with no or
+ * AngularJS `{{singleSelection() && singleSelection().model.name}}`: with no or
  * several items selected the expression is `false`, which AngularJS prints as
  * the text "false"; a selection of one hole (Q-39) prints nothing.
  */

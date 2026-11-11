@@ -561,7 +561,7 @@ describe('remove and move', () => {
     fm.selectedModalPath = ['', 'b'];
     fm.move();
     await settle();
-    // The leading empty element of a picked folder path is kept, as in legacy.
+    // The leading empty element of a picked folder path is kept, as in the AngularJS frontend.
     expect(requests[0]).toMatchObject({ url: '/api/move', body: { action: 'move', items: ['/a.txt', '/d.md'], newPath: '//b' } });
     expect(fm.modals.isOpen('move')).toBe(false);
   });
@@ -668,7 +668,7 @@ describe('upload', () => {
     expect(fm.api.error).toBe(makeI18n().t('error_uploading_files'));
   });
 
-  it('uploadFiles with an empty list hangs with inprocess true, as legacy', async () => {
+  it('uploadFiles with an empty list hangs with inprocess true, as the AngularJS frontend', async () => {
     stubXhr();
     fm.uploadFiles();
     await settle();

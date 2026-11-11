@@ -1,4 +1,4 @@
-/** Legacy "zh" translations, extracted verbatim from angular-filemanager.min.js. */
+/** "zh" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
 const messages: Record<string, string> = {
   "filemanager": "文档管理器",
   "language": "语言",

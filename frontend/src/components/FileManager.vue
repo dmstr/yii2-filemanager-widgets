@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Root component. Port of the legacy `main.html`: provides the configuration,
+ * Root component. Port of the AngularJS root template: provides the configuration,
  * the translator and the file manager state to all descendants, makes the
  * whole widget a drop zone for uploads (F-70) and lays out navbar, folder
  * tree, the active view, the dialogs and the context menu.

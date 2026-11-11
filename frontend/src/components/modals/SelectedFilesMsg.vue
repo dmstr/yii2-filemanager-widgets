@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Port of the legacy `selected-files-msg` partial with its `ng-include`
+ * Port of the AngularJS `selected-files-msg` partial with its `ng-include`
  * wrapper. Every include had its own scope, so `showDetails` is per instance.
  * Vue drops whitespace-only text at the edges of an element; the `{{ ' ' }}`
  * keep the spaces AngularJS rendered inside the inline elements, which count

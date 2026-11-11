@@ -1,5 +1,5 @@
 /**
- * HTTP client of the file manager: the merge of the legacy `apiHandler` (HTTP
+ * HTTP client of the file manager: the merge of the AngularJS `apiHandler` (HTTP
  * calls, loading and error state) and `apiMiddleware` (items to paths, URL per
  * action from the config). Every instance has its own `inprocess`/`error`
  * state, as every `new ApiMiddleware()` had.
@@ -28,7 +28,7 @@ const BRIDGE_ERROR = 'Error %s - Bridge response error, please check the API doc
 const NOT_FOUND_ERROR = 'Error 404 - Backend bridge is not working, please check the ajax response.';
 
 /**
- * Legacy `deferredHandler`, shared by the API client and the navigator, which each keep the error
+ * AngularJS `deferredHandler`, shared by the API client and the navigator, which each keep the error
  * in their own state (`target.error`). Q-30 fixed: a response without a body (network failure,
  * empty reply) no longer throws; the bridge error is the result. `result.error` replaces an error
  * that is already set for the API client, while the navigator keeps the first one
@@ -70,7 +70,7 @@ export interface Api {
   inprocess: boolean;
   asyncSuccess: boolean;
   error: string;
-  /** Upload progress; unset until the first upload starts, as the legacy handler never initialised it. */
+  /** Upload progress; unset until the first upload starts, as the AngularJS handler never initialised it. */
   progress: number | undefined;
   list(path: string[], customHandler?: DeferredHandler, recycle?: boolean): Promise<ApiData>;
   copy(files: Selection, path: string[]): Promise<ApiData>;
@@ -88,7 +88,7 @@ export interface Api {
   extract(item: Item, folderName: string, path: string[]): Promise<ApiData>;
   changePermissions(item: ItemModel): Promise<ApiData>;
   createFolder(item: Item): Promise<ApiData>;
-  /** The legacy controller called `$http` directly for this one: no `inprocess`, no `error`, no handler. */
+  /** The AngularJS controller called `$http` directly for this one: no `inprocess`, no `error`, no handler. */
   resolvePermissions(path: string): Promise<ApiData>;
 }
 
@@ -105,7 +105,7 @@ const getFileList = (files: Selection | undefined): Array<string | undefined> =>
 const withQuery = (url: string, data: Record<string, unknown>): string => [url, param(data)].join('?');
 
 /**
- * The legacy item model carried two fields the port's `Item` dropped as
+ * The AngularJS item model carried two fields the port's `Item` dropped as
  * dead code, `dirName` and `recursive`, but the permissions request sends the
  * whole model, so they are put back on the wire in their original position.
  */
@@ -123,7 +123,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
   const deferredHandler: DeferredHandler = (data, deferred, code, defaultMsg) =>
     settleDeferred(api, data, deferred, code, defaultMsg, true);
 
-  /** Runs a request the way every legacy method did: flags first, handler on the outcome, `inprocess` cleared last. */
+  /** Runs a request the way every AngularJS method did: flags first, handler on the outcome, `inprocess` cleared last. */
   function call(
     method: 'GET' | 'POST',
     url: string,
@@ -153,7 +153,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
   const post = (url: string, data: Record<string, unknown>, defaultMsg: () => string) =>
     call('POST', url, data, defaultMsg);
 
-  /** Legacy `download` / `downloadMultiple` switch (Q-20): the ajax branch needs `saveAs` from the host app. */
+  /** AngularJS `download` / `downloadMultiple` switch (Q-20): the ajax branch needs `saveAs` from the host app. */
   function opensNewWindow(forceNewWindow?: boolean): boolean {
     return !config.downloadFilesByAjax || !!forceNewWindow || !(window as SaveAsWindow).saveAs;
   }
@@ -190,7 +190,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
 
     return new Promise<ApiData>((resolve, reject) => {
       const deferred: Deferred = { resolve: resolve as Deferred['resolve'], reject };
-      // Legacy edge case: with no files nothing is sent, the promise never
+      // AngularJS edge case: with no files nothing is sent, the promise never
       // settles and `inprocess` stays true until the next call resets it.
       if (!(files && files.length)) {
         return;
@@ -329,7 +329,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
       if (opensNewWindow(forceNewWindow)) {
         return !!window.open(url, '_blank', '');
       }
-      // Q-20: legacy requests the bare URL here, without any parameter.
+      // Q-20: AngularJS requests the bare URL here, without any parameter.
       return downloadByAjax(config.downloadMultipleUrl, toFilename);
     },
 

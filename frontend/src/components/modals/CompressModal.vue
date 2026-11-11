@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Compress dialog (`#compress`). Port of the legacy modal markup. With
+ * Compress dialog (`#compress`). Port of the AngularJS modal markup. With
  * `compressAsync` the dialog stays open after the request and `asyncSuccess`
  * swaps the question for a success note and the footer for a close button.
  */

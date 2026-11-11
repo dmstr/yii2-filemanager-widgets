@@ -1,5 +1,5 @@
 /**
- * Deep copy with the semantics of `angular.copy`, which the legacy item
+ * Deep copy with the semantics of `angular.copy`, which the AngularJS item
  * factory relies on: dates and regular expressions are cloned, class
  * instances keep their prototype, functions are shared by reference and
  * cycles are preserved.

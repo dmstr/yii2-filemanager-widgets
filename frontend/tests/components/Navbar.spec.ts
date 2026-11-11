@@ -48,7 +48,7 @@ describe('view switch buttons (F-05)', () => {
     expect(window.localStorage.getItem('viewTemplate')).toBe('main-icons.html');
   });
 
-  it('keeps legacy titles, including the raw keys of the three missing translations', async () => {
+  it('keeps the AngularJS titles, including the raw keys of the three missing translations', async () => {
     app = await mountWidget({ config: { enableIconPreviewView: true } });
     expect(button('fm-icons').attributes('title')).toBe('Switch to icons view');
     expect(button('fm-table').attributes('title')).toBe('Switch to table view');

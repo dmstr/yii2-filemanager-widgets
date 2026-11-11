@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Folder tree of the visited folders. Port of the legacy `sidebar.html`. */
+/** Folder tree of the visited folders. Port of the AngularJS sidebar. */
 import { useFileManager } from '../services/fileManager.ts';
 import SidebarBranch from './SidebarBranch.vue';
 

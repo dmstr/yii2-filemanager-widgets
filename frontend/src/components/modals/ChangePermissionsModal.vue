@@ -2,7 +2,7 @@
 /**
  * Permissions dialog (`#changepermissions`): one role multi-select each
  * for read, write and delete. The submit button is never disabled and keeps
- * the id `submit`, as in legacy.
+ * the id `submit`, as in the AngularJS frontend.
  */
 import { computed, type WritableComputedRef } from 'vue';
 import { useI18n } from '../../i18n/index.ts';

@@ -1,9 +1,9 @@
 /**
- * Ports of the four legacy AngularJS filters, quirks included.
+ * Ports of the four AngularJS filters, quirks included.
  */
 
 /**
- * Port of the `strLimit` filter. Legacy `limitTo` semantics for strings:
+ * Port of the `strLimit` filter. AngularJS `limitTo` semantics for strings:
  * a negative limit keeps the tail and a `NaN` limit keeps everything, while
  * the suffix is still appended. An empty `more` falls back to `...`.
  */
@@ -27,7 +27,7 @@ export function fileExtension(input: string): string {
  * Port of the `formatDate` filter.
  *
  * Q-22: dates go through `toISOString`, so the output is shifted to UTC.
- * The legacy filter threw a RangeError for an Invalid Date (which every item
+ * The AngularJS filter threw a RangeError for an Invalid Date (which every item
  * without a parsable date has, see `Item`) and for `null`/`undefined`;
  * AngularJS then left the raw `{{ ... }}` text in the cell. A Vue template
  * must not throw, so those inputs yield an empty string.

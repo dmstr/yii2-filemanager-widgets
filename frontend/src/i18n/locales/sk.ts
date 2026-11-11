@@ -1,4 +1,4 @@
-/** Legacy "sk" translations, extracted verbatim from angular-filemanager.min.js. */
+/** "sk" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
 const messages: Record<string, string> = {
   "filemanager": "Správca súborov",
   "language": "Jazyk",

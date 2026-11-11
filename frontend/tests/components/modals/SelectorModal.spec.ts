@@ -53,7 +53,7 @@ const itemRows = (w: VueWrapper) => bodyRows(w).slice(3);
 const visibleItemNames = (w: VueWrapper) => itemRows(w).filter((r) => shown(r.element)).map((r) => squash(r.find('td a').text()));
 
 describe('SelectorModal markup', () => {
-  it('renders the legacy #selector dialog with breadcrumb, table and buttons', async () => {
+  it('renders the AngularJS #selector dialog with breadcrumb, table and buttons', async () => {
     const { wrapper, fm } = mountSelector();
     await open(fm);
     const modal = wrapper.find('#selector');

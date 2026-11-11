@@ -76,7 +76,7 @@ describe.each(Object.keys(VIEWS) as ViewName[])('%s view gestures', (name) => {
     expect(spy).toHaveBeenCalledWith(itemAt(2));
   });
 
-  it('keeps the legacy tooltip: name and size, binary or decimal prefixes by config', async () => {
+  it('keeps the AngularJS tooltip: name and size, binary or decimal prefixes by config', async () => {
     viewUnderTest = name;
     app = await open(name, { files: [file('big.bin', { size: 1536 })] });
     const target = name === 'table' ? app.wrapper.find('td a') : rows()[0];

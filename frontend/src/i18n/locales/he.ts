@@ -1,4 +1,4 @@
-/** Legacy "he" translations, extracted verbatim from angular-filemanager.min.js. */
+/** "he" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
 const messages: Record<string, string> = {
   "filemanager": "מנהל קבצים",
   "language": "שפה",

@@ -16,7 +16,7 @@
  * Vue's `v-model.trim` trims the visible text on `change` (blur), and a
  * `:value` binding rewrites the field whenever the trimmed value changes
  * (a backspace that leaves a trailing space removes the space); neither
- * matches the legacy behaviour.
+ * matches the AngularJS behaviour.
  */
 import { watch, type Directive, type WatchStopHandle } from 'vue';
 

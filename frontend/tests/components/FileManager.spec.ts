@@ -22,7 +22,7 @@ function dragEvent(type: string, types: string[] = ['Files'], extra: Record<stri
 const root = () => app.wrapper.element as HTMLElement;
 
 describe('FileManager layout', () => {
-  it('renders the four legacy blocks in order below the root div', async () => {
+  it('renders the four blocks of the AngularJS frontend in order below the root div', async () => {
     app = await mountWidget();
     const blocks = Array.from(root().children);
     expect(blocks).toHaveLength(4);

@@ -63,14 +63,14 @@ const click = (target: Element): void => {
 };
 
 describe('BaseModal markup', () => {
-  it('renders the legacy frame, the size class and passes attributes to the .modal element', () => {
+  it('renders the AngularJS frame, the size class and passes attributes to the .modal element', () => {
     const { move, selector } = mountDialogs({ class: 'modal-fullscreen', 'data-x': '1' });
     expect(move.className).toBe('modal animated fadeIn modal-fullscreen');
     expect(move.getAttribute('data-x')).toBe('1');
     expect(move.querySelector(':scope > .modal-dialog > .modal-content > a.change')).not.toBeNull();
     expect(move.querySelector('.modal-dialog')!.className).toBe('modal-dialog');
     expect(selector.querySelector('.modal-dialog')!.className).toBe('modal-dialog modal-lg');
-    // Like the legacy markup before the first show: no inline style, no tabindex.
+    // Like the AngularJS markup before the first show: no inline style, no tabindex.
     expect(move.hasAttribute('style')).toBe(false);
     expect(move.hasAttribute('tabindex')).toBe(false);
   });
@@ -223,7 +223,7 @@ describe('BaseModal dismiss gestures', () => {
 });
 
 describe('BaseModal focus', () => {
-  it('focuses the [autofocus] element 100 ms after showing (legacy bundle lines 8-12)', async () => {
+  it('focuses the [autofocus] element 100 ms after showing (carried over from the AngularJS frontend)', async () => {
     vi.useFakeTimers();
     const { fm, move } = mountDialogs();
     fm.modals.open('move');

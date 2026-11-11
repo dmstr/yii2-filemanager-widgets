@@ -31,7 +31,7 @@ export interface AllowedActions {
   customDirActions: CustomActions;
 }
 
-/** Every option of the legacy provider plus the ones only PHP or templates know. */
+/** Every option of the AngularJS provider plus the ones only PHP or templates know. */
 export interface FileManagerConfig {
   appName: string;
   defaultLang: string;

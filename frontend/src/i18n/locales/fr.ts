@@ -1,4 +1,4 @@
-/** Legacy "fr" translations, extracted verbatim from angular-filemanager.min.js. */
+/** "fr" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
 const messages: Record<string, string> = {
   "filemanager": "Gestionnaire de fichier",
   "language": "Langue",

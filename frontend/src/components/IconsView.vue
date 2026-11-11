@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Icon view of the current folder. Port of the legacy `main-icons.html`. */
+/** Icon view of the current folder. Port of the AngularJS icon view. */
 import { useConfig } from '../config/injection.ts';
 import { useI18n } from '../i18n/index.ts';
 import { useFileManager } from '../services/fileManager.ts';

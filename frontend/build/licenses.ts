@@ -10,8 +10,9 @@ const BANNER =
   `/*! Vue 3 file manager widget. Contains Vue (MIT) and code derived from isteven-multi-select (MIT) and ` +
   `angular-filemanager (MIT); their notices are in ${LICENSES_FILE} in the same directory. */\n`;
 
-/** Notices of code that is part of the repository, one text file each (`frontend/licenses/`). */
-const noticesDir = fileURLToPath(new URL('../licenses/', import.meta.url));
+/** Notices of code that is part of the repository: the `*.license.txt` files next to this plugin, one per work. */
+const noticesDir = fileURLToPath(new URL('./', import.meta.url));
+const NOTICE_SUFFIX = '.license.txt';
 
 const LICENSE_NAMES = ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'license', 'license.md', 'LICENCE'];
 
@@ -39,7 +40,7 @@ function readDependency(root: string): Dependency {
   const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { name: string; version: string; license?: string };
   const file = LICENSE_NAMES.map((name) => join(root, name)).find((path) => existsSync(path));
   if (!file) {
-    throw new Error(`${manifest.name} is bundled but ships no licence file; add its notice to frontend/licenses/ and handle it in build/licenses.ts`);
+    throw new Error(`${manifest.name} is bundled but ships no licence file; add its notice as a *.license.txt file to frontend/build/ or handle it in build/licenses.ts`);
   }
   return { name: manifest.name, version: manifest.version, license: manifest.license ?? 'see text', text: readFileSync(file, 'utf8').trim() };
 }
@@ -48,7 +49,7 @@ function readDependency(root: string): Dependency {
  * Emits `filemanager.licenses.txt` and points the two bundle files to it with a banner comment.
  * The notices are those of every npm package compiled into the bundle (read from `node_modules`
  * at build time, so they follow the installed version) and the committed texts in
- * `frontend/licenses/`. No timestamps and no paths, so the output is deterministic.
+ * `frontend/build/*.license.txt`. No timestamps and no paths, so the output is deterministic.
  */
 export function licensesPlugin(): Plugin {
   return {
@@ -77,7 +78,7 @@ export function licensesPlugin(): Plugin {
         sections.push(`${group.map((d) => `${d.name} ${d.version} (${d.license})`).join('\n')}\n\n${text}`);
       }
       const own = readdirSync(noticesDir)
-        .filter((name) => name.endsWith('.txt'))
+        .filter((name) => name.endsWith(NOTICE_SUFFIX))
         .sort()
         .map((name) => readFileSync(join(noticesDir, name), 'utf8').trim());
 

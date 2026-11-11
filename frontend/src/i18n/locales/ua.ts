@@ -1,4 +1,4 @@
-/** Legacy "ua" translations, extracted verbatim from angular-filemanager.min.js. */
+/** "ua" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
 const messages: Record<string, string> = {
   "filemanager": "Файловий менеджер",
   "language": "Мова",

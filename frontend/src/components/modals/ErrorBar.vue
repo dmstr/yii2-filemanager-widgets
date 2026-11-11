@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Port of the legacy `error-bar` partial with its `ng-include` wrapper: the API error of the open dialog. */
+/** Port of the AngularJS `error-bar` partial with its `ng-include` wrapper: the API error of the open dialog. */
 import { useFileManager } from '../../services/fileManager.ts';
 
 const fm = useFileManager();

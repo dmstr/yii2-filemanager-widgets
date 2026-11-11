@@ -49,7 +49,7 @@ function fromOctal(input: string | number): Codes | undefined {
 
 /**
  * Unix permissions, parsed from octal (`644`, `0755`) or code notation
- * (`rwxr-xr-x`, `drwxr-xr-x`). Port of the legacy `chmod` service.
+ * (`rwxr-xr-x`, `drwxr-xr-x`). Port of the AngularJS `chmod` service.
  */
 export class Chmod {
   owner: Rwx = rwx();

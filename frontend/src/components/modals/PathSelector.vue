@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Port of the legacy `path-selector` partial with its `ng-include` wrapper:
+ * Port of the AngularJS `path-selector` partial with its `ng-include` wrapper:
  * the selection and the destination of move/copy plus the link that opens
  * the destination dialog on top.
  */
@@ -31,13 +31,13 @@ const { t } = useI18n();
             <!-- the trailing {{ ' ' }} keeps the space AngularJS rendered inside this inline element -->
             <b>{{ t('destination') }}:</b> {{ fm.getSelectedPath() }}{{ ' ' }}
           </div>
-          <!-- Opens the destination dialog at the MAIN navigator's path, as in legacy -->
+          <!-- Opens the destination dialog at the MAIN navigator's path, as in the AngularJS frontend -->
           <a href="" class="label label-primary" @click.prevent="fm.openNavigator(fm.navigator.currentPath)">
             {{ t('change') }}
           </a>
         </div>
       </div>
-      <!-- Q-10: a second footer nested in the panel, kept for parity -->
+      <!-- Q-10: a second footer nested in the panel, as in the AngularJS frontend -->
       <div class="modal-footer">
         <button type="button" class="btn btn-default" :disabled="fm.api.inprocess" @click="$emit('close')">{{ t('close') }}</button>
       </div>

@@ -1,7 +1,7 @@
 /**
  * The dialog actions that change files or permissions, each with the
- * validation, error key, refresh and close behaviour of the legacy
- * controller. On an empty or multiple selection where legacy code threw and
+ * validation, error key, refresh and close behaviour of the AngularJS
+ * controller. On an empty or multiple selection where AngularJS code threw and
  * AngularJS swallowed it (Q-29: expressions on an empty selection; Q-03: permissions need exactly one item) they return without doing anything.
  */
 import { ref } from 'vue';
@@ -26,7 +26,7 @@ export function createDialogActions(ctx: FileManagerContext) {
   }
 
   /**
-   * Loads the roles, then opens the dialog. Legacy quirk: the error set for a
+   * Loads the roles, then opens the dialog. AngularJS quirk: the error set for a
    * failed request is wiped again at once, because opening the dialog clears
    * `api.error`; the dialog opens either way.
    */

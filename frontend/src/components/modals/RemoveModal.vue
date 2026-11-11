@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Delete confirmation dialog (`#remove`). Port of the legacy modal markup. */
+/** Delete confirmation dialog (`#remove`). Port of the AngularJS modal markup. */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
 import BaseModal from './BaseModal.vue';

@@ -9,7 +9,7 @@ import { initialView, storeView, type ViewName } from '../storage.ts';
 import type { Navigator } from '../navigator.ts';
 import { filterByName, orderBy } from './collection.ts';
 
-/** Legacy `order()`: a second click on the same column flips the direction, a new column starts ascending. */
+/** AngularJS `order()`: a second click on the same column flips the direction, a new column starts ascending. */
 export function createSortState() {
   const reverse = ref(false);
   // The first key is always the type, so folders come before files.
@@ -32,7 +32,7 @@ export function createViewState(config: FileManagerConfig, navigator: Navigator)
   }
 
   /**
-   * Legacy `$scope.fileList`, which the active view template assigned:
+   * AngularJS `$scope.fileList`, which the active view template assigned:
    * filtered by name in every view, sorted only in the table (Q-23). Sorting
    * by `model.permissions` finds nothing to compare (Q-06).
    */

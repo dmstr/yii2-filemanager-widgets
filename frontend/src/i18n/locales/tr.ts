@@ -1,4 +1,4 @@
-/** Legacy "tr" translations, extracted verbatim from angular-filemanager.min.js. */
+/** "tr" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
 const messages: Record<string, string> = {
   "filemanager": "Dosya Yöneticisi",
   "language": "Dil",
