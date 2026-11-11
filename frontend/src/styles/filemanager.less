@@ -3,12 +3,6 @@
 // rule stays what it was under the former <angular-filemanager> scope), then the
 // custom rules. `base.less` and `custom.less` are the stylesheets inherited from the
 // AngularJS frontend, kept unmodified.
-//
-// NOTE: the imported file contains one rule that names the old tag
-// (`angular-filemanager > div, ...` in a media query). Nested here it compiles
-// to `hrzg-filemanager angular-filemanager > div`, which matches nothing,
-// exactly as it matched nothing under the old scope. That is kept on purpose so
-// the layout stays identical.
 hrzg-filemanager {
   @import './base.less';
 }
