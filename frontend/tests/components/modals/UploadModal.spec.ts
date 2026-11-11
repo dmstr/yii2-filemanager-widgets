@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import UploadModal from '../../../src/components/modals/UploadModal.vue';
 import { humanReadableFileSize } from '../../../src/utils/format.ts';
-import { diffAgainstLegacy, isHidden, legacyAvailable, legacyContent, mountModal, text, type MountedModal } from './helpersB.ts';
+import { diffAgainstLegacy, isHidden, legacyContent, mountModal, text, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -23,7 +23,7 @@ function choose(files: File[]): void {
 }
 
 describe('UploadModal', () => {
-  it.runIf(legacyAvailable)('has the structure of the legacy template', async () => {
+  it('has the structure of the legacy template', async () => {
     app = mountModal(UploadModal);
     app.fm.uploadFileList = [makeFile('a.txt'), makeFile('b.txt')];
     await nextTick();

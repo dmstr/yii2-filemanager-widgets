@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Link dialog (`#downloadlink`, F-61): path, stream and download link, or one
+ * Link dialog (`#downloadlink`): path, stream and download link, or one
  * field per custom URL of the item.
  *
  * Legacy: the copy buttons have no `type`, so a click copied and then also

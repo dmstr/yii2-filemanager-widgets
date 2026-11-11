@@ -5,10 +5,11 @@
  * leading `!`, mixed types, tie breaking under `reverse`) show up on screen.
  */
 
+import { isObject } from '../../utils/isObject.ts';
+
 type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 type Comparator = (actual: Any, expected: Any) => boolean;
 
-const isObject = (value: unknown): boolean => value !== null && typeof value === 'object';
 const typeOf = (value: unknown): string => (value === null ? 'null' : typeof value);
 const hasCustomToString = (value: Any): boolean =>
   typeof value.toString === 'function' && value.toString !== Object.prototype.toString;

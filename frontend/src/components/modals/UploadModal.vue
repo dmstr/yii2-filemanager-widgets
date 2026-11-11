@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Upload dialog (`#uploadfile`, F-59). Port of the legacy modal markup with
+ * Upload dialog (`#uploadfile`). Port of the legacy modal markup with
  * `ngf-select` replaced by a hidden file input.
  *
  * ng-file-upload put that input into a hidden `<label>` appended to

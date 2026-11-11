@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vitest/config';
+import { licensesPlugin } from './build/licenses.ts';
 import { devAssetsPlugin } from './dev/dev-assets.ts';
 import { mockApiPlugin } from './dev/mock-api.ts';
 
@@ -14,6 +15,7 @@ export default defineConfig({
     vue({ template: { compilerOptions: { whitespace: 'preserve' } } }),
     mockApiPlugin(),
     devAssetsPlugin(),
+    licensesPlugin(),
   ],
   // The Yii2 asset bundle loads a plain script tag, so Vue's dev/prod switch
   // must be resolved at build time.

@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { isShown, mountWidget, settle, type Mounted } from './helpers.ts';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { isShown, mountWidget, sampleFiles, settle, type Mounted } from './helpers.ts';
 
 let app: Mounted;
 afterEach(() => app?.wrapper.unmount());
@@ -74,7 +74,7 @@ describe('navbar controls', () => {
 
   it('shows only the allowed entries of the more menu', async () => {
     app = await mountWidget({ allowedActions: { upload: false } });
-    const items = app.wrapper.findAll('#more + ul li');
+    const items = app.wrapper.findAll('#more ~ ul li');
     expect(items.map((li) => isShown(li.element))).toEqual([true, false]);
   });
 
@@ -91,10 +91,24 @@ describe('navbar controls', () => {
     expect(app.fm.fileList.map((i) => i.model.name)).toEqual(['notes.txt']);
   });
 
+  it('trims the query like ng-model but leaves the typed text in the field, and the refresh clears the field', async () => {
+    app = await mountWidget();
+    const input = app.wrapper.find('.dropdown-menu input');
+    await input.setValue('  notes ');
+    expect(app.fm.query).toBe('notes');
+    expect((input.element as HTMLInputElement).value).toBe('  notes ');
+    expect(app.fm.fileList.map((i) => i.model.name)).toEqual(['notes.txt']);
+    app.wrapper.find('nav .glyphicon-refresh').element.parentElement!.click();
+    await settle();
+    expect(app.fm.query).toBe('');
+    expect((input.element as HTMLInputElement).value).toBe('');
+    expect(app.fm.fileList).toHaveLength(sampleFiles.length);
+  });
+
   it('opens the new folder dialog state and the phantom selection from the more menu', async () => {
     app = await mountWidget();
     await app.wrapper.find('#more').trigger('click');
-    await app.wrapper.find('#more + ul li').trigger('click');
+    await app.wrapper.find('#more ~ ul li').trigger('click');
     expect(app.fm.modals.isOpen('newfolder')).toBe(true);
     expect(app.fm.temps).toHaveLength(1);
   });
@@ -146,7 +160,7 @@ describe('dropdown behaviour (Bootstrap 3.4.1 rules)', () => {
   it('closes when a menu item is clicked', async () => {
     app = await mountWidget();
     await toggle('more').trigger('click');
-    await app.wrapper.find('#more + ul li a').trigger('click');
+    await app.wrapper.find('#more ~ ul li a').trigger('click');
     expect(group('more').classList.contains('open')).toBe(false);
   });
 
@@ -166,7 +180,7 @@ describe('dropdown behaviour (Bootstrap 3.4.1 rules)', () => {
     expect(group('dropDownMenuLang').classList.contains('open')).toBe(false);
 
     await toggle('more').trigger('click');
-    await press(app.wrapper.find('#more + ul').element, 27);
+    await press(app.wrapper.find('#more ~ ul').element, 27);
     expect(group('more').classList.contains('open')).toBe(false);
   });
 
@@ -184,5 +198,87 @@ describe('dropdown behaviour (Bootstrap 3.4.1 rules)', () => {
     await toggle('more').trigger('click');
     document.removeEventListener('click', listener);
     expect(reached).toBe(false);
+  });
+});
+
+describe('dropdown backdrop on touch devices (Bootstrap 3.4.1)', () => {
+  const backdrops = () => Array.from(document.querySelectorAll('.dropdown-backdrop'));
+  // jsdom already reports touch support (`ontouchstart` is on HTMLElement.prototype); "no touch" removes it for the test.
+  const saved = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'ontouchstart');
+  const touch = (on: boolean) => {
+    if (on) {
+      if (saved) {
+        Object.defineProperty(HTMLElement.prototype, 'ontouchstart', saved);
+      }
+    } else {
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>).ontouchstart;
+    }
+  };
+  beforeEach(() => touch(true));
+  afterEach(() => touch(true));
+
+  it('inserts no backdrop without touch support', async () => {
+    touch(false);
+    app = await mountWidget();
+    await app.wrapper.find('#more').trigger('click');
+    expect(backdrops()).toHaveLength(0);
+  });
+
+  it('inserts one backdrop right after the toggle that opens the menu, and none when it closes', async () => {
+    touch(true);
+    app = await mountWidget();
+    const more = app.wrapper.find('#more');
+    await more.trigger('click');
+    expect(backdrops()).toHaveLength(1);
+    expect(more.element.nextElementSibling).toBe(backdrops()[0]);
+    expect(backdrops()[0].tagName).toBe('DIV');
+    await more.trigger('click');
+    expect(backdrops()).toHaveLength(0);
+  });
+
+  it('replaces the backdrop when another dropdown opens', async () => {
+    touch(true);
+    app = await mountWidget();
+    await app.wrapper.find('#more').trigger('click');
+    const search = app.wrapper.find('#dropDownMenuLang');
+    await search.trigger('click');
+    expect(backdrops()).toHaveLength(1);
+    expect(search.element.nextElementSibling).toBe(backdrops()[0]);
+  });
+
+  it('closes the menu and removes the backdrop on a click on the backdrop', async () => {
+    touch(true);
+    app = await mountWidget();
+    await app.wrapper.find('#more').trigger('click');
+    backdrops()[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await settle();
+    expect(backdrops()).toHaveLength(0);
+    expect(app.wrapper.find('#more').element.parentElement!.classList.contains('open')).toBe(false);
+  });
+
+  it('removes the backdrop when a menu item or the document is clicked, but keeps it for a right click', async () => {
+    touch(true);
+    app = await mountWidget();
+    await app.wrapper.find('#more').trigger('click');
+    const rightClick = new MouseEvent('click', { bubbles: true, button: 2 });
+    Object.defineProperty(rightClick, 'which', { value: 3 });
+    document.body.dispatchEvent(rightClick);
+    await settle();
+    expect(backdrops()).toHaveLength(1);
+    await app.wrapper.find('#more ~ ul li a').trigger('click');
+    expect(backdrops()).toHaveLength(0);
+  });
+
+  it('inserts no backdrop inside a .navbar-nav', async () => {
+    touch(true);
+    app = await mountWidget();
+    const group = app.wrapper.find('#more').element.parentElement!;
+    const nav = document.createElement('ul');
+    nav.className = 'navbar-nav';
+    group.parentElement!.insertBefore(nav, group);
+    nav.appendChild(group);
+    await app.wrapper.find('#more').trigger('click');
+    expect(backdrops()).toHaveLength(0);
+    nav.replaceWith(group);
   });
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Move dialog (`#move`, F-52) with the destination path selector. Port of the legacy modal markup. */
+/** Move dialog (`#move`) with the destination path selector. Port of the legacy modal markup. */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
 import BaseModal from './BaseModal.vue';

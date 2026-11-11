@@ -16,7 +16,6 @@ import type { FileManagerContext } from './fileManager/types.ts';
 import { createViewState } from './fileManager/view.ts';
 import { createModalManager } from './modals.ts';
 import { createNavigator } from './navigator.ts';
-import { initialLocale, storeLocale } from './storage.ts';
 
 export function createFileManager(config: FileManagerConfig, i18n: I18n) {
   const api = createApi(config, i18n);
@@ -50,24 +49,16 @@ export function createFileManager(config: FileManagerConfig, i18n: I18n) {
     destination.selectedModalPath.value = navigator.currentPath;
   };
 
-  /** With a locale: remember and use it. Without: the stored language, else the configured default. */
-  function changeLanguage(locale?: string): void {
-    if (locale) {
-      storeLocale(locale);
-      i18n.use(locale);
-      return;
-    }
-    i18n.use(initialLocale(config, ''));
-  }
-
-  /** The legacy start-up: language (query parameter, storage, default), then the first listing. */
+  /**
+   * The legacy start-up after the language: the first listing. The language itself is resolved once
+   * by `main.ts` (`initialLocale`) before the translator is created, so the first render already
+   * uses it.
+   */
   function init(): Promise<void> {
-    i18n.use(initialLocale(config));
     return navigator.refresh();
   }
 
   return reactive({
-    config,
     api,
     modals,
     navigator,
@@ -75,7 +66,6 @@ export function createFileManager(config: FileManagerConfig, i18n: I18n) {
     modalWithPathSelector: destination.modalWithPathSelector,
     isInThisPath: destination.isInThisPath,
     init,
-    changeLanguage,
 
     // View state
     query: view.query,

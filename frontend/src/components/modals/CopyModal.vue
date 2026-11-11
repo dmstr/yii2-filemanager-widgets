@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Copy dialog (`#copy`, F-54): new name for a single item plus the destination path selector. */
+/** Copy dialog (`#copy`): new name for a single item plus the destination path selector. */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
 import { tempModelField, vTextModel } from '../modelTrim.ts';

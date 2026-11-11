@@ -21,7 +21,7 @@ use yii\web\View;
  * File manager base widget, renders the mount point of the Vue 3 file manager
  * and hands the configuration to the bundle via `window.fileManagerConfig`
  *
- * @package hrzg\filemanager\widgets\base
+ * @package hrzg\filemanager\widgets
  * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
 class FileManagerWidget extends Widget

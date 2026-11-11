@@ -14,7 +14,7 @@ use yii\web\View;
 
 /**
  * Class FileManagerAsset
- * Publishes the compiled Vue 3 file manager (filemanager.css and filemanager.js).
+ * Publishes the compiled Vue 3 file manager (filemanager.css and filemanager.js) with its notice file filemanager.licenses.txt.
  * Bootstrap 3 CSS incl. Glyphicons is the only dependency, it comes from the host application.
  * @package hrzg\filemanager\assets
  * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
@@ -62,8 +62,9 @@ class FileManagerAsset extends AssetBundle
      */
     public $publishOptions = [
         'forceCopy' => false,
-        // publish only the build output; protects the web root from stray files in the directory
-        'only' => ['filemanager.css', 'filemanager.js'],
+        // publish only the build output; protects the web root from stray files in the directory.
+        // The notice file is published too: the banner of filemanager.js and filemanager.css points to it.
+        'only' => ['filemanager.css', 'filemanager.js', 'filemanager.licenses.txt'],
     ];
 
     /**

@@ -1,6 +1,6 @@
 # Guards against changing the frontend source without rebuilding the committed
 # bundle: Composer installs this package from the git tag without a build step,
-# so src/assets/dist/filemanager.{js,css} must match what `yarn build` produces.
+# so src/assets/dist/filemanager.{js,css,licenses.txt} must match what `yarn build` produces.
 name: Frontend
 
 on:
@@ -56,6 +56,6 @@ jobs:
           if [ -n "$changes" ]; then
             echo "$changes"
             git --no-pager diff --stat -- ../src/assets/dist
-            echo "::error::src/assets/dist is out of date. Run 'yarn build' in frontend/ and commit src/assets/dist/filemanager.js and filemanager.css."
+            echo "::error::src/assets/dist is out of date. Run 'yarn build' in frontend/ and commit src/assets/dist/filemanager.js, filemanager.css and filemanager.licenses.txt."
             exit 1
           fi

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import NewFolderModal from '../../../src/components/modals/NewFolderModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyAvailable, legacyContent, mountModal, rendered, select, text, type MountedModal } from './helpersA.ts';
+import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, rendered, select, text, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -15,9 +15,9 @@ const type = async (value: string) => {
 };
 
 describe('NewFolderModal', () => {
-  it.runIf(legacyAvailable)('has the structure of the legacy template', () => {
+  it('has the structure of the legacy template', () => {
     app = mountModal(NewFolderModal);
-    expect(diffAgainstLegacy(legacyContent('newfolder'), app.wrapper.find('.modal-content').element, app.t)).toBeNull();
+    expect(diffAgainstLegacy(legacyContent('newfolder'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
   });
 
   it('renders the texts and an empty field on the phantom item the dialog opens with', async () => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Edit dialog (`#edit`, F-57): large modal with a fullscreen toggle. The
+ * Edit dialog (`#edit`): large modal with a fullscreen toggle. The
  * toggle is local state, as `fullscreen` lived on the legacy scope and
  * nothing else read it.
  */

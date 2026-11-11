@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import CompressModal from '../../../src/components/modals/CompressModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyAvailable, legacyContent, mountModal, select, text, visibleText, type MountedModal } from './helpersB.ts';
+import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, select, text, visibleText, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -17,7 +17,7 @@ const cancel = () => footerButtons()[1];
 const submit = () => app.wrapper.find('button[type=submit]');
 
 describe('CompressModal', () => {
-  it.runIf(legacyAvailable)('has the structure of the legacy template', () => {
+  it('has the structure of the legacy template', () => {
     mount();
     expect(diffAgainstLegacy(legacyContent('compress'), app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });

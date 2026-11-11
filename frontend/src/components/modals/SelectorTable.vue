@@ -3,18 +3,17 @@
  * Folder table of the destination dialog. Port of the legacy
  * `main-table-modal.html`, bound to the dialog's own navigator and sort state.
  */
-import { useConfig } from '../../config/injection.ts';
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
-import { humanReadableFileSize, strLimit } from '../../utils/format.ts';
+import { strLimit } from '../../utils/format.ts';
 import Spinner from '../Spinner.vue';
+import { useFileSize } from '../useFileSize.ts';
 
 const fm = useFileManager();
-const config = useConfig();
 const { t } = useI18n();
 const selector = fm.selector;
 
-const sizeOf = (size: number | null | undefined): string => humanReadableFileSize(size as number, config.useBinarySizePrefixes);
+const sizeOf = useFileSize();
 </script>
 
 <template>

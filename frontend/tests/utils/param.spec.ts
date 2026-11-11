@@ -31,7 +31,7 @@ describe('param', () => {
     expect(param({ items: ['a', 'b'] })).toBe('items%5B%5D=a&items%5B%5D=b');
   });
 
-  it('keeps spaces as %20 like jQuery 3 does (the brief expected +)', () => {
+  it('keeps spaces as %20 like jQuery 3 does (not +)', () => {
     expect(param({ a: 'b c' })).toBe('a=b%20c');
   });
 

@@ -13,6 +13,7 @@ function mount(): void {
     return;
   }
   const config = readGlobalConfig();
+  // The one place that resolves the language: `?lang=` is stored here, once, before the first listing.
   const i18n = createI18n(initialLocale(config));
   const fileManager = createFileManager(config, i18n);
   createApp(FileManager, { config, i18n, fileManager }).mount(root);

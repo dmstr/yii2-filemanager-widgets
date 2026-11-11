@@ -5,6 +5,7 @@
  */
 import { ref } from 'vue';
 import type { Item } from '../../models/Item.ts';
+import { noop } from '../../utils/noop.ts';
 import { param } from '../../utils/param.ts';
 import { settled, type FileManagerContext } from './types.ts';
 
@@ -115,16 +116,23 @@ export function createBrowseActions(ctx: FileManagerContext) {
     modal('downloadlink', false);
   }
 
-  /** One file downloads directly, several files as ZIP; a selection with a folder does nothing. */
-  function download(): Promise<unknown> | boolean | undefined {
+  /**
+   * One file downloads directly, several files as ZIP; a selection with a folder does nothing. The
+   * Ajax branch is settled here and returns nothing: a promise returned to a template event handler
+   * would send its rejection to Vue's error handler, while the legacy handler stayed silent (the
+   * error is already on `api.error`).
+   */
+  function download(): boolean | undefined {
     const item = selection.singleSelection();
     if (selection.selectionHas('dir')) {
       return;
     }
-    if (item) {
-      return api.download(item);
+    const result = item ? api.download(item) : api.downloadMultiple(selection.temps.value);
+    if (result instanceof Promise) {
+      settled(result, noop);
+      return;
     }
-    return api.downloadMultiple(selection.temps.value);
+    return result;
   }
 
   return {

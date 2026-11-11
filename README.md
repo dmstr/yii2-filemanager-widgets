@@ -70,7 +70,7 @@ Register such a script with `$this->registerJs($js, \yii\web\View::POS_END)`; se
 
 #### Development
 
-The source of the Vue 3 bundle lives in `./frontend/`, see [frontend/README.md](frontend/README.md) for development and building. The build writes `src/assets/dist/filemanager.js` and `filemanager.css`.
+The source of the Vue 3 bundle lives in `./frontend/`, see [frontend/README.md](frontend/README.md) for development and building. The build writes `src/assets/dist/filemanager.js`, `filemanager.css` and the notice file `filemanager.licenses.txt` that both files point to.
 
 
 Input widget

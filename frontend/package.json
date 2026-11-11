@@ -1,6 +1,7 @@
 {
   "name": "yii2-filemanager-widgets-frontend",
   "private": true,
+  "license": "BSD-3-Clause",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -14,7 +15,7 @@
     "vue": "3.5.45"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "24.19.2",
     "@vitejs/plugin-vue": "6.0.10",
     "@vue/test-utils": "2.5.1",
     "bootstrap": "3.4.1",

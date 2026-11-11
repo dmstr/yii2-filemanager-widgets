@@ -1,3 +1,4 @@
+import { isObject } from '../utils/isObject.ts';
 import { createDefaults } from './defaults.ts';
 import type { FileManagerConfig } from './types.ts';
 
@@ -11,10 +12,6 @@ declare global {
 const PATTERN_OPTIONS = ['isEditableFilePattern', 'isImageFilePattern', 'isExtractableFilePattern'] as const;
 
 type Bag = Record<string, unknown>;
-
-function isObject(value: unknown): value is Bag {
-  return value !== null && typeof value === 'object';
-}
 
 /**
  * The deep merge of `angular.merge` as shipped with AngularJS 1.5.11, which

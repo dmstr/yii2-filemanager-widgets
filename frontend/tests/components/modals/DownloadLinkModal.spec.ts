@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import DownloadLinkModal from '../../../src/components/modals/DownloadLinkModal.vue';
 import { copyToClipboard } from '../../../src/components/modals/copyToClipboard.ts';
-import { diffAgainstLegacy, isHidden, item, legacyAvailable, legacyContent, mountModal, select, text, type MountedModal } from './helpersB.ts';
+import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, select, text, type MountedModal } from './helpers.ts';
 
 vi.mock('../../../src/components/modals/copyToClipboard.ts', () => ({ copyToClipboard: vi.fn(() => Promise.resolve(true)) }));
 
@@ -41,7 +41,7 @@ function showCustom(urls: Record<string, string>): void {
 }
 
 describe('DownloadLinkModal', () => {
-  it.runIf(legacyAvailable)('has the structure of the legacy template, default URL branch', async () => {
+  it('has the structure of the legacy template, default URL branch', async () => {
     app = mountModal(DownloadLinkModal);
     showDefault();
     await nextTick();
@@ -49,7 +49,7 @@ describe('DownloadLinkModal', () => {
     expect(diffAgainstLegacy(legacy, app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });
 
-  it.runIf(legacyAvailable)('has the structure of the legacy template, custom URL branch', async () => {
+  it('has the structure of the legacy template, custom URL branch', async () => {
     app = mountModal(DownloadLinkModal);
     showCustom({ image: 'http://x/i.png', thumb: 'http://x/t.png' });
     await nextTick();

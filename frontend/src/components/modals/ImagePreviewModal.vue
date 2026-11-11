@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Image preview dialog (`#imagepreview`, F-50). Port of the legacy modal
+ * Image preview dialog (`#imagepreview`). Port of the legacy modal
  * markup; the image source and the loading flag come from the file manager
  * state instead of the jQuery calls of `openImagePreview`.
  */

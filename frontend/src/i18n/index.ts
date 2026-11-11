@@ -4,25 +4,22 @@
  * is decided elsewhere and passed in.
  */
 import { inject, provide, ref, type InjectionKey, type Ref } from 'vue';
-import en from './locales/en';
-import he from './locales/he';
-import pt from './locales/pt';
-import es from './locales/es';
-import fr from './locales/fr';
-import de from './locales/de';
-import sk from './locales/sk';
-import zh from './locales/zh';
-import ru from './locales/ru';
-import ua from './locales/ua';
-import tr from './locales/tr';
-import fa from './locales/fa';
+import en from './locales/en.ts';
+import he from './locales/he.ts';
+import pt from './locales/pt.ts';
+import es from './locales/es.ts';
+import fr from './locales/fr.ts';
+import de from './locales/de.ts';
+import sk from './locales/sk.ts';
+import zh from './locales/zh.ts';
+import ru from './locales/ru.ts';
+import ua from './locales/ua.ts';
+import tr from './locales/tr.ts';
+import fa from './locales/fa.ts';
 
 const catalogs: Record<string, Record<string, string>> = {
   en, he, pt, es, fr, de, sk, zh, ru, ua, tr, fa,
 };
-
-/** Locale codes that have a translation table, in legacy declaration order. */
-export const LOCALES = ['en', 'he', 'pt', 'es', 'fr', 'de', 'sk', 'zh', 'ru', 'ua', 'tr', 'fa'] as const;
 
 export interface I18n {
   /** Current locale code; may be a code without a table (every lookup then yields the key). */
@@ -68,7 +65,7 @@ export function createI18n(initialLocale: string): I18n {
   };
 }
 
-export const I18N_KEY: InjectionKey<I18n> = Symbol('i18n');
+const I18N_KEY: InjectionKey<I18n> = Symbol('i18n');
 
 /** Makes the instance available to all descendants of the calling component. */
 export function provideI18n(instance: I18n): void {

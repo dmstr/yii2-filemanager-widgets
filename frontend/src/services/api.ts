@@ -27,6 +27,43 @@ export type DeferredHandler = (data: unknown, deferred: Deferred, code: number, 
 const BRIDGE_ERROR = 'Error %s - Bridge response error, please check the API docs or this ajax response.';
 const NOT_FOUND_ERROR = 'Error 404 - Backend bridge is not working, please check the ajax response.';
 
+/**
+ * Legacy `deferredHandler`, shared by the API client and the navigator, which each keep the error
+ * in their own state (`target.error`). Q-30 fixed: a response without a body (network failure,
+ * empty reply) no longer throws; the bridge error is the result. `result.error` replaces an error
+ * that is already set for the API client, while the navigator keeps the first one
+ * (`overwriteWithResultError` false).
+ */
+export function settleDeferred(
+  target: { error: string },
+  data: unknown,
+  deferred: Deferred,
+  code: number,
+  defaultMsg: string | undefined,
+  overwriteWithResultError: boolean,
+): void {
+  const body: ApiData = data !== null && typeof data === 'object' ? (data as ApiData) : {};
+  if (!data || typeof data !== 'object') {
+    target.error = BRIDGE_ERROR.replace('%s', String(code));
+  }
+  if (code == 404) {
+    target.error = NOT_FOUND_ERROR;
+  }
+  if ((overwriteWithResultError || !target.error) && body.result && body.result.error) {
+    target.error = body.result.error;
+  }
+  if (!target.error && body.error) {
+    target.error = body.error.message as string;
+  }
+  if (!target.error && defaultMsg) {
+    target.error = defaultMsg;
+  }
+  if (target.error) {
+    return deferred.reject(data);
+  }
+  return deferred.resolve(data);
+}
+
 type Selection = Array<Item | undefined>;
 
 export interface Api {
@@ -68,7 +105,7 @@ const getFileList = (files: Selection | undefined): Array<string | undefined> =>
 const withQuery = (url: string, data: Record<string, unknown>): string => [url, param(data)].join('?');
 
 /**
- * The legacy item model carried two fields the foundation `Item` dropped as
+ * The legacy item model carried two fields the port's `Item` dropped as
  * dead code, `dirName` and `recursive`, but the permissions request sends the
  * whole model, so they are put back on the wire in their original position.
  */
@@ -83,32 +120,8 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
   // Assigned right below; the functions only run after that.
   let api: Api;
 
-  /**
-   * Legacy `deferredHandler`. Q-30 fixed: a response without a body (network
-   * failure, empty reply) no longer throws; the bridge error is the result.
-   */
-  const deferredHandler: DeferredHandler = (data, deferred, code, defaultMsg) => {
-    const body: ApiData = data !== null && typeof data === 'object' ? (data as ApiData) : {};
-    if (!data || typeof data !== 'object') {
-      api.error = BRIDGE_ERROR.replace('%s', String(code));
-    }
-    if (code == 404) {
-      api.error = NOT_FOUND_ERROR;
-    }
-    if (body.result && body.result.error) {
-      api.error = body.result.error;
-    }
-    if (!api.error && body.error) {
-      api.error = body.error.message as string;
-    }
-    if (!api.error && defaultMsg) {
-      api.error = defaultMsg;
-    }
-    if (api.error) {
-      return deferred.reject(data);
-    }
-    return deferred.resolve(data);
-  };
+  const deferredHandler: DeferredHandler = (data, deferred, code, defaultMsg) =>
+    settleDeferred(api, data, deferred, code, defaultMsg, true);
 
   /** Runs a request the way every legacy method did: flags first, handler on the outcome, `inprocess` cleared last. */
   function call(

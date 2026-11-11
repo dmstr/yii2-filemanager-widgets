@@ -5,7 +5,6 @@ export interface Rwx {
   exec: boolean;
 }
 
-const OCTAL_VALUES = { read: 4, write: 2, exec: 1 };
 const CODE_VALUES = { read: 'r', write: 'w', exec: 'x' };
 const KEYS = ['owner', 'group', 'others'] as const;
 
@@ -71,17 +70,6 @@ export class Chmod {
       this.group = codes.group;
       this.others = codes.others;
     }
-  }
-
-  /** Octal string such as `755`. Unused by the app, ported to keep the class complete. */
-  toOctal(prepend?: string, append?: string): string {
-    const result = KEYS.map((key) => {
-      let value = (this[key].read && OCTAL_VALUES.read) || 0;
-      value += (this[key].write && OCTAL_VALUES.write) || 0;
-      value += (this[key].exec && OCTAL_VALUES.exec) || 0;
-      return value;
-    });
-    return (prepend || '') + result.join('') + (append || '');
   }
 
   /** Code string such as `rwxr-xr-x`. */

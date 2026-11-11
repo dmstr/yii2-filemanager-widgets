@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Compress dialog (`#compress`, F-55). Port of the legacy modal markup. With
+ * Compress dialog (`#compress`). Port of the legacy modal markup. With
  * `compressAsync` the dialog stays open after the request and `asyncSuccess`
  * swaps the question for a success note and the footer for a close button.
  */
@@ -16,7 +16,7 @@ const fm = useFileManager();
 const config = useConfig();
 const { t } = useI18n();
 
-/** `ng-model="temp.tempModel.name"`; `temp` always exists (Q-25). */
+/** `ng-model="temp.tempModel.name"`; `temp` always exists (Q-25: a computed value here, refreshed on every selection change). */
 const name = tempModelField(() => fm.temp, 'name');
 </script>
 

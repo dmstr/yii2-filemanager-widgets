@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/dev/legacy.less" />
     <script src="/vendor/jquery/jquery.min.js"></script>
     <script src="/vendor/bootstrap/js/bootstrap.min.js"></script>
-    <!-- Same order as AfmBowerAsset, then AfmAsset -->
+    <!-- Same order as AfmBowerAsset, then AfmAsset (the asset bundles of version 1.x of the widget, removed in 2.0.0) -->
     <script src="/legacy/bower/angular.min.js"></script>
     <script src="/legacy/bower/angular-sanitize.min.js"></script>
     <script src="/legacy/bower/angular-translate.min.js"></script>
@@ -18,7 +18,7 @@
     <script src="/legacy/dist/angular-filemanager.min.js"></script>
     <script src="/harness/config.js"></script>
     <script>
-      // Same hook FileManagerWidget::setFileManagerConfig() registers.
+      // Same hook FileManagerWidget::setFileManagerConfig() registered in version 1.x of the widget (removed in 2.0.0).
       angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (config) {
         var defaults = config.$get();
         config.set(angular.merge(defaults, window.fileManagerConfig));

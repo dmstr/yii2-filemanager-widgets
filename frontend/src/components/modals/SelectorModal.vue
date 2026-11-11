@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Destination folder dialog (legacy `#selector`, F-62). It has its own
+ * Destination folder dialog (legacy `#selector`). It has its own
  * navigator and opens on top of the move or copy dialog (Q-32).
  */
 import { useI18n } from '../../i18n/index.ts';

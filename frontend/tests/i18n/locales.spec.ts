@@ -1,8 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { LOCALES } from '../../src/i18n';
+import { createI18n } from '../../src/i18n/index.ts';
 
+const localesDir = resolve(__dirname, '../../src/i18n/locales');
+/** The locale codes with a table: one file per code. */
+const LOCALES = readdirSync(localesDir)
+  .filter((name) => name.endsWith('.ts'))
+  .map((name) => name.slice(0, -3));
 const legacyPath = resolve(__dirname, '../../legacy/angular-filemanager.min.js');
 
 /** Evaluates the legacy $translateProvider blocks with a stub provider. */
@@ -30,6 +35,14 @@ const counts: Record<string, number> = { en: 99, de: 99, he: 91 };
 describe('locale parity with legacy source', () => {
   it('finds all 12 legacy languages', () => {
     expect(Object.keys(legacy).sort()).toEqual([...LOCALES].sort());
+  });
+
+  it('registers every locale file in the translator catalog', async () => {
+    for (const lang of LOCALES) {
+      const mod = (await import(`../../src/i18n/locales/${lang}.ts`)).default as Record<string, string>;
+      const [key, value] = Object.entries(mod)[0];
+      expect(createI18n(lang).t(key), lang).toBe(value);
+    }
   });
 
   for (const lang of LOCALES) {

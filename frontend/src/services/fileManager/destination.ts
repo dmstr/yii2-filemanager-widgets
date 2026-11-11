@@ -9,12 +9,13 @@ import type { Navigator } from '../navigator.ts';
 import { orderBy } from './collection.ts';
 import { createSortState } from './view.ts';
 import type { createSelection } from './selection.ts';
+import type { ModalFn } from './types.ts';
 
 interface Deps {
   navigator: Navigator;
   selectorNavigator: Navigator;
   selection: ReturnType<typeof createSelection>;
-  modal: (id: string, hide?: boolean) => true;
+  modal: ModalFn;
 }
 
 export function createDestination({ navigator, selectorNavigator, selection, modal }: Deps) {

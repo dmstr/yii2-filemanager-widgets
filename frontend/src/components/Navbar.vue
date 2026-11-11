@@ -8,11 +8,20 @@ import { useConfig } from '../config/injection.ts';
 import { useI18n } from '../i18n/index.ts';
 import { useFileManager } from '../services/fileManager.ts';
 import Breadcrumb from './Breadcrumb.vue';
+import { textModel, vTextModel } from './modelTrim.ts';
 import { useDropdown } from './useDropdown.ts';
 
 const fm = useFileManager();
 const config = useConfig();
 const { t } = useI18n();
+
+// ng-model with the default ngTrim, like the legacy search field: the query is the trimmed text.
+const query = textModel(
+  () => fm.query,
+  (value) => {
+    fm.query = value;
+  },
+);
 
 // Template refs are bound by variable name (`ref="searchRoot"`), so the two instances are destructured.
 const {
@@ -64,7 +73,7 @@ const {
                   <i class="glyphicon glyphicon-search mr2"></i>
                 </button>
                 <div class="dropdown-menu animated fast fadeIn pull-right" role="menu" aria-labelledby="dropDownMenuLang" @keydown="onSearchKeydown">
-                  <input v-model="fm.query" type="text" class="form-control" :placeholder="t('search') + '...'" />
+                  <input v-text-model="query" type="text" class="form-control" :placeholder="t('search') + '...'" />
                 </div>
               </div>
 
@@ -120,6 +129,7 @@ const {
                   <i class="glyphicon glyphicon-option-vertical"></i>
                 </button>
 
+                <!-- The links keep href="#" as in the legacy markup; .prevent matches legacy, where AngularJS's $location click handler cancelled the navigation (no hash change, no scrolling). -->
                 <ul class="dropdown-menu scrollable-menu animated fast fadeIn pull-right" role="menu" aria-labelledby="more" @keydown="onMoreKeydown">
                   <li v-show="config.allowedActions.createFolder" role="presentation" @click="fm.modal('newfolder') && fm.prepareNewFolder()">
                     <a href="#" role="menuitem" tabindex="-1" @click.prevent>

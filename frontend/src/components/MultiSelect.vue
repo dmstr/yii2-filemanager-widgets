@@ -23,8 +23,11 @@ const hashKeys = new WeakMap<object, string>();
 
 <script setup lang="ts">
 /**
- * Port of the third-party directive `isteven-multi-select` 4.0.0, limited to
- * what the permissions dialog uses (F-64): multiple selection, vertical
+ * Port of the third-party AngularJS directive `isteven-multi-select` 4.0.0
+ * (MIT licence, Copyright (c) 2014 Ignatius Steven, https://github.com/isteven;
+ * the full notice is in `frontend/licenses/isteven-multi-select.txt` and is
+ * copied into the build's `filemanager.licenses.txt`), limited to
+ * what the permissions dialog uses: multiple selection, vertical
  * layout, all four helper elements, the fixed English texts and
  * `button-label`/`item-label` `role`, `tick-property` `selected`,
  * `output-properties` `role selected`. Markup, class names and the order of

@@ -56,40 +56,17 @@ afterEach(() => {
 });
 
 describe('start-up and language', () => {
-  it('init() applies the language, then lists the root', async () => {
-    window.localStorage.setItem('language', 'de');
-    stubFetch((r) => defaultReply(r));
-    const instance = createFileManager(makeConfig(), makeI18n());
-    expect(instance.navigator.fileList).toEqual([]);
-    await instance.init();
-    expect(instance.navigator.fileList).toHaveLength(files.length);
-  });
-
-  it('prefers the lang query parameter, stores it and falls back to the default language', async () => {
+  it('init() lists the root and leaves the language alone (main.ts resolves it once)', async () => {
     window.localStorage.clear();
     window.history.replaceState(null, '', '/?lang=fr');
     stubFetch((r) => defaultReply(r));
     const i18n = makeI18n();
-    await createFileManager(makeConfig(), i18n).init();
-    expect(i18n.locale.value).toBe('fr');
-    expect(window.localStorage.getItem('language')).toBe('fr');
-
-    window.history.replaceState(null, '', '/');
-    window.localStorage.clear();
-    const fallback = makeI18n();
-    await createFileManager(makeConfig({ defaultLang: 'es' }), fallback).init();
-    expect(fallback.locale.value).toBe('es');
+    const instance = createFileManager(makeConfig(), i18n);
+    expect(instance.navigator.fileList).toEqual([]);
+    await instance.init();
+    expect(instance.navigator.fileList).toHaveLength(files.length);
+    expect(i18n.locale.value).toBe('en');
     expect(window.localStorage.getItem('language')).toBeNull();
-  });
-
-  it('changeLanguage stores and applies a locale, without one it restores the stored language', () => {
-    fm.changeLanguage('ru');
-    expect(window.localStorage.getItem('language')).toBe('ru');
-    window.localStorage.setItem('language', 'tr');
-    fm.changeLanguage();
-    expect(window.localStorage.getItem('language')).toBe('tr');
-    window.localStorage.removeItem('language');
-    fm.changeLanguage();
   });
 
   it('does nothing before init()', () => {
@@ -777,6 +754,22 @@ describe('download', () => {
     expect(open.mock.calls[0][0]).toMatch(/^\/api\/downloadMultiple\?action=downloadMultiple&items%5B%5D=%2Fa\.txt&items%5B%5D=%2Fd\.md&toFilename=/);
   });
 
+  it('settles a failed Ajax download: the error is on api.error, nothing is returned or logged', async () => {
+    (window as unknown as Record<string, unknown>).saveAs = vi.fn();
+    await boot({ downloadFilesByAjax: true });
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    override = (r) => ((r.body as { action?: string } | undefined)?.action === 'list' ? undefined : { status: 500, body: 'x', contentType: 'text/plain' });
+    select('a.txt');
+    expect(fm.download()).toBeUndefined();
+    await settle();
+    expect(fm.api.error).toContain('Error 500');
+    expect(logged).not.toHaveBeenCalled();
+    select('a.txt', 'd.md');
+    expect(fm.download()).toBeUndefined();
+    await settle();
+    expect(logged).not.toHaveBeenCalled();
+  });
+
   it('does nothing when the selection has a folder', () => {
     const open = vi.spyOn(window, 'open');
     select('b', 'a.txt');
@@ -889,7 +882,7 @@ describe('provide / use', () => {
     const Child = defineComponent({
       setup() {
         received = useFileManager();
-        return () => h('span', useFileManager().config.appName);
+        return () => h('span', useFileManager().navigator.currentPath.length);
       },
     });
     const Root = defineComponent({
@@ -900,7 +893,7 @@ describe('provide / use', () => {
     });
     const wrapper = mount(Root);
     expect(received).toBe(fm);
-    expect(wrapper.text()).toBe(fm.config.appName);
+    expect(wrapper.text()).toBe(String(fm.navigator.currentPath.length));
   });
 
   it('templates re-render with the state', async () => {

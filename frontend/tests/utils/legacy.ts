@@ -28,22 +28,31 @@ export function angularGlobal(): Any {
   return (window as Any).angular;
 }
 
-/** The text of the IIFE in the bundle that contains `marker`. */
+/** The text of the IIFE in the bundle that contains `marker`, whether it takes `(angular)` or `(angular, $)`. */
 function iife(marker: string): string {
   const at = bundle.indexOf(marker);
   if (at < 0) throw new Error(`legacy marker not found: ${marker}`);
-  const start = bundle.lastIndexOf('(function(angular)', at);
-  const end = bundle.indexOf('})(angular);', at) + '})(angular);'.length;
-  return bundle.slice(start, end);
+  const start = bundle.lastIndexOf('(function(angular', at);
+  const closer = bundle.startsWith('(function(angular)', start) ? '})(angular);' : '})(angular, jQuery);';
+  return bundle.slice(start, bundle.indexOf(closer, at) + closer.length);
 }
+
+/** Runs the IIFEs that contain the markers against `angular`, with jQuery for those that take it. */
+function runIifes(angular: Any, markers: string[]): void {
+  const jQuery = (window as Any).jQuery;
+  for (const marker of markers) {
+    new Function('angular', 'jQuery', '$', iife(marker))(angular, jQuery, jQuery);
+  }
+}
+
+/** The legacy model classes every service under test needs: `chmod` and `item`. */
+const MODEL_MARKERS = ["service('chmod'", "factory('item'"];
 
 /** Registers the legacy module with a config the specs can mutate, then runs the given IIFEs. */
 function injector(config: Any, markers: string[]): Any {
   const angular = angularGlobal();
   angular.module('FileManagerApp', []).value('fileManagerConfig', config);
-  for (const marker of markers) {
-    new Function('angular', iife(marker))(angular);
-  }
+  runIifes(angular, markers);
   return angular.injector(['ng', 'FileManagerApp']);
 }
 
@@ -61,7 +70,7 @@ export function legacyFilters(config: Any = {}): Record<'strLimit' | 'fileExtens
 
 /** The legacy `chmod` service (the class) and `item` factory (the class). */
 export function legacyModels(config: Any): { Chmod: Any; Item: Any } {
-  const $injector = injector(config, ["service('chmod'", "factory('item'"]);
+  const $injector = injector(config, MODEL_MARKERS);
   return { Chmod: $injector.get('chmod'), Item: $injector.get('item') };
 }
 
@@ -76,16 +85,6 @@ export function legacySlug(): (input: Any) => string {
 /** The real `angular.merge`. */
 export function angularMerge(dst: Any, ...src: Any[]): Any {
   return angularGlobal().merge(dst, ...src);
-}
-
-/** The text of the IIFE that contains `marker`, whether it takes `(angular)` or `(angular, $)`. */
-function iifeWithJquery(marker: string): string {
-  const at = bundle.indexOf(marker);
-  if (at < 0) throw new Error(`legacy marker not found: ${marker}`);
-  const start = bundle.lastIndexOf('(function(angular', at);
-  const endMarker = '})(angular, jQuery);';
-  const end = bundle.indexOf(endMarker, at) + endMarker.length;
-  return bundle.slice(start, end);
 }
 
 /** The real `filter` and `orderBy` filters of AngularJS 1.5.11. */
@@ -104,9 +103,7 @@ export function legacyNavigator(config: Any): { FileNavigator: Any; Item: Any } 
     // Like the real service, hand out the constructor.
     return function () {};
   });
-  for (const marker of ["service('chmod'", "factory('item'", "service('fileNavigator'"]) {
-    new Function('angular', iife(marker))(angular);
-  }
+  runIifes(angular, [...MODEL_MARKERS, "service('fileNavigator'"]);
   const $injector = angular.injector(['ng', 'FileManagerApp']);
   return { FileNavigator: $injector.get('fileNavigator'), Item: $injector.get('item') };
 }
@@ -126,7 +123,7 @@ export function legacyApi(config: Any, reply: () => LegacyReply = () => ({ statu
   const calls: Array<{ method: string; url: string; data?: Any }> = [];
   const module = angular.module('FileManagerApp', []).value('fileManagerConfig', config);
   module.factory('$translate', () => ({ instant: (key: string) => key }));
-  const answer = ($q: Any, notifyProgress = false) => {
+  const answer = ($q: Any) => {
     const deferred = $q.defer();
     const response = reply();
     const settle = response.status >= 200 && response.status < 300 ? deferred.resolve : deferred.reject;
@@ -134,7 +131,6 @@ export function legacyApi(config: Any, reply: () => LegacyReply = () => ({ statu
     const promise = deferred.promise;
     promise.success = (fn: Any) => (promise.then((r: Any) => fn(r.data, r.status)), promise);
     promise.error = (fn: Any) => (promise.then(null, (r: Any) => fn(r.data, r.status)), promise);
-    void notifyProgress;
     return promise;
   };
   module.factory('$http', [
@@ -160,11 +156,7 @@ export function legacyApi(config: Any, reply: () => LegacyReply = () => ({ statu
       },
     }),
   ]);
-  for (const marker of ["service('chmod'", "factory('item'"]) {
-    new Function('angular', iife(marker))(angular);
-  }
-  new Function('angular', 'jQuery', '$', iifeWithJquery("service('apiHandler'"))(angular, (window as Any).jQuery, (window as Any).jQuery);
-  new Function('angular', iife("service('apiMiddleware'"))(angular);
+  runIifes(angular, [...MODEL_MARKERS, "service('apiHandler'", "service('apiMiddleware'"]);
   const $injector = angular.injector(['ng', 'FileManagerApp']);
   const ApiMiddleware = $injector.get('apiMiddleware');
   return { middleware: new ApiMiddleware(), Item: $injector.get('item'), calls, flush: () => $injector.get('$rootScope').$digest() };
@@ -194,10 +186,7 @@ export function legacyController(config: Any): { $scope: Any; Item: Any } {
         this.apiHandler = { error: '', inprocess: false, asyncSuccess: false };
       };
     });
-  for (const marker of ["service('chmod'", "factory('item'"]) {
-    new Function('angular', iife(marker))(angular);
-  }
-  new Function('angular', 'jQuery', '$', iifeWithJquery("controller('FileManagerCtrl'"))(angular, (window as Any).jQuery, (window as Any).jQuery);
+  runIifes(angular, [...MODEL_MARKERS, "controller('FileManagerCtrl'"]);
   const $injector = angular.injector(['ng', 'FileManagerApp']);
   const $scope = $injector.get('$rootScope').$new();
   $injector.get('$controller')('FileManagerCtrl', { $scope });
@@ -255,4 +244,16 @@ export function legacyMultiSelect(input: Any, output?: Any): LegacyMultiSelect {
       host.remove();
     },
   };
+}
+
+/** A template of the legacy bundle's `$templateCache` (for example `modals.html`), parsed as the document the AngularJS app rendered its dialogs from. */
+export function legacyTemplate(name: string): Document {
+  const put: Record<string, string> = {};
+  const run = bundle.match(/angular\.module\("FileManagerApp"\)\.run\(\["\$templateCache", function\(\$templateCache\) \{[\s\S]*?\}\]\);/);
+  if (!run) throw new Error('legacy template cache not found');
+  const cache = { put: (key: string, html: string) => void (put[key] = html) };
+  new Function('angular', run[0])({ module: () => ({ run: (list: Any[]) => list[1](cache) }) });
+  const html = put[`src/templates/${name}`];
+  if (html === undefined) throw new Error(`legacy template not found: ${name}`);
+  return new DOMParser().parseFromString(html, 'text/html');
 }

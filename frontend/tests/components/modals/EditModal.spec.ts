@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import EditModal from '../../../src/components/modals/EditModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyAvailable, legacyContent, mountModal, select, text, type MountedModal } from './helpersB.ts';
+import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, select, text, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -16,7 +16,7 @@ const footerButtons = () => app.wrapper.findAll('.modal-footer button');
 const nextTick = () => app.wrapper.vm.$nextTick();
 
 describe('EditModal', () => {
-  it.runIf(legacyAvailable)('has the structure of the legacy template', () => {
+  it('has the structure of the legacy template', () => {
     mount();
     expect(diffAgainstLegacy(legacyContent('edit'), app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });

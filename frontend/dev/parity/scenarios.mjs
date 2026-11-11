@@ -25,20 +25,20 @@ const VIEW = { icons: 'main-icons.html', table: 'main-table.html', preview: 'mai
  */
 const MULTI = process.platform === 'darwin' ? 'Meta' : 'Control';
 
-/** Inventory decision 9.1: the fixed Q-03 shows the permissions entry only for exactly one item. */
+/** Decided deviation: the port fixes legacy's JavaScript error (Q-03) by showing the permissions entry only for exactly one item. */
 const Q03 = {
   pattern: /ul\[0\] > li\[12\] <li>: hidden legacy null vs vue true$/,
   reason: 'Q-03 fixed: permissions entry only for exactly one selected item',
 };
 
-/** The same decision moves every entry below the permissions entry by one row, so the menu's boxes differ. */
+/** The same fix moves every entry below the permissions entry by one row, so the menu's boxes differ. */
 const Q03_LAYOUT = {
   pattern: /div\[3\] > div\[0\].*: rect legacy/,
   reason: 'Q-03 fixed: the missing permissions entry shifts the boxes of the entries below it',
 };
 
 /**
- * Inventory decision 9.1: Q-25 makes `temp` a computed value. Legacy refreshed it only when the
+ * Decided deviation: `temp` is a computed value in the port (Q-25). Legacy refreshed it only when the
  * selection was replaced, so after a Ctrl/Cmd-click the hidden compress dialog still binds the
  * first item and its name field shows that name; the port shows the empty placeholder.
  */
@@ -156,6 +156,14 @@ for (const view of ['icons', 'table']) {
     },
   });
 }
+add({
+  name: 'search-trims-surrounding-spaces',
+  async run(page, h) {
+    // ng-model trims the model, not the field: the list filters on the trimmed text, the field keeps the spaces.
+    await h.search('  er ');
+    await h.snap('leading-and-trailing-space');
+  },
+});
 add({
   name: 'search-dropdown-open',
   async run(page) {
@@ -275,7 +283,7 @@ add({
 
 // -------------------------------------------------------------------- context menu
 
-/** Selection cases of the brief; each gets the menu opened on its last step. */
+/** Selection cases of the context menu; each gets the menu opened on its last step. */
 const contextCases = [
   {
     name: 'none',
@@ -413,7 +421,8 @@ add({
 /**
  * Selections the dialogs are opened for. Each one ends with the context menu
  * open. Several items are selected with Shift (a replacement of the
- * selection), so the Q-25 difference only shows where a scenario asks for it.
+ * selection), so the difference of Q-25 (the compress name field follows
+ * every selection change) only shows where a scenario asks for it.
  */
 /** Enters `folder` unless `file` is already listed, so a selection can be repeated in one scenario. */
 async function enterOnce(h, folder, file) {

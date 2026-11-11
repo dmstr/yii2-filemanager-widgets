@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MultiSelect from '../../../src/components/MultiSelect.vue';
 import ChangePermissionsModal from '../../../src/components/modals/ChangePermissionsModal.vue';
-import { diffAgainstLegacy, isHidden, item, legacyAvailable, legacyContent, mountModal, select, text, type MountedModal } from './helpersB.ts';
+import { diffAgainstLegacy, isHidden, item, legacyContent, mountModal, select, text, type MountedModal } from './helpers.ts';
 
 let app: MountedModal;
 afterEach(() => app?.wrapper.unmount());
@@ -14,7 +14,7 @@ const roles = (...names: string[]) => names.map((role, i) => ({ role, selected: 
 const KEYS = ['authRead', 'authUpdate', 'authDelete'] as const;
 
 describe('ChangePermissionsModal', () => {
-  it.runIf(legacyAvailable)('has the structure of the legacy template', () => {
+  it('has the structure of the legacy template', () => {
     app = mountModal(ChangePermissionsModal);
     expect(diffAgainstLegacy(legacyContent('changepermissions'), app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });

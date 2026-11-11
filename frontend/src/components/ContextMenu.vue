@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Right-click menu. Port of the legacy `item-context-menu.html` together with
- * the document-level jQuery handlers of the bundle (lines 14-37). Like the
+ * the document-level jQuery handlers of the legacy bundle (hide on click, place on right-click). Like the
  * legacy code it keeps the element itself out of Vue's hands: the container
  * is shown and hidden through its inline `display` (jQuery `show()`/`hide()`)
  * and positioned absolutely, while the two lists inside toggle with `v-show`
@@ -119,9 +119,8 @@ function placeMenu(pageX: number, pageY: number): void {
 
 /**
  * Legacy delegated handler `.main-navigation .table-files tr.item-list:has("td"), .item-list`.
- * The first selector is a subset of the second, so any `.item-list` opens
- * the menu, including a row of the destination dialog. The default action is
- * prevented at once, the placement waits one render so that the list
+ * The first selector is a subset of the second, so any `.item-list` element
+ * opens the menu. The default action is prevented at once, the placement waits one render so that the list
  * visibility (which the click on the item just changed) is up to date, as it
  * was in the synchronous AngularJS digest.
  */

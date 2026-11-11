@@ -1,6 +1,4 @@
-/** Shared setup for the dialog specs of the compress/extract/edit/upload/permissions/link group: mounting, selection helpers and a comparison with the legacy markup. */
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+/** Shared setup for the dialog specs: a mounted dialog on a real file manager state, selection helpers and a comparison with the legacy markup. */
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import { defineComponent, h, nextTick, reactive, type Component } from 'vue';
 import { provideConfig } from '../../../src/config/injection.ts';
@@ -9,6 +7,7 @@ import { provideI18n } from '../../../src/i18n/index.ts';
 import type { Item } from '../../../src/models/Item.ts';
 import { createFileManager, provideFileManager, type FileManager } from '../../../src/services/fileManager.ts';
 import { dir, file, makeConfig, makeI18n, makeItem } from '../../services/helpers.ts';
+import { legacyTemplate } from '../../utils/legacy.ts';
 
 export { dir, file, makeItem };
 
@@ -47,8 +46,10 @@ export async function select(fm: FileManager, ...items: Array<Item | undefined>)
   await nextTick();
 }
 
-/** Text with collapsed whitespace, as the browser shows it. */
+/** A test-utils wrapper or a plain element. */
 export type Wrapped = VueWrapper | DOMWrapper<Element> | Element;
+
+/** Text with collapsed whitespace, as the browser shows it. */
 export const text = (wrapper: Wrapped): string =>
   ('element' in wrapper ? wrapper.element : wrapper).textContent!.replace(/\s+/g, ' ').trim();
 
@@ -64,15 +65,12 @@ export function visibleText(root: Wrapped): string {
 
 export const isHidden = (el: Element): boolean => (el as HTMLElement).style.display === 'none';
 
-const LEGACY_FILE = resolve(process.cwd(), '../_tasks/2026-11-11_vue3-port/legacy-templates/modals.html');
+/** Waits for the render after a state change. */
+export const rendered = (app: MountedModal): Promise<void> => app.wrapper.vm.$nextTick();
 
-/** `_tasks` is git-ignored: comparisons against the legacy markup run only where the file exists. */
-export const legacyAvailable = existsSync(LEGACY_FILE);
-
-/** The `.modal-content` of a legacy dialog; `drop` removes subtrees (an `ng-if` branch that is not rendered). */
+/** The `.modal-content` of a legacy dialog, from the template in the legacy bundle; `drop` removes subtrees (an `ng-if` branch that is not rendered). */
 export function legacyContent(id: string, drop: string[] = []): Element {
-  const doc = new DOMParser().parseFromString(readFileSync(LEGACY_FILE, 'utf8'), 'text/html');
-  const content = doc.querySelector(`#${id} .modal-content`)!;
+  const content = legacyTemplate('modals.html').querySelector(`#${id} .modal-content`)!;
   for (const selector of drop) {
     content.querySelectorAll(selector).forEach((el) => el.remove());
   }
@@ -86,7 +84,7 @@ const ignoredAttribute = (name: string): boolean => /^(ng-|ngf-|ngclipboard|data
  * `{{'key' | translate}}` filters are resolved; any other expression is
  * data and becomes a `\u0000` marker that matches whatever was rendered.
  */
-function ownText(el: Element, legacy: boolean, translate: (key: string) => string): string {
+function ownText(el: Element, legacy: boolean, translate: (key: string) => string, emptyData: boolean): string {
   const raw = [...el.childNodes]
     .filter((n) => n.nodeType === Node.TEXT_NODE)
     .map((n) => n.textContent ?? '')
@@ -94,7 +92,7 @@ function ownText(el: Element, legacy: boolean, translate: (key: string) => strin
   const resolved = legacy
     ? raw
         .replace(/\{\{\s*(["'])(.+?)\1\s*\|\s*translate\s*\}\}/g, (_m, _q, key: string) => translate(key))
-        .replace(/\{\{.*?\}\}/g, '\u0000')
+        .replace(/\{\{.*?\}\}/g, emptyData ? '' : '\u0000')
     : raw;
   return resolved.replace(/\s+/g, ' ').trim();
 }
@@ -117,17 +115,26 @@ function attributes(el: Element): Record<string, string> {
   return result;
 }
 
-const matchesPattern = (legacyValue: string, renderedValue: string): boolean =>
-  new RegExp('^' + legacyValue.split(/\{\{.*?\}\}/).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$').test(renderedValue);
+const matchesPattern = (legacyValue: string, renderedValue: string, emptyData: boolean): boolean =>
+  new RegExp('^' + legacyValue.split(/\{\{.*?\}\}/).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(emptyData ? '' : '.*') + '$').test(renderedValue);
 
 /**
  * Compares tag, attributes (without `ng-*`, `ngf-*`, `data-*`, `style`, `disabled`, `value`), own
  * text and children of a rendered dialog with its legacy template. `ng-include` wrappers compare
  * only the wrapper (the partials belong to other components), the `isteven-multi-select` element
  * only its class and tag, and one `ng-repeat` child is cloned to the number of rendered rows.
- * Returns the first difference as a path, or `null` when equal.
+ * A legacy `{{expression}}` is data and matches any rendered text or attribute value; with
+ * `emptyData` it must render as the empty string (a dialog with an empty selection). Returns the
+ * first difference as a path, or `null` when equal.
  */
-export function diffAgainstLegacy(legacy: Element, rendered: Element, translate: (key: string) => string, path = ''): string | null {
+export function diffAgainstLegacy(
+  legacy: Element,
+  rendered: Element,
+  translate: (key: string) => string,
+  options: { emptyData?: boolean } = {},
+  path = '',
+): string | null {
+  const emptyData = !!options.emptyData;
   const here = `${path}/${legacy.tagName.toLowerCase()}`;
   if (legacy.tagName !== rendered.tagName) return `${here}: tag ${rendered.tagName}`;
   if (legacy.hasAttribute('isteven-multi-select')) {
@@ -137,7 +144,7 @@ export function diffAgainstLegacy(legacy: Element, rendered: Element, translate:
   const b = attributes(rendered);
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   for (const key of keys) {
-    if (!(key in a) || !(key in b) || !matchesPattern(a[key], b[key])) {
+    if (!(key in a) || !(key in b) || !matchesPattern(a[key], b[key], emptyData)) {
       return `${here}: attribute ${key} is ${JSON.stringify(b[key])} instead of ${JSON.stringify(a[key])}`;
     }
   }
@@ -145,8 +152,8 @@ export function diffAgainstLegacy(legacy: Element, rendered: Element, translate:
   const rawLegacy = [...legacy.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent).join('');
   // `{{key | translate}}` of an API-provided key: the rendered text is the translated key.
   if (!/\{\{\s*\w+\s*\|\s*translate\s*\}\}/.test(rawLegacy)) {
-    const textA = ownText(legacy, true, translate);
-    const textB = ownText(rendered, false, translate);
+    const textA = ownText(legacy, true, translate, emptyData);
+    const textB = ownText(rendered, false, translate, emptyData);
     if (!textMatches(textA, textB)) return `${here}: text "${textB}" instead of "${textA.replace(/\u0000/g, '{...}')}"`;
   }
   let childrenA = [...legacy.children];
@@ -158,7 +165,7 @@ export function diffAgainstLegacy(legacy: Element, rendered: Element, translate:
   }
   if (childrenA.length !== childrenB.length) return `${here}: ${childrenB.length} children instead of ${childrenA.length}`;
   for (let i = 0; i < childrenA.length; i++) {
-    const diff = diffAgainstLegacy(childrenA[i], childrenB[i], translate, `${here}[${i}]`);
+    const diff = diffAgainstLegacy(childrenA[i], childrenB[i], translate, options, `${here}[${i}]`);
     if (diff) return diff;
   }
   return null;

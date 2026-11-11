@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Permissions dialog (`#changepermissions`, F-60): one role multi-select each
+ * Permissions dialog (`#changepermissions`): one role multi-select each
  * for read, write and delete. The submit button is never disabled and keeps
  * the id `submit`, as in legacy.
  */

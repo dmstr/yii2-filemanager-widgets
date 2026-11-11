@@ -2,7 +2,7 @@
  * The dialog actions that change files or permissions, each with the
  * validation, error key, refresh and close behaviour of the legacy
  * controller. On an empty or multiple selection where legacy code threw and
- * AngularJS swallowed it (Q-29, Q-03) they return without doing anything.
+ * AngularJS swallowed it (Q-29: expressions on an empty selection; Q-03: permissions need exactly one item) they return without doing anything.
  */
 import { ref } from 'vue';
 import type { Item } from '../../models/Item.ts';

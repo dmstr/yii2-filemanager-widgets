@@ -8,7 +8,8 @@ import { reactive } from 'vue';
 import type { FileManagerConfig } from '../config/types.ts';
 import type { I18n } from '../i18n/index.ts';
 import { Item } from '../models/Item.ts';
-import { createApi, type ApiData, type Deferred, type DeferredHandler } from './api.ts';
+import { noop } from '../utils/noop.ts';
+import { createApi, settleDeferred, type DeferredHandler } from './api.ts';
 
 /** One node of the sidebar tree; the root node has no `item`. */
 export interface TreeNode {
@@ -34,44 +35,15 @@ export interface Navigator {
   listHasFolders(): Item | undefined;
 }
 
-const BRIDGE_ERROR = 'Error %s - Bridge response error, please check the API docs or this ajax response.';
-const NOT_FOUND_ERROR = 'Error 404 - Backend bridge is not working, please check the ajax response.';
-
-const noop = (): void => {};
-
 /** Creates a navigator with its own API client. */
 export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigator {
   const api = createApi(config, i18n);
   // Assigned right below; the functions only run after that.
   let nav: Navigator;
 
-  /**
-   * The navigator's own variant of `deferredHandler`: it writes to
-   * `nav.error` and, unlike the API one, never overwrites an error that is
-   * already set with `result.error`.
-   */
-  const deferredHandler: DeferredHandler = (data, deferred: Deferred, code, defaultMsg) => {
-    const body: ApiData = data !== null && typeof data === 'object' ? (data as ApiData) : {};
-    if (!data || typeof data !== 'object') {
-      nav.error = BRIDGE_ERROR.replace('%s', String(code));
-    }
-    if (code == 404) {
-      nav.error = NOT_FOUND_ERROR;
-    }
-    if (!nav.error && body.result && body.result.error) {
-      nav.error = body.result.error;
-    }
-    if (!nav.error && body.error) {
-      nav.error = body.error.message as string;
-    }
-    if (!nav.error && defaultMsg) {
-      nav.error = defaultMsg;
-    }
-    if (nav.error) {
-      return deferred.reject(data);
-    }
-    return deferred.resolve(data);
-  };
+  /** The navigator's own variant of `deferredHandler`: it writes to `nav.error` and keeps an error that is already set. */
+  const deferredHandler: DeferredHandler = (data, deferred, code, defaultMsg) =>
+    settleDeferred(nav, data, deferred, code, defaultMsg, false);
 
   function buildTree(path: string): void {
     const flatNodes: TreeNode[] = [];

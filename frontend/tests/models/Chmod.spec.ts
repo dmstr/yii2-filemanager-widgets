@@ -6,17 +6,15 @@ const { Chmod: LegacyChmod } = legacyModels({});
 
 describe('Chmod', () => {
   it.each([
-    ['644', 'rw-r--r--', '644'],
-    ['0755', 'rwxr-xr-x', '755'],
-    [644, 'rw-r--r--', '644'],
-    ['rwxr-xr-x', 'rwxr-xr-x', '755'],
-    ['drwxr-xr-x', 'rwxr-xr-x', '755'],
-    [' r w x r-x r-x ', 'rwxr-xr-x', '755'],
-    ['rwsr-xr-t', 'rw-r-xr-x', '655'], // setuid 's' does not count as exec, 't' does
-  ])('parses %s', (input, code, octal) => {
-    const chmod = new Chmod(input);
-    expect(chmod.toCode()).toBe(code);
-    expect(chmod.toOctal()).toBe(octal);
+    ['644', 'rw-r--r--'],
+    ['0755', 'rwxr-xr-x'],
+    [644, 'rw-r--r--'],
+    ['rwxr-xr-x', 'rwxr-xr-x'],
+    ['drwxr-xr-x', 'rwxr-xr-x'],
+    [' r w x r-x r-x ', 'rwxr-xr-x'],
+    ['rwsr-xr-t', 'rw-r-xr-x'], // setuid 's' does not count as exec, 't' does
+  ])('parses %s', (input, code) => {
+    expect(new Chmod(input).toCode()).toBe(code);
   });
 
   it('exposes the rwx flags per class', () => {
@@ -28,7 +26,7 @@ describe('Chmod', () => {
 
   it('starts with every flag off when there is no input', () => {
     expect(new Chmod().toCode()).toBe('---------');
-    expect(new Chmod(undefined).toOctal()).toBe('000');
+    expect(new Chmod(undefined).toCode()).toBe('---------');
     expect(new Chmod(null).toCode()).toBe('---------');
   });
 
@@ -39,7 +37,6 @@ describe('Chmod', () => {
 
   it('prepends and appends around the code', () => {
     expect(new Chmod('755').toCode('d', '!')).toBe('drwxr-xr-x!');
-    expect(new Chmod('755').toOctal('0', '#')).toBe('0755#');
   });
 
   it('throws the legacy message for invalid input', () => {
@@ -52,24 +49,22 @@ describe('Chmod', () => {
   });
 
   it('keeps the last three digits of a four digit octal value, whatever the first is', () => {
-    expect(new Chmod('9755').toOctal()).toBe('755');
+    expect(new Chmod('9755').toCode()).toBe('rwxr-xr-x');
     expect(() => new Chmod('77777')).toThrow();
   });
 
   it('matches the legacy service over a table of inputs', () => {
     const inputs: unknown[] = ['644', '0755', 644, 755, '1777', 'rwxr-xr-x', 'drwxr-xr-x', '---------', 'rwsrwsrwt', '', 0, null, undefined, '999', 'abc', ' 6 4 4 ', '9755', 'rwxrwxrwxx', '1e2', true];
     for (const input of inputs) {
-      let expected: { code: string; octal: string } | string;
+      let expected: string;
       try {
-        const legacy = new LegacyChmod(input);
-        expected = { code: legacy.toCode(), octal: legacy.toOctal() };
+        expected = new LegacyChmod(input).toCode();
       } catch (error) {
         expected = (error as Error).message;
       }
-      let actual: { code: string; octal: string } | string;
+      let actual: string;
       try {
-        const chmod = new Chmod(input as string);
-        actual = { code: chmod.toCode(), octal: chmod.toOctal() };
+        actual = new Chmod(input as string).toCode();
       } catch (error) {
         actual = (error as Error).message;
       }

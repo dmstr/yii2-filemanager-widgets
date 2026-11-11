@@ -1,6 +1,6 @@
 import { computed, createApp, defineComponent, h } from 'vue';
 import { describe, expect, it } from 'vitest';
-import { createI18n, provideI18n, useI18n } from '../../src/i18n';
+import { createI18n, provideI18n, useI18n } from '../../src/i18n/index.ts';
 
 describe('translator', () => {
   it('returns known keys', () => {

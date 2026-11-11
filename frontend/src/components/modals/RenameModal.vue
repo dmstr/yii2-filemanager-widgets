@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Rename dialog (`#rename`, F-53). Port of the legacy modal markup. */
+/** Rename dialog (`#rename`). Port of the legacy modal markup. */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
 import { tempModelField, vTextModel } from '../modelTrim.ts';

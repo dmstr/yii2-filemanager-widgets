@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * New folder dialog (`#newfolder`, F-58). The input binds to the phantom
+ * New folder dialog (`#newfolder`). The input binds to the phantom
  * item that opening the dialog put into the selection (Q-26).
  */
 import { useI18n } from '../../i18n/index.ts';
