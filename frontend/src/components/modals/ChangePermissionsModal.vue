@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * Permissions dialog (`#changepermissions`): one role multi-select each
- * for read, write and delete. The submit button is never disabled and keeps
- * the id `submit`, as in the AngularJS frontend.
+ * for read, write and delete. The submit button keeps the id `submit`, as in
+ * the AngularJS frontend; it is disabled only while the roles could not be
+ * loaded, so a dialog without the item's roles cannot overwrite them.
  */
 import { computed, type WritableComputedRef } from 'vue';
 import { useI18n } from '../../i18n/index.ts';
@@ -34,7 +35,7 @@ function outputModel(key: RoleKey): WritableComputedRef<MultiSelectOutputItem[] 
   });
 }
 
-/** The model's own role array, never a copy (a new reference counts as a new input model). */
+/** The model's own role array, never a copy (a new reference counts as a new input model); `null` and `undefined` show as no roles. */
 const inputModel = (key: RoleKey): MultiSelectItem[] | null | undefined =>
   fm.singleSelection()?.model[key] as MultiSelectItem[] | null | undefined;
 
@@ -82,7 +83,7 @@ const authDelete = outputModel('authDelete');
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" @click="close()">{{ t('cancel') }}</button>
-        <button type="submit" class="btn btn-primary" id="submit">{{ t('change') }}</button>
+        <button type="submit" class="btn btn-primary" id="submit" :disabled="fm.permissionsLoadFailed">{{ t('change') }}</button>
       </div>
     </form>
   </BaseModal>

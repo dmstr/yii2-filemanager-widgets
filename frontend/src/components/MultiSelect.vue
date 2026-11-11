@@ -37,6 +37,11 @@ const hashKeys = new WeakMap<object, string>();
  * Like the directive, it ticks the input items in place (`selected`) and
  * writes the ticked items to the output model, which is bound with
  * `v-model:output-model`.
+ *
+ * Unlike the directive, a `null` or `undefined` input model counts as an empty
+ * list: the directive ignored it, so the rows, label, reset backup and output
+ * of the previous input model stayed, and a dialog reused for another item
+ * showed and returned that item's roles.
  */
 import { onBeforeUnmount, ref, shallowReactive, shallowRef, toRaw, watch, type ComponentPublicInstance } from 'vue';
 
@@ -173,15 +178,10 @@ function matches(item: MultiSelectItem, needle: string): boolean {
 
 /**
  * The directive's `updateFilter`: case-insensitive substring match, collected
- * from the end of the input and reversed back to input order. Returns false
- * where the directive throws, which is for a `null` input model.
+ * from the end of the input and reversed back to input order.
  */
-function updateFilter(): boolean {
-  const input = props.inputModel;
-  if (input === undefined || input === null) {
-    setFiltered([]);
-    return input === undefined;
-  }
+function updateFilter(): void {
+  const input = props.inputModel ?? [];
   const needle = labelFilter.toUpperCase();
   const result: MultiSelectItem[] = [];
   for (let i = input.length - 1; i >= 0; i--) {
@@ -190,7 +190,6 @@ function updateFilter(): boolean {
   result.reverse();
   setFiltered(result);
   later(getFormElements);
-  return true;
 }
 
 function setFiltered(list: MultiSelectItem[]): void {
@@ -267,8 +266,8 @@ function removeDocumentListeners(): void {
   document.removeEventListener('keydown', keyboardListener);
 }
 
-/** Opens or closes the layer; returns false where the directive throws (opening with a `null` input model). */
-function toggleCheckboxes(): boolean {
+/** Opens or closes the layer. */
+function toggleCheckboxes(): void {
   removeDocumentListeners();
   if (shown.value) {
     setShown(false);
@@ -277,10 +276,10 @@ function toggleCheckboxes(): boolean {
     focusRow(tabIndex, false);
     formElements[tabIndex]?.blur();
     button.value?.focus();
-    return true;
+    return;
   }
   setFilter('');
-  if (!updateFilter()) return false;
+  updateFilter();
   helperItems = [];
   helperItemsLength = 0;
   setShown(true);
@@ -295,13 +294,13 @@ function toggleCheckboxes(): boolean {
   }
   filterInput.value?.focus();
   tabIndex = tabIndex + helperItemsLength - 2;
-  return true;
 }
 
 function onButtonClick(): void {
   // ng-click="toggleCheckboxes(); refreshSelectedItems(); refreshButton(); prepareGrouping; prepareIndex();"
   // refreshSelectedItems does not exist and prepareGrouping is not called, so both do nothing.
-  if (toggleCheckboxes() && refreshButton()) prepareIndex();
+  toggleCheckboxes();
+  if (refreshButton()) prepareIndex();
   digest();
 }
 
@@ -357,7 +356,8 @@ function onHelperClick(type: 'all' | 'none' | 'reset', e: Event): void {
 
 function onClearClick(e: Event): void {
   setFilter('');
-  if (updateFilter()) select('clear', e);
+  updateFilter();
+  select('clear', e);
   digest();
 }
 
@@ -469,9 +469,8 @@ watch(
     if (!initial && out !== previous[1] && toRaw(out) !== toRaw(lastEmitted)) output = out;
     if (!initial && input === previous[0]) return;
     lastSnapshot = snapshot();
-    if (!input) return;
     // The directive's reference watch: new backup for Reset, then filter, index and both outputs.
-    backUp = input.map((item) => ({ selected: item.selected }));
+    backUp = (input ?? []).map((item) => ({ selected: item.selected }));
     updateFilter();
     prepareGrouping();
     prepareIndex();

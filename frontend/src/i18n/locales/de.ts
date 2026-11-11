@@ -1,4 +1,4 @@
-/** "de" translations, carried over verbatim from the AngularJS frontend of version 1.x. */
+/** "de" translations, carried over verbatim from the AngularJS frontend of version 1.x; `error_get_permissions` was used there but missing from every table. */
 const messages: Record<string, string> = {
   "filemanager": "Dateimanager",
   "language": "Sprache",
@@ -80,6 +80,7 @@ const messages: Record<string, string> = {
   "error_creating_folder": "Beim Erstellen des Ordners ist ein Fehler aufgetreten",
   "error_getting_content": "Beim Holen des Dateiinhalts ist ein Fehler aufgetreten",
   "error_changing_perms": "Beim Ändern der Dateiberechtigungen ist ein Fehler aufgetreten",
+  "error_get_permissions": "Beim Laden der Berechtigungen der Datei oder des Ordners ist ein Fehler aufgetreten",
   "error_uploading_files": "Beim Hochladen der Dateien ist ein Fehler aufgetreten",
   "sure_to_start_compression_with": "Möchten Sie die Datei wirklich komprimieren?",
   "owner": "Besitzer",
