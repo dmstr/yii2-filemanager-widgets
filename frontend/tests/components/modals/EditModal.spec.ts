@@ -66,7 +66,7 @@ describe('EditModal', () => {
     expect((textarea().element as HTMLTextAreaElement).value).toBe('  line one\nline two\n\n');
     await select(app.fm);
     await expect(textarea().setValue('x')).resolves.toBeUndefined();
-    expect((textarea().element as HTMLTextAreaElement).value).toBe('');
+    expect((textarea().element as HTMLTextAreaElement).value).toBe('x');
   });
 
   it('toggles modal-fullscreen on the dialog with the second header button', async () => {

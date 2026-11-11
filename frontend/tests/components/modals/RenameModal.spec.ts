@@ -34,15 +34,16 @@ describe('RenameModal', () => {
     expect(text(submit())).toBe('Rename');
   });
 
-  it('prints "false" as the name and an empty input for several items and for no selection, nothing for a hole', async () => {
+  it('prints an empty name and an empty input for several items, no selection and a hole', async () => {
     app = mountModal(RenameModal);
     await select(app.fm, item('a'), item('b'));
-    expect(text(app.wrapper.find('label.radio b'))).toBe('false');
+    expect(text(app.wrapper.find('label.radio b'))).toBe('');
     expect((input().element as HTMLInputElement).value).toBe('');
     await select(app.fm);
-    expect(text(app.wrapper.find('label.radio'))).toBe('Enter new name for false');
+    expect(text(app.wrapper.find('label.radio'))).toBe('Enter new name for');
     await select(app.fm, undefined);
     expect(text(app.wrapper.find('label.radio b'))).toBe('');
+    expect(app.wrapper.text()).not.toContain('false');
   });
 
   it('writes the trimmed input to tempModel, an empty field as an empty string', async () => {
@@ -65,7 +66,7 @@ describe('RenameModal', () => {
     await select(app.fm, a, item('b'));
     await expect(type('x')).resolves.toBeUndefined();
     expect(a.tempModel.name).toBe('a');
-    expect((input().element as HTMLInputElement).value).toBe('');
+    expect((input().element as HTMLInputElement).value).toBe('x');
   });
 
   it('follows changes of tempModel made elsewhere', async () => {

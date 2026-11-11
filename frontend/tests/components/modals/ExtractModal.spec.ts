@@ -53,13 +53,12 @@ describe('ExtractModal', () => {
     expect(a.tempModel.name).toBe('');
   });
 
-  it('drops the write when nothing is selected, like an assignment through an undefined base', async () => {
+  it('keeps the typed text without writing it when nothing is selected', async () => {
     app = mountModal(ExtractModal);
     await select(app.fm);
     await expect(input().setValue('x')).resolves.toBeUndefined();
     expect(app.fm.singleSelection()).toBeUndefined();
-    // The model did not take the value, so the field shows the model again.
-    expect((input().element as HTMLInputElement).value).toBe('');
+    expect((input().element as HTMLInputElement).value).toBe('x');
   });
 
   it('closes on the cross and on Cancel without refreshing', async () => {
