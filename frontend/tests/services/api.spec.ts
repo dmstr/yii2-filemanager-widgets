@@ -417,23 +417,33 @@ describe('upload', () => {
     await promise;
   });
 
-  it('reports progress as the percentage minus one and resets it afterwards (Q-34)', async () => {
+  it('reports progress as the rounded-down percentage, reaching 100, and resets it afterwards', async () => {
     const Xhr = stubXhr();
     const promise = api.upload(files(), []);
     const xhr = Xhr.instances[0];
-    xhr.emitProgress(50, 200);
-    expect(api.progress).toBe(24);
-    xhr.emitProgress(199, 200);
-    expect(api.progress).toBe(98);
-    xhr.emitProgress(200, 200);
-    expect(api.progress).toBe(99);
-    xhr.emitProgress(250, 200);
-    expect(api.progress).toBe(99);
     xhr.emitProgress(0, 200);
-    expect(api.progress).toBe(-1);
+    expect(api.progress).toBe(0);
+    xhr.emitProgress(50, 200);
+    expect(api.progress).toBe(25);
+    xhr.emitProgress(199, 200);
+    expect(api.progress).toBe(99);
+    xhr.emitProgress(200, 200);
+    expect(api.progress).toBe(100);
+    xhr.emitProgress(250, 200);
+    expect(api.progress).toBe(100);
     xhr.respond(200, { result: {} });
     await promise;
     expect(api.progress).toBe(0);
+  });
+
+  it('shows 0 instead of NaN when the total is 0', async () => {
+    const Xhr = stubXhr();
+    const promise = api.upload(files(), []);
+    const xhr = Xhr.instances[0];
+    xhr.emitProgress(0, 0);
+    expect(api.progress).toBe(0);
+    xhr.respond(200, { result: {} });
+    await promise;
   });
 
   it('rejects with result.error from a failed upload', async () => {

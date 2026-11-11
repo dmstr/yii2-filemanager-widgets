@@ -206,9 +206,9 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
       for (const [name, value] of Object.entries(REQUEST_HEADERS)) {
         xhr.setRequestHeader(name, value);
       }
-      // Q-34: the percentage minus one, so it never shows more than 99.
       const onProgress = (event: ProgressEvent): void => {
-        api.progress = Math.min(100, parseInt(String((100.0 * event.loaded) / event.total))) - 1;
+        // An unknown or zero total would give NaN, which the template would print.
+        api.progress = event.total > 0 ? Math.min(100, Math.floor((100 * event.loaded) / event.total)) : 0;
       };
       xhr.upload.addEventListener('progress', onProgress);
       xhr.upload.addEventListener('load', (event) => event.lengthComputable && onProgress(event));
