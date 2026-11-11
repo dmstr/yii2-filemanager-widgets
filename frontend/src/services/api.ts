@@ -10,6 +10,7 @@ import type { I18n } from '../i18n/index.ts';
 import type { Item, ItemModel } from '../models/Item.ts';
 import { param } from '../utils/param.ts';
 import { slug } from '../utils/slug.ts';
+import { withQuery } from '../utils/withQuery.ts';
 import { REQUEST_HEADERS, isSuccess, parseBody, request, type HttpResult } from './http.ts';
 
 /** Shape of a decoded API response; every part is optional on the wire. */
@@ -101,8 +102,7 @@ const getFilePath = (item: Item | undefined): string | undefined => item && item
 const getFileList = (files: Selection | undefined): Array<string | undefined> =>
   (files || []).map((file) => file && file.model.fullPath());
 
-/** `[url, $.param(data)].join('?')`; Q-36: a handler URL that already has a query gets a second `?`. */
-const withQuery = (url: string, data: Record<string, unknown>): string => [url, param(data)].join('?');
+const urlWithParams = (url: string, data: Record<string, unknown>): string => withQuery(url, param(data));
 
 /**
  * The AngularJS item model carried two fields the port's `Item` dropped as
@@ -299,7 +299,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
 
     getUrl(item) {
       const path = getFilePath(item);
-      return path && withQuery(config.downloadFileUrl, { action: 'download', path });
+      return path && urlWithParams(config.downloadFileUrl, { action: 'download', path });
     },
 
     getPreviewUrl(item) {
@@ -324,7 +324,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
       // Q-35: characters 9 to 13 of the millisecond timestamp.
       const timestamp = new Date().getTime().toString().substr(8, 13);
       const toFilename = timestamp + '-' + config.multipleDownloadFileName;
-      const url = withQuery(config.downloadMultipleUrl, {
+      const url = urlWithParams(config.downloadMultipleUrl, {
         action: 'downloadMultiple',
         items: getFileList(files),
         toFilename,
