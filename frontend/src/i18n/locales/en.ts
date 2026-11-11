@@ -1,4 +1,4 @@
-/** "en" translations, carried over verbatim from the AngularJS frontend of version 1.x; `error_get_permissions` was used there but missing from every table. */
+/** "en" translations, carried over from the AngularJS frontend of version 1.x, plus the texts that frontend used without defining them. */
 const messages: Record<string, string> = {
   "filemanager": "File Manager",
   "language": "Language",
@@ -100,6 +100,19 @@ const messages: Record<string, string> = {
   "download_as_zip": "Download as ZIP",
   "roles": "Roles",
   "domain": "Domain",
+  "refresh": "Refresh",
+  "selection": "Selection",
+  "switch_to_icons_view": "Switch to icons view",
+  "switch_to_table_view": "Switch to table view",
+  "switch_to_preview_view": "Switch to preview view",
+  "error_moving": "An error occurred moving the file or folder",
+  "error_downloading": "An error occurred downloading the file",
+  "error_cannot_move_same_path": "Cannot move to the same path",
+  "select_all": "Select All",
+  "select_none": "Select None",
+  "reset": "Reset",
+  "search_placeholder": "Search...",
+  "none_selected": "None Selected",
 };
 
 export default messages;

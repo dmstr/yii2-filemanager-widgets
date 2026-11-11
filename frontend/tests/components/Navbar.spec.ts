@@ -48,7 +48,7 @@ describe('view switch buttons (F-05)', () => {
     expect(window.localStorage.getItem('viewTemplate')).toBe('main-icons.html');
   });
 
-  it('keeps the AngularJS titles, including the raw keys of the three missing translations', async () => {
+  it('titles the view buttons with their own texts', async () => {
     app = await mountWidget({ config: { enableIconPreviewView: true } });
     expect(button('fm-icons').attributes('title')).toBe('Switch to icons view');
     expect(button('fm-table').attributes('title')).toBe('Switch to table view');
@@ -57,10 +57,10 @@ describe('view switch buttons (F-05)', () => {
 });
 
 describe('navbar controls', () => {
-  it('refreshes with recycle: true and the Q-05 tooltip', async () => {
+  it('refreshes with recycle: true and a tooltip that says so', async () => {
     app = await mountWidget();
     const refresh = app.wrapper.find('nav .glyphicon-refresh').element.parentElement!;
-    expect(refresh.getAttribute('title')).toBe('Icons');
+    expect(refresh.getAttribute('title')).toBe('Refresh');
     refresh.click();
     await settle();
     expect(app.requests[0].body).toMatchObject({ action: 'list', recycle: true });

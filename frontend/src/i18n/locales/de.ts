@@ -1,4 +1,4 @@
-/** "de" translations, carried over verbatim from the AngularJS frontend of version 1.x; `error_get_permissions` was used there but missing from every table. */
+/** "de" translations, carried over from the AngularJS frontend of version 1.x, plus the texts that frontend used without defining them. */
 const messages: Record<string, string> = {
   "filemanager": "Dateimanager",
   "language": "Sprache",
@@ -100,6 +100,19 @@ const messages: Record<string, string> = {
   "download_as_zip": "Download als ZIP",
   "roles": "Rollen",
   "domain": "Domain",
+  "refresh": "Aktualisieren",
+  "selection": "Auswahl",
+  "switch_to_icons_view": "Zur Symbolansicht wechseln",
+  "switch_to_table_view": "Zur Tabellenansicht wechseln",
+  "switch_to_preview_view": "Zur Vorschauansicht wechseln",
+  "error_moving": "Beim Verschieben der Datei oder des Ordners ist ein Fehler aufgetreten",
+  "error_downloading": "Beim Herunterladen der Datei ist ein Fehler aufgetreten",
+  "error_cannot_move_same_path": "Verschieben in denselben Pfad ist nicht möglich",
+  "select_all": "Alle auswählen",
+  "select_none": "Keine auswählen",
+  "reset": "Zurücksetzen",
+  "search_placeholder": "Suche...",
+  "none_selected": "Nichts ausgewählt",
 };
 
 export default messages;

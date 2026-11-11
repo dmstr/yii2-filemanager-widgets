@@ -7,6 +7,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MultiSelect, { type MultiSelectItem } from '../../src/components/MultiSelect.vue';
+import { createI18n, I18N_KEY } from '../../src/i18n/index.ts';
 import { loadFixture } from '../utils/fixtures.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -40,6 +41,7 @@ function vueDriver(input: Any, output?: Any): Driver & { wrapper: VueWrapper } {
     },
     attrs: { class: 'permission-multi-select-button' },
     attachTo: document.body,
+    global: { provide: { [I18N_KEY as symbol]: createI18n('en') } },
   });
   return {
     wrapper,

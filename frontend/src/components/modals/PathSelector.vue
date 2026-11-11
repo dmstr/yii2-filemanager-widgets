@@ -17,7 +17,7 @@ const { t } = useI18n();
     <div class="panel panel-primary mt10 mb0">
       <div class="panel-body">
         <div class="detail-sources">
-          <div class="like-code mr5"><b>{{ t('Selection') }}:</b>
+          <div class="like-code mr5"><b>{{ t('selection') }}:</b>
             <SelectedFilesMsg />
           </div>
         </div>
