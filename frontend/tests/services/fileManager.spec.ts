@@ -620,7 +620,7 @@ describe('remove and move', () => {
     select('a.txt');
     fm.modalWithPathSelector('move');
     expect(fm.move()).toBe(false);
-    expect(fm.api.error).toBe('error_cannot_move_same_path');
+    expect(fm.api.error).toBe('Cannot move to the same path');
     await settle();
     expect(requests).toEqual([]);
   });
@@ -1227,7 +1227,7 @@ describe('destination chosen by row or by the current-folder button', () => {
       await inRoot();
       await pickCurrent([]);
       expect(fm.move()).toBe(false);
-      expect(fm.api.error).toBe('error_cannot_move_same_path');
+      expect(fm.api.error).toBe('Cannot move to the same path');
       expect(movesSent()).toEqual([]);
     });
 

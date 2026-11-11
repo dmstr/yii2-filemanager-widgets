@@ -272,10 +272,10 @@ describe('response handling', () => {
     expect(api.error).toBe('Unknown error listing, check the response');
   });
 
-  it('shows the raw key where a translation is missing', async () => {
+  it('shows a translated message for a failed move', async () => {
     reply = () => ({ status: 500, body: { foo: 1 } });
     await expect(api.move(items(), [])).rejects.toBeDefined();
-    expect(api.error).toBe('error_moving');
+    expect(api.error).toBe('An error occurred moving the file or folder');
   });
 
   it('does not throw on a network failure and rejects with the bridge error (Q-30)', async () => {

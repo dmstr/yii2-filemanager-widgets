@@ -28,7 +28,7 @@ const hashKeys = new WeakMap<object, string>();
  * the full notice is in `frontend/licenses/isteven-multi-select.txt` and is
  * copied into the build's `filemanager.licenses.txt`), limited to
  * what the permissions dialog uses: multiple selection, vertical
- * layout, all four helper elements, the fixed English texts and
+ * layout, all four helper elements and
  * `button-label`/`item-label` `role`, `tick-property` `selected`,
  * `output-properties` `role selected`. Markup, class names and the order of
  * state changes follow the directive's link function and template, so the
@@ -43,9 +43,12 @@ const hashKeys = new WeakMap<object, string>();
  * of the previous input model stayed, and a dialog reused for another item
  * showed and returned that item's roles.
  */
+import { useI18n } from '../i18n/index.ts';
 import { onBeforeUnmount, ref, shallowReactive, shallowRef, toRaw, watch, type ComponentPublicInstance } from 'vue';
 
 type ButtonLabel = { kind: 'empty' } | { kind: 'none' } | { kind: 'labels'; labels: string[] };
+
+const { t } = useI18n();
 
 const props = defineProps<{
   inputModel?: MultiSelectItem[] | null;
@@ -493,15 +496,15 @@ onBeforeUnmount(() => {
 <template>
   <div ref="rootEl">
     <span class="multiSelect inlineBlock" :class="{ buttonClicked: spanClicked }">
-      <button ref="button" id="" type="button" @click="onButtonClick"><template v-if="buttonLabel.kind === 'none'">None Selected<span class="caret"></span></template><template v-else-if="buttonLabel.kind === 'labels'"><template v-for="(text, i) in buttonLabel.labels" :key="i"><template v-if="i > 0">, </template><div class="buttonLabel">{{ text }}<span v-if="i === buttonLabel.labels.length - 1" class="caret"></span></div></template><span v-if="buttonLabel.labels.length === 0" class="caret"></span></template></button>
+      <button ref="button" id="" type="button" @click="onButtonClick"><template v-if="buttonLabel.kind === 'none'">{{ t('none_selected') }}<span class="caret"></span></template><template v-else-if="buttonLabel.kind === 'labels'"><template v-for="(text, i) in buttonLabel.labels" :key="i"><template v-if="i > 0">, </template><div class="buttonLabel">{{ text }}<span v-if="i === buttonLabel.labels.length - 1" class="caret"></span></div></template><span v-if="buttonLabel.labels.length === 0" class="caret"></span></template></button>
       <div ref="layer" class="checkboxLayer" :class="{ show: shown }">
         <div ref="helperContainer" class="helperContainer">
           <!-- No whitespace between the helper buttons: the directive's template had only comments there, and a space shifts them -->
-          <div class="line"><button type="button" class="helperButton" @click="onHelperClick('all', $event)">&#10003;&nbsp;&nbsp;Select All</button><button type="button" class="helperButton" @click="onHelperClick('none', $event)">&times;&nbsp;&nbsp;Select None</button><button type="button" class="helperButton reset" @click="onHelperClick('reset', $event)">&#8630;&nbsp;&nbsp;Reset</button></div>
+          <div class="line"><button type="button" class="helperButton" @click="onHelperClick('all', $event)">&#10003;&nbsp;&nbsp;{{ t('select_all') }}</button><button type="button" class="helperButton" @click="onHelperClick('none', $event)">&times;&nbsp;&nbsp;{{ t('select_none') }}</button><button type="button" class="helperButton reset" @click="onHelperClick('reset', $event)">&#8630;&nbsp;&nbsp;{{ t('reset') }}</button></div>
           <div class="line" style="position: relative">
             <input
               ref="filterInput"
-              placeholder="Search..."
+              :placeholder="t('search_placeholder')"
               type="text"
               class="inputFilter"
               @click="onFilterClick"
