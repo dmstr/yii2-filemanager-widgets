@@ -716,6 +716,23 @@ describe('downloadLink', () => {
     expect(fm.modals.isOpen('downloadlink')).toBe(true);
   });
 
+  it('joins the links with & when the handler URL has a query', async () => {
+    await boot({ downloadFileUrl: '/api/downloadFile?scope=s' });
+    select('a.txt');
+    fm.downloadLink();
+    expect(fm.dlLink).toBe(window.location.protocol + '//' + window.location.host + '/api/downloadFile?scope=s&action=download&path=%2Fa.txt');
+    expect(fm.streamLink).toBe('/api/downloadFile?scope=s&action=stream&path=%2Fa.txt');
+  });
+
+  it('prefixes the page origin to an absolute handler URL', async () => {
+    // Existing behaviour, not fixed here: the origin is put in front blindly, so the absolute link is broken.
+    await boot({ downloadFileUrl: 'https://cdn.example/api' });
+    select('a.txt');
+    fm.downloadLink();
+    expect(fm.dlLink).toBe(window.location.protocol + '//' + window.location.host + 'https://cdn.example/api?action=download&path=%2Fa.txt');
+    expect(fm.streamLink).toBe('https://cdn.example/api?action=stream&path=%2Fa.txt');
+  });
+
   it('shows the urls of the API when the item has some', async () => {
     override = (r) => ((r.body as { action: string }).action === 'list' ? { body: { result: [file('u.txt', { urls: { image: '/i', download: '/d' } })] } } : undefined);
     await fm.refreshLocation();

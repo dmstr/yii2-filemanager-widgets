@@ -7,6 +7,7 @@ import { ref } from 'vue';
 import type { Item } from '../../models/Item.ts';
 import { noop } from '../../utils/noop.ts';
 import { param } from '../../utils/param.ts';
+import { withQuery } from '../../utils/withQuery.ts';
 import { settled, type FileManagerContext } from './types.ts';
 
 export function createBrowseActions(ctx: FileManagerContext) {
@@ -93,7 +94,7 @@ export function createBrowseActions(ctx: FileManagerContext) {
     }
   }
 
-  /** Fills the link dialog state and opens it. Q-36: the handler URL gets `?` appended even if it has one. */
+  /** Fills the link dialog state and opens it. The absolute link puts the page origin in front of the handler URL as is, so an absolute handler URL yields `origin + absolute URL`. */
   function downloadLink(): void {
     const item = selection.singleSelection();
     if (selection.selectionHas('dir') || !item) {
@@ -101,8 +102,8 @@ export function createBrowseActions(ctx: FileManagerContext) {
     }
     const itemFullPath = item.model.fullPath();
     const domain = window.location.protocol + '//' + window.location.host;
-    dlLink.value = domain + [config.downloadFileUrl, param({ action: 'download', path: itemFullPath })].join('?');
-    streamLink.value = [config.downloadFileUrl, param({ action: 'stream', path: itemFullPath })].join('?');
+    dlLink.value = domain + withQuery(config.downloadFileUrl, param({ action: 'download', path: itemFullPath }));
+    streamLink.value = withQuery(config.downloadFileUrl, param({ action: 'stream', path: itemFullPath }));
     path.value = itemFullPath;
     urls.value = [];
     showDefaultUrls.value = true;
