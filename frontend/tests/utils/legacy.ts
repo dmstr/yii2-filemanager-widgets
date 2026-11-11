@@ -203,3 +203,56 @@ export function legacyController(config: Any): { $scope: Any; Item: Any } {
   $injector.get('$controller')('FileManagerCtrl', { $scope });
   return { $scope, Item: $injector.get('item') };
 }
+
+/** The text of the `isteven-multi-select` 4.0.0 module inside the bundle, directive and template. */
+function multiSelectSource(): string {
+  const start = bundle.indexOf("angular.module( 'isteven-multi-select'");
+  const endMarker = "$templateCache.put( 'isteven-multi-select.htm' , template );\n}]);";
+  const end = bundle.indexOf(endMarker, start) + endMarker.length;
+  if (start < 0 || end < endMarker.length) throw new Error('legacy multi-select not found');
+  return bundle.slice(start, end);
+}
+
+export interface LegacyMultiSelect {
+  /** The host `div` the directive renders into, attached to `document.body`. */
+  element: HTMLElement;
+  /** The parent scope: `input` is the input model, `output` the output model. */
+  scope: Any;
+  /** Runs a digest on the parent scope, as an AngularJS event handler would. */
+  digest: () => void;
+  /** Destroys the scope and detaches the host. */
+  destroy: () => void;
+}
+
+/**
+ * The real `isteven-multi-select` directive, compiled with exactly the
+ * attributes the permissions dialog uses and linked into `document.body`.
+ * `$timeout` callbacks run on real timers, so specs wait a macrotask.
+ */
+export function legacyMultiSelect(input: Any, output?: Any): LegacyMultiSelect {
+  const angular = angularGlobal();
+  new Function('angular', multiSelectSource())(angular);
+  const $injector = angular.injector(['ng', 'isteven-multi-select']);
+  const scope = $injector.get('$rootScope').$new();
+  scope.input = input;
+  scope.output = output;
+  const host = document.createElement('div');
+  host.innerHTML =
+    '<div isteven-multi-select input-model="input" output-model="output" button-label="role" item-label="role"' +
+    ' tick-property="selected" output-properties="role selected" class="permission-multi-select-button"></div>';
+  document.body.appendChild(host);
+  const element = $injector.get('$compile')(host.firstChild)(scope)[0] as HTMLElement;
+  scope.$digest();
+  return {
+    element,
+    scope,
+    digest: () => scope.$digest(),
+    destroy: () => {
+      // The directive never unbinds its document listeners on $destroy; drop them so specs stay independent.
+      const isolate = angular.element(element).isolateScope();
+      angular.element(document).off('click', isolate.externalClickListener).off('keydown', isolate.keyboardListener);
+      scope.$destroy();
+      host.remove();
+    },
+  };
+}
