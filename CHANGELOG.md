@@ -1,5 +1,17 @@
 # CHANGELOG
 
+### 2.0.3
+
+Fixes:
+
+- keyboard users see a focus outline on links, buttons and other controls inside the file manager; mouse clicks still show none. Two stylesheet rules that never applied were removed, with no visual change
+- hiding the size column with `hideSize` also hides the size cells in every row, so the remaining columns no longer sit under the wrong headers
+- clicking the permissions header sorts the table by the permission text shown in the column (for example `drwxr-xr-x`), with folders still listed first
+- with a host page that provides `saveAs` (FileSaver.js), downloads no longer corrupt images, archives and PDFs, and the download of several files as a ZIP requests the right URL. Without `saveAs` downloads open in a new window as before
+- `FileManagerWidget` sends the handler URL for the edit action too (`editUrl`); it pointed at a path that does not exist
+- the refresh button no longer sends a leftover `recycle` flag to the backend and just reloads the current folder
+- the bundle's built-in defaults no longer carry the name of the AngularJS project: without the PHP widget the first breadcrumb entry reads `/` and a ZIP download is suggested as `filemanager.zip`, which is what the PHP widget already sent
+
 ### 2.0.2
 
 Fixes:

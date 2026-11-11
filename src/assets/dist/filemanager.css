@@ -250,12 +250,7 @@ hrzg-filemanager .modal .modal-header .close.fullscreen {
   top: 4px;
   margin-right: 0.8em;
 }
-hrzg-filemanager body {
-  font-size: 14px;
-  height: 100vh;
-}
-hrzg-filemanager *,
-hrzg-filemanager *:focus {
+hrzg-filemanager *:focus:not(:focus-visible) {
   outline: 0!important;
 }
 hrzg-filemanager .navbar {
@@ -531,7 +526,6 @@ hrzg-filemanager .main {
     padding-right: 0;
     padding-left: 0;
   }
-  hrzg-filemanager angular-filemanager > div,
   hrzg-filemanager .row,
   hrzg-filemanager .main,
   hrzg-filemanager .sidebar {
