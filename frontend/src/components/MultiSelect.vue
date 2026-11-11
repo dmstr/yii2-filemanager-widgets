@@ -14,11 +14,6 @@ export interface MultiSelectOutputItem {
 
 // The directive's `output-properties="role selected"`.
 const OUTPUT_PROPERTIES = ['role', 'selected'];
-
-// AngularJS's ng-repeat writes `$$hashKey = 'object:<uid>'` onto every item it renders,
-// from one counter shared by the whole app; the filter later searches that value.
-let nextUid = 0;
-const hashKeys = new WeakMap<object, string>();
 </script>
 
 <script setup lang="ts">
@@ -86,21 +81,11 @@ let helperItemsLength = 0;
 let formElements: HTMLElement[] = [];
 let lastSnapshot = '';
 const timers = new Set<ReturnType<typeof setTimeout>>();
-// The directive's random `idx_*` and `spc_*` properties, kept off the items.
+// The directive's random `idx_*` property, kept off the items.
 const indexOf = new WeakMap<object, number>();
-const spacingOf = new WeakMap<object, number>();
 const rowItem = new WeakMap<Element, object>();
 
 const raw = (item: object): object => toRaw(item);
-
-function hashKeyOf(item: object): string {
-  let key = hashKeys.get(raw(item));
-  if (key === undefined) {
-    key = `object:${++nextUid}`;
-    hashKeys.set(raw(item), key);
-  }
-  return key;
-}
 
 /** The directive's `writeLabel`: each label property is prefixed with `&nbsp;`, a falsy role gives no text. */
 function writeLabel(item: MultiSelectItem): string {
@@ -167,16 +152,9 @@ function refreshButton(): boolean {
   return true;
 }
 
-/** Any non-boolean value of the item counts, including the hidden index, spacing and `$$hashKey`. */
+/** Only the role name is searched, so internal values such as the row index cannot match. */
 function matches(item: MultiSelectItem, needle: string): boolean {
-  const values: unknown[] = [];
-  for (const key in item) values.push(item[key]);
-  // The directive's own properties sit on the item in AngularJS; a filter of `0` or `obj` matches every row through them.
-  const key = raw(item);
-  if (spacingOf.has(key)) values.push(spacingOf.get(key));
-  if (indexOf.has(key)) values.push(indexOf.get(key));
-  if (hashKeys.has(key)) values.push(hashKeys.get(key));
-  return values.some((value) => typeof value !== 'boolean' && String(value).toUpperCase().indexOf(needle) >= 0);
+  return String(item.role ?? '').toUpperCase().includes(needle);
 }
 
 /**
@@ -199,12 +177,7 @@ function setFiltered(list: MultiSelectItem[]): void {
   const kept = new Set(list.map(raw));
   // ng-repeat drops the row element of an item that leaves the list, and with it the hand-set focus class.
   for (const item of [...focused]) if (!kept.has(item)) focused.delete(item);
-  for (const item of list) hashKeyOf(item);
   filteredModel.value = list;
-}
-
-function prepareGrouping(): void {
-  for (const item of filteredModel.value) spacingOf.set(raw(item), 0);
 }
 
 function prepareIndex(): void {
@@ -323,6 +296,7 @@ function select(type: 'all' | 'none' | 'reset' | 'clear' | 'filter', e: Event): 
   switch (type) {
     case 'all':
     case 'none':
+      // Acts on the rows the search currently shows, which is the intended meaning of these buttons while a filter is active.
       for (const value of filteredModel.value) value.selected = type === 'all';
       ticks.value++;
       refreshOutputModel();
@@ -475,7 +449,6 @@ watch(
     // The directive's reference watch: new backup for Reset, then filter, index and both outputs.
     backUp = (input ?? []).map((item) => ({ selected: item.selected }));
     updateFilter();
-    prepareGrouping();
     prepareIndex();
     refreshOutputModel();
     refreshButton();
@@ -518,7 +491,7 @@ onBeforeUnmount(() => {
         <div ref="checkBoxContainer" class="checkBoxContainer">
           <div
             v-for="(item, index) in filteredModel"
-            :key="hashKeyOf(item)"
+            :key="raw(item) as PropertyKey"
             :ref="(el) => setRow(el, item)"
             class="multiSelectItem"
             :class="rowClass(item)"
