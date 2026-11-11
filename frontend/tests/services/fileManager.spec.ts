@@ -694,10 +694,20 @@ describe('upload', () => {
     expect(fm.uploadFileList.map((f) => f.name)).toEqual(['two.txt']);
   });
 
-  it('cancelling the dialog keeps the list (Q-11)', () => {
+  it('closing the dialog without an upload empties the list', () => {
     fm.addForUpload(picked());
     fm.modal('uploadfile', true);
-    expect(fm.uploadFileList).toHaveLength(2);
+    expect(fm.uploadFileList).toEqual([]);
+  });
+
+  it('a drop while the dialog is closed keeps the fresh files, a drop while it is open appends', () => {
+    fm.addForUpload(picked());
+    fm.modal('uploadfile', true);
+    fm.addForUpload([new File(['3'], 'three.txt')]);
+    expect(fm.uploadFileList.map((f) => f.name)).toEqual(['three.txt']);
+    expect(fm.modals.isOpen('uploadfile')).toBe(true);
+    fm.addForUpload([new File(['4'], 'four.txt')]);
+    expect(fm.uploadFileList.map((f) => f.name)).toEqual(['three.txt', 'four.txt']);
   });
 
   it('uploads to the current path, then refreshes, clears the list and closes', async () => {
