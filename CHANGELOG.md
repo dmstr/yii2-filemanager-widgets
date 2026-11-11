@@ -1,5 +1,21 @@
 # CHANGELOG
 
+### 2.0.1
+
+Changed defaults:
+
+- `FileManagerWidget` no longer offers "Download as ZIP", "Compress" (including the name prompt) and "Extract" by default: `downloadMultiple`, `compress`, `compressChooseName` and `extract` are `false`. The filefly backend has no such actions, so the entries led to a 404 page or did nothing. A backend that implements them switches them back on in the widget's options: `'options' => ['allowedActions' => ['downloadMultiple' => true, 'compress' => true, 'compressChooseName' => true, 'extract' => true]]`
+
+Fixes:
+
+- if loading the permissions of a file or folder fails, the permissions dialog shows the error with no roles and cannot be saved. It no longer shows or saves the roles of a previously opened item, also not for a permission type the server returns no roles for
+- copying a single file under a new name works: the name typed in the copy dialog is applied, where before the copy always kept the original name. An unchanged name is not sent, so the copy keeps the original name as before
+- copying several items into the folder they are already in is refused in the dialog with an error message, instead of sending a request that fails on the server
+- the file list is reloaded after a failed action (delete, move, copy, rename, new folder, upload, compress, extract), so changes the server already made show up at once, for example the accepted files of a partly rejected upload. The error message and the open dialog stay as they were
+- when the folder is changed again before the previous one has finished loading, only the answer to the latest navigation is shown; before, the list could show the contents of the wrong folder
+- handler URLs that already contain a query string, such as `/filefly/api?scope=my-scope`, work for downloads, previews and the "copy link" dialog: parameters are appended with `&` instead of a second `?`. Handler URLs without a query string behave exactly as before
+- choosing a destination folder in the move, copy, compress and extract dialogs sends the same path (`/a/b`) whether the folder row's button or the button for the folder currently shown is used; the row button sent `//a/b`
+
 ### 2.0.0
 
 The frontend of `FileManagerWidget` is rewritten in Vue 3. Look and behaviour are unchanged apart from the fixes below; widget usage and all widget properties stay as they are.
