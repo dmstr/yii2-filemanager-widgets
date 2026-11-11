@@ -8,11 +8,6 @@ import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
 import SelectedFilesMsg from './SelectedFilesMsg.vue';
 
-defineEmits<{
-  /** The nested close button was clicked; the dialog author wires it to the slot's `close`. */
-  close: [];
-}>();
-
 const fm = useFileManager();
 const { t } = useI18n();
 </script>
@@ -36,10 +31,6 @@ const { t } = useI18n();
             {{ t('change') }}
           </a>
         </div>
-      </div>
-      <!-- Q-10: a second footer nested in the panel, as in the AngularJS frontend -->
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" :disabled="fm.api.inprocess" @click="$emit('close')">{{ t('close') }}</button>
       </div>
     </div>
   </div>
