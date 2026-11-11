@@ -14,6 +14,8 @@ use yii\web\View;
 
 /**
  * Class AfmAsset
+ * Publishes the compiled Vue 3 file manager (filemanager.css and filemanager.js).
+ * Bootstrap 3 CSS incl. Glyphicons is the only dependency, it comes from the host application.
  * @package hrzg\filemanager\assets
  * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
@@ -33,22 +35,26 @@ class AfmAsset extends AssetBundle
      * @var array
      */
     public $css = [
-        'angular-filemanager-scoped.less',
-        'angular-filemanager-custom.less'
+        'filemanager.css',
     ];
 
     /**
      * @var array
      */
     public $js = [
-        'angular-filemanager.min.js',
+        'filemanager.js',
     ];
 
     /**
+     * The bundle goes to the end of the body: inline code of a position renders after
+     * the script files of the same position, so only POS_END guarantees that the
+     * config FileManagerWidget writes at POS_HEAD exists when the bundle runs.
+     * The bundle mounts itself on DOMContentLoaded.
+     *
      * @var array
      */
     public $jsOptions = [
-        'position' => View::POS_HEAD,
+        'position' => View::POS_END,
     ];
 
     /**
@@ -56,15 +62,15 @@ class AfmAsset extends AssetBundle
      */
     public $publishOptions = [
         'forceCopy' => false,
+        // keep the legacy AngularJS files and LESS sources out of the web root
+        'only' => ['filemanager.css', 'filemanager.js'],
     ];
 
     /**
      * @var array
      */
     public $depends = [
-        'yii\bootstrap\BootstrapPluginAsset',
-        'yii\web\YiiAsset',
-        'hrzg\filemanager\assets\AfmBowerAsset',
+        'yii\bootstrap\BootstrapAsset',
     ];
 
     /**

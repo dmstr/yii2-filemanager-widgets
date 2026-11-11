@@ -18,7 +18,8 @@ use yii\web\View;
 
 /**
  * Class FileManagerWidget
- * File manager base widget
+ * File manager base widget, renders the mount point of the Vue 3 file manager
+ * and hands the configuration to the bundle via `window.fileManagerConfig`
  *
  * @package hrzg\filemanager\widgets\base
  * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
@@ -39,7 +40,7 @@ class FileManagerWidget extends Widget
     /**
      * @var string
      */
-    public $template = '<div data-ng-app="FileManagerApp"><div class="ng-cloak"><angular-filemanager></angular-filemanager></div></div>';
+    public $template = '<angular-filemanager></angular-filemanager>';
 
     /**
      * @var boolean|null
@@ -52,7 +53,8 @@ class FileManagerWidget extends Widget
     public $enableIconPreviewView;
 
     /**
-     * array of angular fileManagerApp options
+     * array of file manager options, merged over the defaults below and
+     * passed to the bundle as `window.fileManagerConfig`
      *
      * @var null|array
      */
@@ -79,7 +81,7 @@ class FileManagerWidget extends Widget
     }
 
     /**
-     * Set handler url and init angular module config
+     * Set handler url and publish the config to `window.fileManagerConfig`
      */
     protected function setFileManagerConfig()
     {
@@ -161,48 +163,36 @@ class FileManagerWidget extends Widget
             ]
         ];
 
-        // these options are regEx and therefor can not be stored as strings in json
-        // if preset, they will be handled later, see search/replace
-        $specialOpts = [
-            'isEditableFilePattern',
-            'isImageFilePattern',
-            'isExtractableFilePattern'
-        ];
-        // store specialOpts for replacement
-        $specialValues = [];
-
         $config = ArrayHelper::merge($defaults, $this->options);
 
-        // now insert placeholders for $specialValues that can not be stored as strings, e.g. regexP
-        foreach ($specialOpts as $opt) {
-            if (!empty($config[$opt])) {
-                $specialValues[$opt] = [
-                    'value' => $config[$opt],
-                    'placeholder' => '###' . strtoupper($opt) . '###',
-                ];
-                $config[$opt] = $specialValues[$opt]['placeholder'];
-            }
-        }
-        // generate config json
-        $configJson = json_encode($config);
-        // then replace placeholder strings in json config that can/should not be strings...
-        foreach ($specialValues as $special) {
-            $configJson = str_replace('"' . $special['placeholder']. '"', $special['value'], $configJson);
-        }
+        // The three pattern options (isEditableFilePattern, isImageFilePattern,
+        // isExtractableFilePattern) travel as plain JSON strings in regular
+        // expression literal notation, the bundle converts them to RegExp.
+        $json = Json::htmlEncode($config);
 
-        // finally create JS to init fileManagerApp
-        $initFilemanagerJs = <<<JS
-angular.module('FileManagerApp').config(['fileManagerConfigProvider', function (config) {
-    var defaults = config.\$get();
-    // we use merge here to get deep.copy, see: https://docs.angularjs.org/api/ng/function/angular.merge
-    config.set(angular.merge(defaults, $configJson));
-}]);
+        // Deep merge into an existing window.fileManagerConfig: keys a host
+        // script set earlier survive unless PHP sets the same key, PHP wins.
+        $js = <<<JS
+(function (win, php) {
+    function isPlain(value) {
+        return value !== null && typeof value === 'object' && !Array.isArray(value);
+    }
+    function merge(target, source) {
+        Object.keys(source).forEach(function (key) {
+            if (isPlain(source[key]) && isPlain(target[key])) {
+                merge(target[key], source[key]);
+            } else {
+                target[key] = source[key];
+            }
+        });
+        return target;
+    }
+    win.fileManagerConfig = merge(win.fileManagerConfig || {}, php);
+})(window, $json);
 JS;
 
-        // Register
-        \Yii::$app->view->registerJs(
-            $initFilemanagerJs,
-            View::POS_HEAD
-        );
+        // POS_HEAD inline code runs before the bundle, which AfmAsset loads at POS_END.
+        // The key keeps a second widget on the same page from emitting it again.
+        \Yii::$app->view->registerJs($js, View::POS_HEAD, 'afm-file-manager-config');
     }
 }
