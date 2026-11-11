@@ -249,11 +249,14 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
 
     copy(files, path) {
       const items = getFileList(files);
-      const singleFilename = items.length === 1 ? (files[0] as Item).tempModel.name : undefined;
+      const [file] = files as Item[];
+      const newFilename = items.length === 1 ? file.tempModel.name.trim() : '';
       const data: Record<string, unknown> = { action: 'copy', items, newPath: getPath(path) };
-      // Q-14: filefly reads `newFilename`, so this name never arrives.
-      if (singleFilename && items.length === 1) {
-        data.singleFilename = singleFilename;
+      // The dialog pre-fills the current name. Sending it unchanged would make the backend validate a
+      // name the user never chose, and a file whose name it rejects could no longer be copied.
+      // Trimmed like the name check in copy(), so the stored name is the one that was validated.
+      if (newFilename && newFilename !== file.model.name) {
+        data.newFilename = newFilename;
       }
       return post(config.copyUrl, data, () => i18n.t('error_copying'));
     },

@@ -40,7 +40,15 @@ const postCases: Array<{
   { name: 'list', url: '/api/list', port: (a) => a.list(['docs', 'x']) },
   { name: 'list with recycle', url: '/api/list', port: (a) => a.list(['docs'], undefined, true) },
   { name: 'copy', url: '/api/copy', port: (a, m) => a.copy(m(), ['t']) },
-  { name: 'copy of one item', url: '/api/copy', port: (a, m) => a.copy([m()[0]], ['t', 'u']) },
+  {
+    name: 'copy of one item',
+    url: '/api/copy',
+    port: (a, m) => {
+      const [item] = m();
+      item.tempModel.name = 'renamed.txt';
+      return a.copy([item], ['t', 'u']);
+    },
+  },
   { name: 'move', url: '/api/move', port: (a, m) => a.move(m(), ['t']) },
   { name: 'remove', url: '/api/remove', port: (a, m) => a.remove(m()) },
   { name: 'getContent', url: '/api/getContent', port: (a, m) => a.getContent(m()[0]) },
@@ -103,11 +111,27 @@ describe('POST requests match the recorded apiMiddleware', () => {
     });
   });
 
-  it('the copy of one item carries singleFilename, several items do not (Q-14)', async () => {
-    await api.copy([items()[0]], ['t']);
+  it('the copy of one item with a changed name carries the trimmed name as newFilename', async () => {
+    const [first] = items();
+    first.tempModel.name = '  copy.txt ';
+    await api.copy([first], ['t']);
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/docs/a.txt'], newPath: '/t', newFilename: 'copy.txt' });
+    expect(Object.keys(requests[0].body as object)).toEqual(['action', 'items', 'newPath', 'newFilename']);
+  });
+
+  it('the copy of one item sends no name when it is unchanged or differs only by surrounding spaces', async () => {
+    const [first] = items();
+    await api.copy([first], ['t']);
+    first.tempModel.name = ' a.txt  ';
+    await api.copy([first], ['t']);
+    for (const request of requests) {
+      expect(request.body).toEqual({ action: 'copy', items: ['/docs/a.txt'], newPath: '/t' });
+    }
+  });
+
+  it('the copy of several items sends no name', async () => {
     await api.copy(items(), ['t']);
-    expect(requests[0].body).toHaveProperty('singleFilename', 'a.txt');
-    expect(requests[1].body).not.toHaveProperty('singleFilename');
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/docs/a.txt', '/docs/b c.txt'], newPath: '/t' });
   });
 
   it('createFolder slugs tempModel.name in place (Q-28)', async () => {

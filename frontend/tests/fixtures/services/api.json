@@ -14,7 +14,7 @@
     {
       "name": "copy of one item",
       "url": "/api/copy",
-      "body": { "action": "copy", "items": [ "/docs/a.txt" ], "newPath": "/t/u", "singleFilename": "a.txt" }
+      "body": { "action": "copy", "items": [ "/docs/a.txt" ], "newPath": "/t/u", "newFilename": "renamed.txt" }
     },
     {
       "name": "move",
