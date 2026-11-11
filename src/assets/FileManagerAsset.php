@@ -62,7 +62,7 @@ class FileManagerAsset extends AssetBundle
      */
     public $publishOptions = [
         'forceCopy' => false,
-        // keep the legacy AngularJS files and LESS sources out of the web root
+        // publish only the build output; protects the web root from stray files in the directory
         'only' => ['filemanager.css', 'filemanager.js'],
     ];
 

@@ -13,13 +13,13 @@ type Any = any;
 const repo = (relative: string) => resolve(process.cwd(), '..', relative);
 const read = (relative: string) => readFileSync(repo(relative), 'utf8');
 
-const bundle = read('src/assets/dist/angular-filemanager.min.js');
+const bundle = read('frontend/legacy/angular-filemanager.min.js');
 
 let loaded = false;
 function load(): void {
   if (loaded) return;
   (0, eval)(read('frontend/node_modules/jquery/dist/jquery.js'));
-  (0, eval)(read('src/assets/bower/angular/angular.min.js'));
+  (0, eval)(read('frontend/legacy/vendor/angular.min.js'));
   loaded = true;
 }
 

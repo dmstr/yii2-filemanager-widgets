@@ -20,7 +20,7 @@ export default defineConfig({
   define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   build: {
     outDir: distDir,
-    // The directory also holds the legacy AngularJS files; never wipe it.
+    // Never wipe the shipped directory implicitly; pass --emptyOutDir to build elsewhere.
     emptyOutDir: false,
     minify: true,
     // Lightning CSS minification rewrites values and drops vendor prefixes; the stylesheet must stay as authored.

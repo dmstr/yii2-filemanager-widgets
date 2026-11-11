@@ -1,0 +1,6 @@
+/frontend export-ignore
+/.github export-ignore
+/tests export-ignore
+/messages_config.php export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore

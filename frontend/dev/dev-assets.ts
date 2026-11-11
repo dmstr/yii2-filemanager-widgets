@@ -5,14 +5,14 @@ import type { Plugin } from 'vite';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const nodeModules = join(here, '../node_modules');
-const assets = join(here, '../../src/assets');
+const legacy = join(here, '../legacy');
 
 /** URL prefix to directory. Classic scripts and plain files bypass Vite's module pipeline this way. */
 const mounts: Record<string, string> = {
   '/vendor/bootstrap/': join(nodeModules, 'bootstrap/dist'),
   '/vendor/jquery/': join(nodeModules, 'jquery/dist'),
-  '/legacy/bower/': join(assets, 'bower/angular'),
-  '/legacy/dist/': join(assets, 'dist'),
+  '/legacy/bower/': join(legacy, 'vendor'),
+  '/legacy/dist/': legacy,
   '/harness/': here,
 };
 

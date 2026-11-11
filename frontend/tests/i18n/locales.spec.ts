@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LOCALES } from '../../src/i18n';
 
-const legacyPath = resolve(__dirname, '../../../src/assets/dist/angular-filemanager.min.js');
+const legacyPath = resolve(__dirname, '../../legacy/angular-filemanager.min.js');
 
 /** Evaluates the legacy $translateProvider blocks with a stub provider. */
 function loadLegacy(): Record<string, Record<string, string>> {

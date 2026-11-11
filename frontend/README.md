@@ -4,6 +4,12 @@ Source of the Vue 3 file manager. It replaces the AngularJS bundle behind `FileM
 
 Use Node 20.19+/22.12+ and yarn classic (1.x).
 
+## Layout
+
+- `src/`: the Vue app. `src/styles/filemanager.less` is the stylesheet entry; it scopes `base.less` (the stylesheet inherited from the AngularJS version) to `<hrzg-filemanager>` and adds `custom.less`.
+- `legacy/`: the AngularJS 1.x frontend of version 1.x and its libraries, unmodified, never shipped; see `legacy/README.md`. Read by the tests, the legacy dev page and the parity tool.
+- `dev/`: dev harness (mock API, both pages, parity tool). `tests/`: Vitest specs.
+
 ## Commands
 
 - `yarn dev`: Vite dev server with HMR and the mock API.
