@@ -79,6 +79,18 @@ describe('UploadModal', () => {
     expect(app.fm.uploadFiles).not.toHaveBeenCalled();
   });
 
+  it('removes the row of the removed file itself, so its button and focus go with it', async () => {
+    app = mountModal(UploadModal);
+    app.fm.uploadFileList = [makeFile('a.txt'), makeFile('b.txt')];
+    await nextTick();
+    const [first, second] = rows().map((row) => row.element);
+    (first.querySelector('button') as HTMLButtonElement).focus();
+    await rows()[0].find('button').trigger('click');
+    expect(first.isConnected).toBe(false);
+    expect(rows()[0].element).toBe(second);
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it('shows the percentage and the bar while uploading', async () => {
     app = mountModal(UploadModal);
     const block = () => app.wrapper.find('.upload-list > div');

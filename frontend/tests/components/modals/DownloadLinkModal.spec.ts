@@ -16,6 +16,11 @@ const lastCopied = () => {
   const calls = vi.mocked(copyToClipboard).mock.calls;
   return calls[calls.length - 1][0];
 };
+/** The legacy template keeps the ids `afm-*-link`; the bundle renders `filemanager-*-link`, so the legacy side is mapped. */
+function withRenamedIds(legacy: Element): Element {
+  legacy.querySelectorAll('[id^="afm-"]').forEach((el) => el.setAttribute('id', el.id.replace(/^afm-/, 'filemanager-')));
+  return legacy;
+}
 const labels = () => app.wrapper.findAll('.modal-body label.radio').map((l) => l.text());
 
 /** Puts the dialog state in the shape `downloadLink()` leaves it in. */
@@ -40,7 +45,7 @@ describe('DownloadLinkModal', () => {
     app = mountModal(DownloadLinkModal);
     showDefault();
     await nextTick();
-    const legacy = legacyContent('downloadlink', ['[ng-if="showCustomUrls"]']);
+    const legacy = withRenamedIds(legacyContent('downloadlink', ['[ng-if="showCustomUrls"]']));
     expect(diffAgainstLegacy(legacy, app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });
 
@@ -48,7 +53,7 @@ describe('DownloadLinkModal', () => {
     app = mountModal(DownloadLinkModal);
     showCustom({ image: 'http://x/i.png', thumb: 'http://x/t.png' });
     await nextTick();
-    const legacy = legacyContent('downloadlink', ['[ng-if="showDefaultUrls"]']);
+    const legacy = withRenamedIds(legacyContent('downloadlink', ['[ng-if="showDefaultUrls"]']));
     // The default-URL wrapper is an ng-if in legacy, so the path field is followed by the repeat rows only.
     expect(diffAgainstLegacy(legacy, app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });
@@ -61,9 +66,9 @@ describe('DownloadLinkModal', () => {
     expect(text(app.wrapper.find('.modal-title'))).toBe(app.t('copy_links'));
     expect(labels()).toEqual([app.t('file_path'), app.t('stream_link'), app.t('download_link')]);
     expect(inputs().map((i) => [i.attributes('id'), (i.element as HTMLInputElement).value])).toEqual([
-      ['afm-path-link', '/sub/a.txt'],
-      ['afm-stream-link', '/api/handler?action=stream&path=%2Fsub%2Fa.txt'],
-      ['afm-download-link', 'http://localhost/api/handler?action=download&path=%2Fsub%2Fa.txt'],
+      ['filemanager-path-link', '/sub/a.txt'],
+      ['filemanager-stream-link', '/api/handler?action=stream&path=%2Fsub%2Fa.txt'],
+      ['filemanager-download-link', 'http://localhost/api/handler?action=download&path=%2Fsub%2Fa.txt'],
     ]);
     expect(inputs()[2].attributes('autofocus')).toBeDefined();
     expect(copyButtons()).toHaveLength(3);
@@ -73,7 +78,7 @@ describe('DownloadLinkModal', () => {
   it('shows only the path field when neither branch is active, and renders before any selection', async () => {
     app = mountModal(DownloadLinkModal);
     await nextTick();
-    expect(inputs().map((i) => i.attributes('id'))).toEqual(['afm-path-link']);
+    expect(inputs().map((i) => i.attributes('id'))).toEqual(['filemanager-path-link']);
     expect((inputs()[0].element as HTMLInputElement).value).toBe('');
     app.fm.showCustomUrls = true;
     app.fm.urls = [];
@@ -87,10 +92,10 @@ describe('DownloadLinkModal', () => {
     await nextTick();
     expect(labels()).toEqual([app.t('file_path'), app.t('image'), app.t('download'), 'my_custom']);
     expect(inputs().map((i) => [i.attributes('id'), (i.element as HTMLInputElement).value])).toEqual([
-      ['afm-path-link', '/sub/a.txt'],
-      ['afm-image-link', 'http://x/i.png'],
-      ['afm-download-link', 'http://x/d.bin'],
-      ['afm-my_custom-link', 'http://x/c'],
+      ['filemanager-path-link', '/sub/a.txt'],
+      ['filemanager-image-link', 'http://x/i.png'],
+      ['filemanager-download-link', 'http://x/d.bin'],
+      ['filemanager-my_custom-link', 'http://x/c'],
     ]);
     expect(inputs().slice(1).every((i) => i.attributes('autofocus') !== undefined)).toBe(true);
     expect(labels().includes(app.t('stream_link'))).toBe(false);
@@ -111,7 +116,7 @@ describe('DownloadLinkModal', () => {
       await button.trigger('click');
       expect(lastCopied()).toBe(inputs()[i].element);
     }
-    expect(vi.mocked(copyToClipboard).mock.calls.map(([el]) => (el as HTMLElement).id).slice(-3)).toEqual(['afm-path-link', 'afm-image-link', 'afm-thumb-link']);
+    expect(vi.mocked(copyToClipboard).mock.calls.map(([el]) => (el as HTMLElement).id).slice(-3)).toEqual(['filemanager-path-link', 'filemanager-image-link', 'filemanager-thumb-link']);
   });
 
   it('copies before the form submit that follows the click re-runs downloadLink()', async () => {

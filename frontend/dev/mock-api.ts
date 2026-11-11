@@ -12,6 +12,8 @@ import type { Plugin } from 'vite';
  * Test hooks: list path `/__error__` answers HTTP 500 with `result.error`; the
  * header `X-Mock-Error: <status>` (or query `mockError=<status>`) makes any
  * request fail with `error.message`; `X-Mock-Delay: <ms>` delays the answer.
+ * `GET /mock/state` dumps the store (paths, types, sizes, permissions) so the
+ * parity tool can compare what both pages changed.
  */
 
 interface Node {
@@ -542,6 +544,13 @@ function createHandler() {
         store = new Store();
         return send(res, 200, { result: { success: true } });
       }
+      if (url.pathname === '/mock/state') {
+        const nodes = [...store.nodes.entries()]
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([path, node]) => `${node.type} ${path} ${node.content.length}`);
+        const perms = Object.fromEntries([...store.perms.entries()].sort(([a], [b]) => (a < b ? -1 : 1)));
+        return send(res, 200, { nodes, perms });
+      }
       const forced = req.headers['x-mock-error'] ?? url.searchParams.get('mockError');
       if (forced) {
         throw new HttpError(Number(forced) || 500, { error: { message: `Mock error (forced ${forced})` } });
@@ -569,7 +578,7 @@ function createHandler() {
   };
 }
 
-/** Dev only: mounts the mock at `/mock/api` and `/mock/reset`. */
+/** Dev only: mounts the mock at `/mock/api`, `/mock/reset` and `/mock/state`. */
 export function mockApiPlugin(): Plugin {
   return {
     name: 'fm-mock-api',
@@ -578,7 +587,7 @@ export function mockApiPlugin(): Plugin {
       const handle = createHandler();
       server.middlewares.use((req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://localhost');
-        if (url.pathname === '/mock/api' || url.pathname === '/mock/reset') {
+        if (url.pathname === '/mock/api' || url.pathname === '/mock/reset' || url.pathname === '/mock/state') {
           void handle(req, res, url);
         } else {
           next();

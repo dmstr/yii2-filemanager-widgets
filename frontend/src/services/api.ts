@@ -33,7 +33,8 @@ export interface Api {
   inprocess: boolean;
   asyncSuccess: boolean;
   error: string;
-  progress: number;
+  /** Upload progress; unset until the first upload starts, as the legacy handler never initialised it. */
+  progress: number | undefined;
   list(path: string[], customHandler?: DeferredHandler, recycle?: boolean): Promise<ApiData>;
   copy(files: Selection, path: string[]): Promise<ApiData>;
   move(files: Selection, path: string[]): Promise<ApiData>;
@@ -221,7 +222,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
     inprocess: false,
     asyncSuccess: false,
     error: '',
-    progress: 0,
+    progress: undefined,
 
     list(path, customHandler, recycle) {
       return call(

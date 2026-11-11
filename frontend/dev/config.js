@@ -8,6 +8,8 @@
 //   ?perms=1                          shows the permissions column (hidePermissions off)
 //   ?pick=1                           enables pickFiles/pickFolders with a logging pickCallback
 //   ?custom=1                         adds one custom file action and one custom folder action
+//   ?deny=compressChooseName          turns those allowedActions off
+//   ?async=1                          sets compressAsync and extractAsync
 (function () {
   var handlerUrl = '/mock/api';
   var params = new URLSearchParams(window.location.search);
@@ -76,6 +78,13 @@
   (params.get('allow') || '').split(',').forEach(function (name) {
     if (name in config.allowedActions) config.allowedActions[name] = true;
   });
+  (params.get('deny') || '').split(',').forEach(function (name) {
+    if (name in config.allowedActions) config.allowedActions[name] = false;
+  });
+  if (params.get('async')) {
+    config.compressAsync = true;
+    config.extractAsync = true;
+  }
   if (params.get('editable')) config.isEditableFilePattern = /\.(txt|svg)$/i;
   if (params.get('preview')) config.enableIconPreviewView = true;
   if (params.get('thumbs')) config.enableThumbnails = true;

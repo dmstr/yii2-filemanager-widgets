@@ -111,6 +111,8 @@ function attributes(el: Element): Record<string, string> {
   }
   // Boolean `autofocus` is reflected as "" by the DOM property.
   if ('autofocus' in result) result.autofocus = '';
+  // AngularJS 1.5 adds autocomplete="off" to every hidden input with ng-model when it compiles the template.
+  if (el.localName === 'input' && el.getAttribute('type') === 'hidden' && el.hasAttribute('ng-model')) result.autocomplete = 'off';
   if (result.class) result.class = result.class.split(/\s+/).sort().join(' ');
   return result;
 }

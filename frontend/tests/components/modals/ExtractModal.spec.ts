@@ -48,6 +48,7 @@ describe('ExtractModal', () => {
     expect((input().element as HTMLInputElement).value).toBe('start');
     await input().setValue('  target dir  ');
     expect(a.tempModel.name).toBe('target dir');
+    expect((input().element as HTMLInputElement).value).toBe('  target dir  ');
     await input().setValue('');
     expect(a.tempModel.name).toBe('');
   });
@@ -57,6 +58,8 @@ describe('ExtractModal', () => {
     await select(app.fm);
     await expect(input().setValue('x')).resolves.toBeUndefined();
     expect(app.fm.singleSelection()).toBeUndefined();
+    // The model did not take the value, so the field shows the model again.
+    expect((input().element as HTMLInputElement).value).toBe('');
   });
 
   it('closes on the cross and on Cancel without refreshing', async () => {

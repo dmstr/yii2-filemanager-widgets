@@ -354,6 +354,8 @@ describe('upload', () => {
 
   it('sends destination and file-n as multipart form data with the AngularJS headers', async () => {
     const Xhr = stubXhr();
+    // The legacy handler never initialised it: the hidden upload block renders "... %" until the first upload.
+    expect(api.progress).toBeUndefined();
     const promise = api.upload(files(), ['docs']);
     const xhr = Xhr.instances[0];
     expect(xhr.method).toBe('POST');

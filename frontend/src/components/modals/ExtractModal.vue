@@ -3,29 +3,17 @@
  * Extract dialog (`#extract`, F-56). Port of the legacy modal markup; the
  * legacy `ng-init="singleSelection().emptyName()"` is dropped (Q-09).
  */
-import { computed } from 'vue';
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
+import { tempModelField, vTextModel } from '../modelTrim.ts';
 import BaseModal from './BaseModal.vue';
 import ErrorBar from './ErrorBar.vue';
 
 const fm = useFileManager();
 const { t } = useI18n();
 
-/**
- * Q-29: AngularJS bound `singleSelection().tempModel.name` and assigned
- * through an undefined base without error; the getter renders '' and the
- * setter drops the write then. `v-model.trim` reproduces `ngTrim`.
- */
-const name = computed({
-  get: () => fm.singleSelection()?.tempModel.name ?? '',
-  set: (value: string) => {
-    const item = fm.singleSelection();
-    if (item) {
-      item.tempModel.name = value;
-    }
-  },
-});
+/** `ng-model="singleSelection().tempModel.name"` (Q-29 without a single selection). */
+const name = tempModelField(() => fm.singleSelection(), 'name');
 </script>
 
 <template>
@@ -44,7 +32,7 @@ const name = computed({
         </div>
         <div v-show="!fm.api.asyncSuccess">
           <label class="radio">{{ t('enter_folder_name_for_extraction') }} <b>{{ fm.singleSelection()?.model.name ?? '' }}</b></label>
-          <input class="form-control" v-model.trim="name" autofocus>
+          <input class="form-control" v-text-model="name" autofocus>
         </div>
         <ErrorBar />
       </div>

@@ -47,8 +47,24 @@ function onChange(event: Event): void {
   fm.addForUpload(files);
 }
 
-// Removing an entry removed its own row (and button) in legacy, so the
-// button's implicit submit never fired; Vue keeps the button, hence `.prevent`.
+/**
+ * Rows are keyed by the file, as `ng-repeat` tracked them by object: removing
+ * an entry removes its own row, button and focus with it (the focus falls back
+ * to the body), instead of reusing the first row for the next file.
+ */
+const rowKeys = new WeakMap<File, number>();
+let nextRowKey = 0;
+function rowKey(file: File): number {
+  let key = rowKeys.get(file);
+  if (key === undefined) {
+    key = nextRowKey++;
+    rowKeys.set(file, key);
+  }
+  return key;
+}
+
+// The remove button's implicit submit never fired in legacy, because the click
+// removed the button before the event reached the form; hence `.prevent`.
 </script>
 
 <template>
@@ -72,7 +88,7 @@ function onChange(event: Event): void {
 
         <div class="upload-list">
           <ul class="list-group">
-            <li class="list-group-item" v-for="(uploadFile, index) in fm.uploadFileList" :key="index">
+            <li class="list-group-item" v-for="(uploadFile, index) in fm.uploadFileList" :key="rowKey(uploadFile)">
               <button class="btn btn-sm btn-danger pull-right" @click.prevent="fm.removeFromUpload(index)">
                   &times;
               </button>

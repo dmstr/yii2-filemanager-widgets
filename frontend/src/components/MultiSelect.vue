@@ -494,11 +494,8 @@ onBeforeUnmount(() => {
       <button ref="button" id="" type="button" @click="onButtonClick"><template v-if="buttonLabel.kind === 'none'">None Selected<span class="caret"></span></template><template v-else-if="buttonLabel.kind === 'labels'"><template v-for="(text, i) in buttonLabel.labels" :key="i"><template v-if="i > 0">, </template><div class="buttonLabel">{{ text }}<span v-if="i === buttonLabel.labels.length - 1" class="caret"></span></div></template><span v-if="buttonLabel.labels.length === 0" class="caret"></span></template></button>
       <div ref="layer" class="checkboxLayer" :class="{ show: shown }">
         <div ref="helperContainer" class="helperContainer">
-          <div class="line">
-            <button type="button" class="helperButton" @click="onHelperClick('all', $event)">&#10003;&nbsp;&nbsp;Select All</button>
-            <button type="button" class="helperButton" @click="onHelperClick('none', $event)">&times;&nbsp;&nbsp;Select None</button>
-            <button type="button" class="helperButton reset" @click="onHelperClick('reset', $event)">&#8630;&nbsp;&nbsp;Reset</button>
-          </div>
+          <!-- No whitespace between the helper buttons: the directive's template had only comments there, and a space shifts them -->
+          <div class="line"><button type="button" class="helperButton" @click="onHelperClick('all', $event)">&#10003;&nbsp;&nbsp;Select All</button><button type="button" class="helperButton" @click="onHelperClick('none', $event)">&times;&nbsp;&nbsp;Select None</button><button type="button" class="helperButton reset" @click="onHelperClick('reset', $event)">&#8630;&nbsp;&nbsp;Reset</button></div>
           <div class="line" style="position: relative">
             <input
               ref="filterInput"

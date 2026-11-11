@@ -2,28 +2,43 @@
  * DOM snapshot and comparison for the parity tool.
  *
  * `takeSnapshot` runs inside the page: it turns the subtree of
- * <angular-filemanager> into a plain tree after removing what only AngularJS
+ * the root element into a plain tree after removing what only AngularJS
  * puts there (comments, ng-* attributes and classes, template scripts), so the
  * legacy and the Vue DOM can be compared as data. `diffSnapshots` runs in Node.
  */
 
 /**
- * Single switch for the dialog subtree: the wrapper of the legacy
- * `modals.html` (third child of the root div) is replaced by a stub on both
- * sides. Switch it off with `--include-dialogs` once the dialogs exist.
+ * Default of the switch for the dialog subtree: when true, the wrapper of the
+ * legacy `modals.html` (third child of the root div) is replaced by a stub on
+ * both sides. The dialogs are compared by default; `--exclude-dialogs` stubs
+ * them for a run that only looks at the main screen.
  */
-export const EXCLUDE_DIALOGS = true;
+export const EXCLUDE_DIALOGS = false;
 
 /** Page side. Must stay self-contained: it is serialised into the browser. */
 export function takeSnapshot(options) {
-  const root = document.querySelector('angular-filemanager');
+  // The legacy page has <angular-filemanager>, the Vue page <hrzg-filemanager>; the two count as equal.
+  const ROOT_TAG = 'filemanager-root';
+  const root = document.querySelector('angular-filemanager, hrzg-filemanager');
   if (!root) {
-    return { tag: 'angular-filemanager', missing: true };
+    return { tag: ROOT_TAG, missing: true };
   }
+  // The ids of the link dialog were renamed from `afm-*-link` to `filemanager-*-link`; the legacy side is mapped.
+  const normaliseValue = (name, value) => (name === 'id' ? value.replace(/^afm-(.+-link)$/, 'filemanager-$1') : value);
 
   // `data-v-app` is the marker Vue puts on the element it mounts into.
   const IGNORED_ATTRIBUTES = /^(ng-|data-ng-|ngf-|data-ngf-|data-toggle$|data-dismiss$|data-v-app$|class$|style$)/;
   const IGNORED_CLASSES = /^ng-/;
+  // Configuration attributes of AngularJS directives, ignored only on the element that carries the
+  // directive: `ng-include data-src`, the isteven multi-select's options and ngclipboard's target.
+  const DIRECTIVE_ATTRIBUTES = [
+    ['ng-include', /^data-src$/],
+    ['isteven-multi-select', /^(isteven-multi-select|input-model|output-model|button-label|item-label|tick-property|output-properties)$/],
+    ['ngclipboard', /^(ngclipboard|data-clipboard-target)$/],
+  ];
+  const isDirectiveAttribute = (el, name) => DIRECTIVE_ATTRIBUTES.some(([marker, names]) => el.hasAttribute(marker) && names.test(name));
+  // Boolean attributes: AngularJS writes `disabled="disabled"`, Vue `disabled=""`; only the presence counts.
+  const BOOLEAN_ATTRIBUTES = /^(autofocus|checked|disabled|multiple|readonly|required|selected)$/;
   // Index of the dialogs wrapper among the children of the root div.
   const DIALOGS_INDEX = 2;
 
@@ -45,8 +60,8 @@ export function takeSnapshot(options) {
     const node = { tag: el.localName };
     const attrs = {};
     for (const attr of Array.from(el.attributes).sort((a, b) => a.name.localeCompare(b.name))) {
-      if (!IGNORED_ATTRIBUTES.test(attr.name)) {
-        attrs[attr.name] = attr.value;
+      if (!IGNORED_ATTRIBUTES.test(attr.name) && !isDirectiveAttribute(el, attr.name)) {
+        attrs[attr.name] = BOOLEAN_ATTRIBUTES.test(attr.name) ? '' : normaliseValue(attr.name, attr.value);
       }
     }
     const classes = Array.from(el.classList).filter((name) => !IGNORED_CLASSES.test(name)).sort();
@@ -109,8 +124,9 @@ export function takeSnapshot(options) {
     return node;
   }
 
-  // <angular-filemanager> holds the controller root div (legacy `ng-controller`, Vue root).
+  // The root element holds the controller root div (legacy `ng-controller`, Vue root).
   const node = describe(root);
+  node.tag = ROOT_TAG;
   node.children = Array.from(root.children).map((child) => walk(child, true));
   return node;
 }

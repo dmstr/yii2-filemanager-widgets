@@ -46,7 +46,8 @@ const authDelete = outputModel('authDelete');
 <template>
   <BaseModal id="changepermissions" v-slot="{ close }">
     <form @submit.prevent="fm.changePermissions()">
-      <input type="hidden">
+      <!-- AngularJS sets autocomplete="off" on every hidden input with ng-model -->
+      <input type="hidden" autocomplete="off">
       <div class="modal-header">
         <button type="button" class="close" @click="close()">
           <span aria-hidden="true">&times;</span>

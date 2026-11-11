@@ -54,6 +54,7 @@ describe('CopyModal', () => {
     await select(app.fm, a);
     await type(' copy.txt ');
     expect(a.tempModel.name).toBe('copy.txt');
+    expect((input().element as HTMLInputElement).value).toBe(' copy.txt ');
     await type('');
     expect(a.tempModel.name).toBe('');
   });

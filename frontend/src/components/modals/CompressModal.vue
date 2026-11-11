@@ -7,6 +7,7 @@
 import { useConfig } from '../../config/injection.ts';
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
+import { tempModelField, vTextModel } from '../modelTrim.ts';
 import BaseModal from './BaseModal.vue';
 import ErrorBar from './ErrorBar.vue';
 import SelectedFilesMsg from './SelectedFilesMsg.vue';
@@ -14,6 +15,9 @@ import SelectedFilesMsg from './SelectedFilesMsg.vue';
 const fm = useFileManager();
 const config = useConfig();
 const { t } = useI18n();
+
+/** `ng-model="temp.tempModel.name"`; `temp` always exists (Q-25). */
+const name = tempModelField(() => fm.temp, 'name');
 </script>
 
 <template>
@@ -39,8 +43,7 @@ const { t } = useI18n();
               {{ t('enter_file_name_for_compression') }}
               <SelectedFilesMsg />
             </label>
-            <!-- ng-model trims what is typed (ngTrim) and writes '' for an empty field -->
-            <input class="form-control" v-model.trim="fm.temp.tempModel.name" autofocus>
+            <input class="form-control" v-text-model="name" autofocus>
           </div>
         </div>
 

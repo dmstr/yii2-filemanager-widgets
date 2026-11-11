@@ -5,19 +5,15 @@
  */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
+import { tempModelField, vTextModel } from '../modelTrim.ts';
 import BaseModal from './BaseModal.vue';
 import ErrorBar from './ErrorBar.vue';
 
 const fm = useFileManager();
 const { t } = useI18n();
 
-/** `ngTrim` and empty-field behaviour as in the rename dialog; ignored without a single selection (Q-29). */
-function onNameInput(event: Event): void {
-  const item = fm.singleSelection();
-  if (item) {
-    item.tempModel.name = (event.target as HTMLInputElement).value.trim();
-  }
-}
+/** `ng-model="singleSelection().tempModel.name"` (Q-29 without a single selection). */
+const name = tempModelField(() => fm.singleSelection(), 'name');
 </script>
 
 <template>
@@ -32,7 +28,7 @@ function onNameInput(event: Event): void {
       </div>
       <div class="modal-body">
         <label class="radio">{{ t('folder_name') }}</label>
-        <input class="form-control" :value="fm.singleSelection()?.tempModel.name ?? ''" autofocus @input="onNameInput">
+        <input class="form-control" v-text-model="name" autofocus>
         <ErrorBar />
       </div>
       <div class="modal-footer">

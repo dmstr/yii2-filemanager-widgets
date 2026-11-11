@@ -15,8 +15,11 @@ const type = async (value: string) => {
 };
 
 describe('RenameModal', () => {
-  it.runIf(legacyAvailable)('has the structure of the legacy template', () => {
+  it.runIf(legacyAvailable)('has the structure of the legacy template', async () => {
     app = mountModal(RenameModal);
+    // The helper empties legacy expressions; a selection of one hole renders the name empty as well.
+    app.fm.temps = [undefined];
+    await rendered(app);
     expect(diffAgainstLegacy(legacyContent('rename'), app.wrapper.find('.modal-content').element, app.t)).toBeNull();
   });
 
@@ -31,13 +34,13 @@ describe('RenameModal', () => {
     expect(text(submit())).toBe('Rename');
   });
 
-  it('renders an empty name and input for several items and for no selection', async () => {
+  it('prints "false" as the name and an empty input for several items and for no selection, nothing for a hole', async () => {
     app = mountModal(RenameModal);
     await select(app.fm, item('a'), item('b'));
-    expect(text(app.wrapper.find('label.radio b'))).toBe('');
+    expect(text(app.wrapper.find('label.radio b'))).toBe('false');
     expect((input().element as HTMLInputElement).value).toBe('');
     await select(app.fm);
-    expect(text(app.wrapper.find('label.radio'))).toBe('Enter new name for');
+    expect(text(app.wrapper.find('label.radio'))).toBe('Enter new name for false');
     await select(app.fm, undefined);
     expect(text(app.wrapper.find('label.radio b'))).toBe('');
   });
@@ -48,6 +51,7 @@ describe('RenameModal', () => {
     await select(app.fm, a);
     await type('  new name  ');
     expect(a.tempModel.name).toBe('new name');
+    expect((input().element as HTMLInputElement).value).toBe('  new name  ');
     expect(a.model.name).toBe('a.txt');
     await type('');
     expect(a.tempModel.name).toBe('');
@@ -61,6 +65,7 @@ describe('RenameModal', () => {
     await select(app.fm, a, item('b'));
     await expect(type('x')).resolves.toBeUndefined();
     expect(a.tempModel.name).toBe('a');
+    expect((input().element as HTMLInputElement).value).toBe('');
   });
 
   it('follows changes of tempModel made elsewhere', async () => {

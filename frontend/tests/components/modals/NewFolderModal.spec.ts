@@ -47,6 +47,7 @@ describe('NewFolderModal', () => {
     await rendered(app);
     await type('  my folder ');
     expect(phantom.tempModel.name).toBe('my folder');
+    expect((input().element as HTMLInputElement).value).toBe('  my folder ');
     await type('');
     expect(phantom.tempModel.name).toBe('');
   });

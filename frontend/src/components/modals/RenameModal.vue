@@ -2,24 +2,22 @@
 /** Rename dialog (`#rename`, F-53). Port of the legacy modal markup. */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
+import { tempModelField, vTextModel } from '../modelTrim.ts';
 import BaseModal from './BaseModal.vue';
 import ErrorBar from './ErrorBar.vue';
 
 const fm = useFileManager();
 const { t } = useI18n();
 
+/** `ng-model="singleSelection().tempModel.name"` (Q-29 without a single selection). */
+const name = tempModelField(() => fm.singleSelection(), 'name');
+
 /**
- * `ng-model` on a text input trims what the user typed (`ngTrim`) and writes
- * the result as is: an empty field gives `''`, not `undefined` (AngularJS
- * 1.5.11, no parser or validator on the input). Without a single selected
- * item the assignment went nowhere (Q-29).
+ * Legacy `{{singleSelection() && singleSelection().model.name}}`: with no or
+ * several items selected the expression is `false`, which AngularJS prints as
+ * the text "false"; a selection of one hole (Q-39) prints nothing.
  */
-function onNameInput(event: Event): void {
-  const item = fm.singleSelection();
-  if (item) {
-    item.tempModel.name = (event.target as HTMLInputElement).value.trim();
-  }
-}
+const selectedName = (): string => (fm.temps.length === 1 ? (fm.temps[0]?.model.name ?? '') : 'false');
 </script>
 
 <template>
@@ -33,8 +31,8 @@ function onNameInput(event: Event): void {
         <h4 class="modal-title">{{ t('rename') }}</h4>
       </div>
       <div class="modal-body">
-        <label class="radio">{{ t('enter_new_name_for') }} <b>{{ fm.singleSelection()?.model.name ?? '' }}</b></label>
-        <input class="form-control" :value="fm.singleSelection()?.tempModel.name ?? ''" autofocus @input="onNameInput">
+        <label class="radio">{{ t('enter_new_name_for') }} <b>{{ selectedName() }}</b></label>
+        <input class="form-control" v-text-model="name" autofocus>
 
         <ErrorBar />
       </div>

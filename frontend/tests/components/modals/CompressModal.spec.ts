@@ -54,6 +54,7 @@ describe('CompressModal', () => {
     await select(app.fm, item('a.txt'));
     await input().setValue('  foo bar  ');
     expect(app.fm.singleSelection()!.tempModel.name).toBe('foo bar');
+    expect((input().element as HTMLInputElement).value).toBe('  foo bar  ');
     await input().setValue('   ');
     expect(app.fm.singleSelection()!.tempModel.name).toBe('');
 
@@ -62,13 +63,11 @@ describe('CompressModal', () => {
     expect(app.fm.temp.tempModel.name).toBe('archive');
   });
 
-  it('keeps what was typed in the field, trailing space included, while the model is trimmed', async () => {
+  it('keeps what was typed in the field, trailing space included, also after blur', async () => {
     mount();
     await select(app.fm, item('a.txt'));
-    (input().element as HTMLInputElement).focus();
-    // `setValue` would also fire `change`, which v-model.trim answers by trimming the field (as on blur).
-    (input().element as HTMLInputElement).value = 'foo ';
-    await input().trigger('input');
+    // `setValue` fires `input` and `change` (the blur); neither rewrites the field.
+    await input().setValue('foo ');
     expect(app.fm.singleSelection()!.tempModel.name).toBe('foo');
     expect((input().element as HTMLInputElement).value).toBe('foo ');
   });

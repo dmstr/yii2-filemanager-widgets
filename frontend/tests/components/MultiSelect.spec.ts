@@ -195,6 +195,13 @@ describe('MultiSelect rendering', () => {
     expect(initial.output).toBe('[{"role":"Admin","selected":true},{"role":"Guest","selected":true}]');
   });
 
+  it('has no whitespace between the helper buttons, like the directive (the parity check drops blank text)', () => {
+    const d = vueDriver(roles(), []);
+    const line = helper(d, 0).parentElement!;
+    expect(Array.from(line.childNodes).map((node) => node.nodeName)).toEqual(['BUTTON', 'BUTTON', 'BUTTON']);
+    d.destroy();
+  });
+
   it('shows "None Selected" with the caret when nothing is ticked', async () => {
     await parity(() => roles().map((item) => ({ ...item, selected: false })), []);
   });
