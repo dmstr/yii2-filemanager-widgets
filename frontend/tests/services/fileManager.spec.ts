@@ -163,11 +163,25 @@ describe('modal()', () => {
     expect(fm.modals.top).toBe('move');
   });
 
-  it('isInThisPath is a substring test on the joined current path (Q-24)', () => {
-    fm.navigator.currentPath = ['data', 'x'];
-    expect(fm.isInThisPath('data/x')).toBe(true);
-    expect(fm.isInThisPath('a')).toBe(true);
-    expect(fm.isInThisPath('zzz')).toBe(false);
+  it.each([
+    ['root, deep path', ['data', 'x'], '', true],
+    ['root, empty path', [], '', true],
+    ['the current folder', ['data', 'x'], 'data/x', true],
+    ['an ancestor', ['data', 'x'], 'data', true],
+    ['a sibling that is a substring of an ancestor', ['data', 'x'], 'a', false],
+    ['a sibling that is a prefix of an ancestor', ['documents'], 'doc', false],
+    ['a sibling that is a suffix of an ancestor', ['data', 'x'], 'ta', false],
+    ['a sibling named like the last segment', ['data', 'y'], 'x', false],
+    ['a sibling with the last segment as prefix', ['data', 'x'], 'data/xy', false],
+    ['a deeper node below the current folder', ['data'], 'data/x', false],
+    ['a node with spaces', ['my docs', 'b c'], 'my docs/b c', true],
+    ['a node with spaces, shorter name', ['my docs', 'b c'], 'my', false],
+    ['a non-ASCII node', ['Übung', 'größe'], 'Übung', true],
+    ['a non-ASCII prefix sibling', ['Übungen'], 'Übung', false],
+    ['a node on an empty current path', [], 'a', false],
+  ] as Array<[string, string[], string, boolean]>)('isInThisPath compares by segment: %s', (_label, current, node, expected) => {
+    fm.navigator.currentPath = current;
+    expect(fm.isInThisPath(node)).toBe(expected);
   });
 });
 

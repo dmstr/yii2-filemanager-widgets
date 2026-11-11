@@ -345,6 +345,49 @@ describe('buildTree', () => {
     expect(last[0].nodes.find((n) => n.name === 'A')!.nodes).toHaveLength(2);
   });
 
+  describe('siblings whose names are prefixes of each other', () => {
+    const folders: Record<string, RawItem[]> = {
+      '/': [dir('doc'), dir('documents'), dir('a'), dir('ab')],
+      '/doc': [dir('x')],
+      '/documents': [dir('y')],
+      '/a': [dir('c')],
+      '/ab': [dir('d')],
+    };
+    async function visitAll(visits: string[][]) {
+      const { nav } = setup((request) => ({ body: { result: folders[(request.body as { path: string }).path] || [] } }));
+      for (const path of visits) {
+        nav.currentPath = path;
+        await nav.refresh();
+      }
+      return strip(nav.history[0].nodes) as Array<{ name: string; nodes: unknown[] }>;
+    }
+    const children = (nodes: Array<{ name: string; nodes: unknown[] }>, name: string) => nodes.find((n) => n.name === name)!.nodes;
+
+    it('prunes doc when documents is listed after it', async () => {
+      const nodes = await visitAll([[], ['doc'], ['documents']]);
+      expect(children(nodes, 'doc')).toEqual([]);
+      expect(children(nodes, 'documents')).toEqual([{ name: 'documents/y', nodes: [] }]);
+    });
+
+    it('prunes a when ab is listed after it', async () => {
+      const nodes = await visitAll([[], ['a'], ['ab']]);
+      expect(children(nodes, 'a')).toEqual([]);
+      expect(children(nodes, 'ab')).toEqual([{ name: 'ab/d', nodes: [] }]);
+    });
+
+    it('prunes the longer sibling when the shorter one is listed after it', async () => {
+      const nodes = await visitAll([[], ['documents'], ['doc']]);
+      expect(children(nodes, 'documents')).toEqual([]);
+      expect(children(nodes, 'doc')).toEqual([{ name: 'doc/x', nodes: [] }]);
+    });
+
+    it('keeps the branch of the listed folder when its parent is listed through a prefix-named sibling', async () => {
+      const nodes = await visitAll([[], ['a'], [], ['a']]);
+      expect(children(nodes, 'a')).toEqual([{ name: 'a/c', nodes: [] }]);
+      expect(children(nodes, 'ab')).toEqual([]);
+    });
+  });
+
   it('keeps the item of every node so the sidebar can navigate by it', async () => {
     const { nav } = setup();
     await nav.refresh();

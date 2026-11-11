@@ -49,10 +49,29 @@ describe('Sidebar', () => {
     expect(isShown(link.find('.glyphicon-folder-open').element)).toBe(true);
     expect(isShown(link.find('.glyphicon-folder-close').element)).toBe(false);
 
-    // Q-24: the test is a substring one, so the unrelated folder "Beta" is simply not in the path here.
+    // The unrelated folder "Beta" is not on the path.
     const beta = lis.find((li) => li.find('a').text() === 'Beta')!;
     expect(isShown(beta.find('a .glyphicon-chevron-right').element)).toBe(true);
     expect(isShown(beta.find('a .glyphicon-folder-close').element)).toBe(true);
+  });
+
+  it('draws only the folders on the current path as open, not siblings whose names are substrings of it', async () => {
+    const siblings: Record<string, unknown[]> = {
+      '/': [dir('a'), dir('at'), dir('data'), dir('x'), dir('doc'), dir('documents')],
+      '/data': [dir('x'), dir('y')],
+      '/data/x': [],
+    };
+    app = await mountWidget({ reply: (request) => ({ body: { result: siblings[(request.body as { path: string }).path] ?? [] } }) });
+    await goDown(['data', 'x']);
+    const open = (li: { find: (selector: string) => { element: Element } }) => isShown(li.find('a .glyphicon-folder-open').element);
+    const lis = app.wrapper.findAll('.file-tree-root li');
+    const state = Object.fromEntries(
+      lis.map((li) => [li.find('a').text(), open(li)] as const).filter(([label]) => label !== '/'),
+    );
+    // The two folders named "x" share a label; the one below "data" is on the path, the one at the root is not.
+    expect(lis.filter((li) => li.find('a').text() === 'x').map(open)).toEqual([true, false]);
+    expect(state).toMatchObject({ a: false, at: false, data: true, doc: false, documents: false, y: false });
+    expect(open(app.wrapper.find('.file-tree-root > li'))).toBe(true);
   });
 
   it('nests the tree three levels deep and truncates names to 30 characters', async () => {
