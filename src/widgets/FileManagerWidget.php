@@ -128,6 +128,7 @@ class FileManagerWidget extends Widget
             'moveUrl' => $this->handlerUrl,
             'removeUrl' => $this->handlerUrl,
             'getContentUrl' => $this->handlerUrl,
+            'editUrl' => $this->handlerUrl,
             'createFolderUrl' => $this->handlerUrl,
             'downloadFileUrl' => $this->handlerUrl,
             'downloadMultipleUrl' => $this->handlerUrl,
