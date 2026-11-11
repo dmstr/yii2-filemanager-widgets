@@ -153,22 +153,21 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
   const post = (url: string, data: Record<string, unknown>, defaultMsg: () => string) =>
     call('POST', url, data, defaultMsg);
 
-  /** AngularJS `download` / `downloadMultiple` switch (Q-20): the ajax branch needs `saveAs` from the host app. */
+  /** AngularJS `download` / `downloadMultiple` switch: the ajax branch needs `saveAs` from the host app. */
   function opensNewWindow(forceNewWindow?: boolean): boolean {
     return !config.downloadFilesByAjax || !!forceNewWindow || !(window as SaveAsWindow).saveAs;
   }
 
-  /** Ajax download branch. The body is read as text and wrapped in a Blob, as `$http` delivered it. */
+  /** Ajax download branch for hosts that provide `window.saveAs`: the response bytes go to it unchanged. */
   function downloadByAjax(url: string, toFilename: string): Promise<unknown> {
     api.inprocess = true;
     return new Promise((resolve, reject) => {
       const deferred: Deferred = { resolve, reject };
-      request('GET', url)
+      request('GET', url, undefined, 'blob')
         .then(
           ({ data }) => {
-            const bin = new Blob([data as BlobPart]);
             deferred.resolve(data);
-            (window as SaveAsWindow).saveAs?.(bin, toFilename);
+            (window as SaveAsWindow).saveAs?.(data as Blob, toFilename);
           },
           ({ data, status }: HttpResult) => deferredHandler(data, deferred, status, i18n.t('error_downloading')),
         )
@@ -332,8 +331,7 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
       if (opensNewWindow(forceNewWindow)) {
         return !!window.open(url, '_blank', '');
       }
-      // Q-20: AngularJS requests the bare URL here, without any parameter.
-      return downloadByAjax(config.downloadMultipleUrl, toFilename);
+      return downloadByAjax(url, toFilename);
     },
 
     compress(files, compressedFilename, path) {
