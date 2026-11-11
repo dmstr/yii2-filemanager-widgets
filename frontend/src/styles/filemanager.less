@@ -1,0 +1,6 @@
+// Same result as the legacy asset bundle: the scope wrapper nests everything
+// under the <angular-filemanager> element selector, then the custom rules.
+// The files are imported, not copied, so the legacy stylesheet stays the
+// single source of truth.
+@import '../../../src/assets/dist/angular-filemanager-scoped.less';
+@import '../../../src/assets/dist/angular-filemanager-custom.less';
