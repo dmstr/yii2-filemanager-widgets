@@ -5,11 +5,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --open /dev/index.html",
     "build": "vite build",
     "test": "vitest run",
-    "typecheck": "vue-tsc --noEmit",
-    "parity": "node dev/parity/parity.mjs"
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "vue": "3.5.45"
@@ -22,7 +20,6 @@
     "jquery": "3.7.1",
     "jsdom": "31.0.0",
     "less": "4.9.1",
-    "playwright": "1.65.0",
     "typescript": "6.0.3",
     "vite": "8.3.8",
     "vitest": "5.1.0",

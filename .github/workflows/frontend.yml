@@ -24,10 +24,6 @@ concurrency:
   group: frontend-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Only needed by the local parity tool; CI never runs it.
-  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-
 jobs:
   check:
     runs-on: ubuntu-latest

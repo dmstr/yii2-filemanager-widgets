@@ -1,6 +1,6 @@
 # legacy
 
-The AngularJS 1.x frontend of version 1.x of this package and the libraries it needs, kept unmodified as the behavioural reference for the tests (`tests/utils/legacy.ts`, `tests/i18n/locales.spec.ts`), the legacy dev page (`dev/legacy.html`) and the parity tool (`dev/parity/`). Nothing in this directory is part of the shipped widget.
+The AngularJS 1.x frontend of version 1.x of this package and the libraries it needs, kept unmodified as the behavioural reference for the tests (`tests/utils/legacy.ts`, `tests/i18n/locales.spec.ts`) and the legacy dev page and parity tool of the port (removed from the repository, see git history). Nothing in this directory is part of the shipped widget.
 
 - `angular-filemanager.min.js`, `angular-filemanager.min.css`: the minified legacy bundle and stylesheet.
 - `angular-filemanager-scoped.less`: wrapper that scopes `../src/styles/base.less` to `<angular-filemanager>`; only the import path differs from the original. Together with `../src/styles/custom.less` it produces the legacy page's stylesheet.

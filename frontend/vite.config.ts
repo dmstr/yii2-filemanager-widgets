@@ -2,10 +2,7 @@ import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vitest/config';
 import { licensesPlugin } from './build/licenses.ts';
-import { devAssetsPlugin } from './dev/dev-assets.ts';
-import { mockApiPlugin } from './dev/mock-api.ts';
 
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const distDir = fileURLToPath(new URL('../src/assets/dist', import.meta.url));
 
 export default defineConfig({
@@ -13,8 +10,6 @@ export default defineConfig({
     // Preserve: AngularJS keeps every whitespace between inline elements and the stylesheet's layout
     // (button gaps, icon-to-label spacing) depends on it; Vue's default `condense` would drop it.
     vue({ template: { compilerOptions: { whitespace: 'preserve' } } }),
-    mockApiPlugin(),
-    devAssetsPlugin(),
     licensesPlugin(),
   ],
   // The Yii2 asset bundle loads a plain script tag, so Vue's dev/prod switch
@@ -35,7 +30,6 @@ export default defineConfig({
       cssFileName: 'filemanager',
     },
   },
-  server: { fs: { allow: [repoRoot] } },
   test: {
     environment: 'jsdom',
     include: ['tests/**/*.spec.ts'],
