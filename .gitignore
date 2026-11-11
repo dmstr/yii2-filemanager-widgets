@@ -1,6 +1,5 @@
 node_modules
 _tasks
-.claude/settings.local.json
 .DS_Store
 .idea
 frontend/coverage
