@@ -1,6 +1,15 @@
-// Same result as the legacy asset bundle: the scope wrapper nests everything
-// under the <angular-filemanager> element selector, then the custom rules.
-// The files are imported, not copied, so the legacy stylesheet stays the
-// single source of truth.
-@import '../../../src/assets/dist/angular-filemanager-scoped.less';
+// Scope wrapper for the stylesheet: the legacy rules are nested under the
+// <hrzg-filemanager> element selector (not a class, so the specificity of every
+// rule stays what it was under the former <angular-filemanager> scope), then the
+// custom rules. The legacy files are imported, not copied, and stay untouched
+// because the legacy dev page still uses them.
+//
+// NOTE: the imported file contains one rule that names the old tag
+// (`angular-filemanager > div, ...` in a media query). Nested here it compiles
+// to `hrzg-filemanager angular-filemanager > div`, which matches nothing,
+// exactly as it matched nothing under the old scope. That is kept on purpose so
+// the layout stays identical.
+hrzg-filemanager {
+  @import '../../../src/assets/dist/angular-filemanager.less';
+}
 @import '../../../src/assets/dist/angular-filemanager-custom.less';

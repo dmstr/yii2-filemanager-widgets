@@ -5,7 +5,12 @@ let app: Mounted;
 afterEach(() => {
   app?.wrapper.unmount();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
+
+const CHROME = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
+const FIREFOX = 'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0';
+const userAgent = (value: string) => vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(value);
 
 /** A drag event as the browser dispatches it; jsdom has no DataTransfer, so the part the zone reads is stubbed. */
 function dragEvent(type: string, types: string[] = ['Files'], extra: Record<string, unknown> = {}): Event {
@@ -86,21 +91,34 @@ describe('FileManager drop zone (F-70)', () => {
     expect(root().classList.contains('upload-dragover')).toBe(false);
   });
 
-  it('ignores drags that carry no files', async () => {
+  it('reacts to every drag, whatever it carries (ngf-drop has no type check)', async () => {
     app = await mountWidget();
     const event = dragEvent('dragover', ['text/plain']);
     root().dispatchEvent(event);
     await app.wrapper.vm.$nextTick();
-    expect(root().classList.contains('upload-dragover')).toBe(false);
-    expect(event.defaultPrevented).toBe(false);
+    expect(root().classList.contains('upload-dragover')).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    const enter = dragEvent('dragenter', []);
+    root().dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(true);
   });
 
-  it('allows the drop and copies by default', async () => {
+  it('copies by default and moves for move and linkMove, in Chrome only', async () => {
     app = await mountWidget();
-    const event = dragEvent('dragover');
-    root().dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(true);
-    expect((event as unknown as { dataTransfer: { dropEffect: string } }).dataTransfer.dropEffect).toBe('copy');
+    const effectFor = (effectAllowed: string): string => {
+      const event = dragEvent('dragover', ['Files'], { effectAllowed });
+      root().dispatchEvent(event);
+      return (event as unknown as { dataTransfer: { dropEffect: string } }).dataTransfer.dropEffect;
+    };
+    userAgent(CHROME);
+    expect(effectFor('all')).toBe('copy');
+    expect(effectFor('copy')).toBe('copy');
+    expect(effectFor('move')).toBe('move');
+    expect(effectFor('linkMove')).toBe('move');
+    // The directive tests the user agent for "Chrome"; elsewhere the browser's own effect stays.
+    userAgent(FIREFOX);
+    expect(effectFor('move')).toBe('none');
+    expect(effectFor('all')).toBe('none');
   });
 
   it('removes the class at once on drop and hands the files to addForUpload', async () => {
@@ -119,12 +137,77 @@ describe('FileManager drop zone (F-70)', () => {
     expect(spy.mock.calls[0][0]).toEqual([dropped]);
   });
 
-  it('does not call addForUpload for a drop without files', async () => {
-    app = await mountWidget();
-    const spy = vi.spyOn(app.fm, 'addForUpload').mockImplementation(() => {});
-    root().dispatchEvent(dragEvent('drop', ['Files'], { files: [] }));
-    await settle();
-    expect(spy).not.toHaveBeenCalled();
+  describe('without files', () => {
+    const dropWithHtml = async (getData: unknown, ...more: Array<Promise<unknown>>) => {
+      app = await mountWidget();
+      const spy = vi.spyOn(app.fm, 'addForUpload').mockImplementation(() => {});
+      root().dispatchEvent(dragEvent('drop', ['text/html'], { files: [], getData }));
+      await settle();
+      await Promise.all(more);
+      await settle();
+      return spy;
+    };
+    const html = (markup: string) => (type: string) => (type === 'text/html' ? markup : '');
+
+    it('does nothing for a drop that carries neither files nor images (Q-49)', async () => {
+      const spy = await dropWithHtml(html(''));
+      expect(spy).not.toHaveBeenCalled();
+      expect(app.fm.modals.isOpen('uploadfile')).toBe(false);
+      expect(app.fm.uploadFileList).toEqual([]);
+    });
+
+    it('does nothing when the transfer offers no readable HTML', async () => {
+      const missing = await dropWithHtml(undefined);
+      expect(missing).not.toHaveBeenCalled();
+      const throwing = await dropWithHtml(() => {
+        throw new Error('denied');
+      });
+      expect(throwing).not.toHaveBeenCalled();
+    });
+
+    it('fetches the images named in dropped HTML and hands them over as named blobs', async () => {
+      app = await mountWidget({ reply: (request) => (request.url.startsWith('http://img.test/') ? { body: 'PNGDATA', contentType: 'image/png' } : undefined) });
+      const spy = vi.spyOn(app.fm, 'addForUpload').mockImplementation(() => {});
+      const markup = '<p><IMG src="http://img.test/a/one.png?x=1"> <img alt="" class="c" src="http://img.test/two.png"></p>';
+      root().dispatchEvent(dragEvent('drop', ['text/html'], { files: [], getData: html(markup) }));
+      await settle();
+      expect(spy).toHaveBeenCalledTimes(1);
+      const blobs = spy.mock.calls[0][0] as unknown as Array<Blob & { name: string }>;
+      expect(blobs.map((blob) => blob.name).sort()).toEqual(['one.png', 'two.png']);
+      expect(blobs.every((blob) => blob.type === 'image/png')).toBe(true);
+    });
+
+    it('delivers nothing when one of the images cannot be fetched', async () => {
+      app = await mountWidget({ reply: (request) => (request.url.endsWith('bad.png') ? { status: 404, body: '' } : undefined) });
+      const spy = vi.spyOn(app.fm, 'addForUpload').mockImplementation(() => {});
+      const markup = '<img src="http://img.test/ok.png"><img src="http://img.test/bad.png">';
+      root().dispatchEvent(dragEvent('drop', ['text/html'], { files: [], getData: html(markup) }));
+      await settle();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('leaves a paste of plain text alone: no dialog, and the paste is not prevented (Q-49)', async () => {
+      app = await mountWidget();
+      const spy = vi.spyOn(app.fm, 'addForUpload').mockImplementation(() => {});
+      const paste = new Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(paste, 'clipboardData', { value: { items: [], files: [], getData: html('') } });
+      root().querySelector('input')!.dispatchEvent(paste);
+      await settle();
+      expect(spy).not.toHaveBeenCalled();
+      expect(app.fm.modals.isOpen('uploadfile')).toBe(false);
+      expect(paste.defaultPrevented).toBe(false);
+    });
+
+    it('still delivers pasted files', async () => {
+      app = await mountWidget();
+      const spy = vi.spyOn(app.fm, 'addForUpload').mockImplementation(() => {});
+      const pasted = new File(['x'], 'p.png', { type: 'image/png' });
+      const paste = new Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(paste, 'clipboardData', { value: { files: [pasted], getData: html('') } });
+      root().querySelector('input')!.dispatchEvent(paste);
+      await settle();
+      expect(spy.mock.calls[0][0]).toEqual([pasted]);
+    });
   });
 
   it('walks a dropped directory and passes the files inside it', async () => {

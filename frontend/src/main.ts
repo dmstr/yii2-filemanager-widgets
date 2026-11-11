@@ -6,9 +6,9 @@ import { createFileManager } from './services/fileManager.ts';
 import { initialLocale } from './services/storage.ts';
 import './styles/filemanager.less';
 
-/** Mounts the app into the first <angular-filemanager> element, if the page has one. */
+/** Mounts the app into the first <hrzg-filemanager> element, if the page has one. */
 function mount(): void {
-  const root = document.querySelector('angular-filemanager');
+  const root = document.querySelector('hrzg-filemanager');
   if (!root) {
     return;
   }

@@ -82,7 +82,8 @@ describe('Sidebar', () => {
 });
 
 describe('Breadcrumb', () => {
-  const crumbs = () => app.wrapper.findAll('.breadcrumb li');
+  // Scoped to the navbar: the destination dialog has a breadcrumb of its own.
+  const crumbs = () => app.wrapper.find('nav.navbar').findAll('.breadcrumb li');
 
   it('starts with the app name for the root and nothing else', async () => {
     app = await mountWidget({ reply, config: { appName: 'My files' } });

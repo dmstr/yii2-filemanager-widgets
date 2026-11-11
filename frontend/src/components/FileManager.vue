@@ -17,7 +17,7 @@ import Navbar from './Navbar.vue';
 import Sidebar from './Sidebar.vue';
 import TableView from './TableView.vue';
 import { useFileDrop } from './useFileDrop.ts';
-// TODO: dialogs: import ModalsHost from './modals/ModalsHost.vue' here and mount it at the marked place in the template.
+import ModalsHost from './modals/ModalsHost.vue';
 
 const props = defineProps<{ config: FileManagerConfig; i18n: I18n; fileManager: FileManager }>();
 
@@ -66,7 +66,7 @@ const { dragOver, onDragOver, onDragEnter, onDragLeave, onDrop, onPaste } = useF
     </div>
 
     <div>
-      <!-- dialogs: ModalsHost is mounted here -->
+      <ModalsHost />
     </div>
     <div>
       <ContextMenu />

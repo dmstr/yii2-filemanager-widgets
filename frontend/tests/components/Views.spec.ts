@@ -4,6 +4,9 @@ import { dir, file, isShown, mountWidget, settle, type MountOptions, type Mounte
 let app: Mounted;
 afterEach(() => app?.wrapper.unmount());
 
+/** The main screen; the mounted destination dialog renders its own tables, spinner and messages outside it. */
+const main = () => app.wrapper.find('.main-navigation');
+
 const VIEWS = {
   icons: { view: 'main-icons.html', row: 'a.thumbnail' },
   table: { view: 'main-table.html', row: 'tr.item-list' },
@@ -169,7 +172,7 @@ describe('icon content', () => {
 
   it('table: shows the permission code and the formatted date', async () => {
     app = await open('table', { files: [file('a.txt', { rights: 'rwxr-xr-x' }), dir('d', { rights: 'rwxr-xr-x' })], config: { hidePermissions: false } });
-    const cells = app.wrapper.findAll('tr.item-list');
+    const cells = main().findAll('tr.item-list');
     // Folders sort first.
     expect(cells[0].findAll('td')[3].text()).toBe('drwxr-xr-x');
     expect(cells[1].findAll('td')[3].text()).toBe('-rwxr-xr-x');
@@ -178,16 +181,16 @@ describe('icon content', () => {
 
   it('table: Q-07 hideSize hides the header cell only', async () => {
     app = await open('table', { config: { hideSize: true } });
-    const headers = app.wrapper.findAll('thead th');
+    const headers = main().findAll('thead th');
     expect(isShown(headers[1].element)).toBe(false);
-    expect(isShown(app.wrapper.find('tbody tr.item-list td.hidden-xs').element)).toBe(true);
+    expect(isShown(main().find('tbody tr.item-list td.hidden-xs').element)).toBe(true);
   });
 
   it('table: hides date and permission columns by config on header and cells', async () => {
     app = await open('table', { config: { hideDate: true, hidePermissions: true } });
-    const headers = app.wrapper.findAll('thead th');
+    const headers = main().findAll('thead th');
     expect(headers.map((h) => isShown(h.element))).toEqual([true, true, false, false]);
-    const cells = app.wrapper.findAll('tr.item-list')[0].findAll('td');
+    const cells = main().findAll('tr.item-list')[0].findAll('td');
     expect(cells.map((c) => isShown(c.element))).toEqual([true, true, false, false]);
   });
 
@@ -220,7 +223,7 @@ describe.each(Object.keys(VIEWS) as ViewName[])('%s view states', (name) => {
   /** Texts of the state elements that are currently visible. */
   const visibleStates = (): string[] => {
     const selector = name === 'table' ? 'tbody tr:not(.item-list)' : '.alert, .iconset > div:not(.item-list)';
-    return app.wrapper
+    return main()
       .findAll(selector)
       .filter((el) => isShown(el.element))
       .map((el) => el.text() || 'spinner');
@@ -234,7 +237,7 @@ describe.each(Object.keys(VIEWS) as ViewName[])('%s view states', (name) => {
   it('shows the list error instead of the empty message', async () => {
     app = await open(name, { reply: () => ({ status: 500, body: { result: { error: 'Disk on fire' } } }) });
     expect(visibleStates()).toEqual(['Disk on fire']);
-    expect(app.wrapper.findAll(VIEWS[name].row).length).toBe(0);
+    expect(main().findAll(VIEWS[name].row).length).toBe(0);
   });
 
   it('shows the spinner while loading and hides the list', async () => {
@@ -242,11 +245,11 @@ describe.each(Object.keys(VIEWS) as ViewName[])('%s view states', (name) => {
     app.fm.navigator.requesting = true;
     await settle();
     expect(visibleStates()).toEqual(['spinner']);
-    expect(app.wrapper.find('.spinner-wrapper.col-xs-12 svg.spinner-container').exists()).toBe(true);
+    expect(main().find('.spinner-wrapper.col-xs-12 svg.spinner-container').exists()).toBe(true);
     if (name === 'table') {
-      expect(app.wrapper.findAll('tr.item-list').every((row) => !isShown(row.element))).toBe(true);
+      expect(main().findAll('tr.item-list').every((row) => !isShown(row.element))).toBe(true);
     } else {
-      expect(app.wrapper.findAll('.col-120').length).toBeGreaterThan(0);
+      expect(main().findAll('.col-120').length).toBeGreaterThan(0);
     }
   });
 
@@ -259,28 +262,28 @@ describe.each(Object.keys(VIEWS) as ViewName[])('%s view states', (name) => {
 describe('table sorting', () => {
   it('sorts folders first, then by column, and flips everything on the second click', async () => {
     app = await open('table', { files: [file('b.txt', { size: 5 }), dir('z', { size: 3 }), file('a.txt', { size: 9 }), dir('y', { size: 1 })] });
-    const names = () => app.wrapper.findAll('tr.item-list').map((row) => row.find('a').text());
+    const names = () => main().findAll('tr.item-list').map((row) => row.find('a').text());
     expect(names()).toEqual(['y', 'z', 'a.txt', 'b.txt']);
-    await app.wrapper.findAll('thead th a')[0].trigger('click');
+    await main().findAll('thead th a')[0].trigger('click');
     expect(names()).toEqual(['b.txt', 'a.txt', 'z', 'y']);
-    await app.wrapper.findAll('thead th a')[1].trigger('click');
+    await main().findAll('thead th a')[1].trigger('click');
     expect(names()).toEqual(['y', 'z', 'b.txt', 'a.txt']);
   });
 
   it('shows the arrow on the active column only and marks the reversed direction', async () => {
     app = await open('table');
-    const arrows = () => app.wrapper.findAll('thead .sortorder').map((span) => [isShown(span.element), span.classes('reverse')]);
+    const arrows = () => main().findAll('thead .sortorder').map((span) => [isShown(span.element), span.classes('reverse')]);
     expect(arrows()).toEqual([[true, false], [false, false], [false, false], [false, false]]);
-    await app.wrapper.findAll('thead th a')[0].trigger('click');
+    await main().findAll('thead th a')[0].trigger('click');
     expect(arrows()[0]).toEqual([true, true]);
-    await app.wrapper.findAll('thead th a')[1].trigger('click');
+    await main().findAll('thead th a')[1].trigger('click');
     expect(arrows()).toEqual([[false, false], [true, false], [false, false], [false, false]]);
   });
 
   it('does not reload the page: header anchors prevent the default action', async () => {
     app = await open('table');
     const event = new MouseEvent('click', { bubbles: true, cancelable: true });
-    app.wrapper.find('thead th a').element.dispatchEvent(event);
+    main().find('thead th a').element.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
   });
 });

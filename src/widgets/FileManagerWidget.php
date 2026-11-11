@@ -40,7 +40,7 @@ class FileManagerWidget extends Widget
     /**
      * @var string
      */
-    public $template = '<angular-filemanager></angular-filemanager>';
+    public $template = '<hrzg-filemanager></hrzg-filemanager>';
 
     /**
      * Show the thumbnail an item brings along instead of the generic image icon
@@ -101,8 +101,12 @@ class FileManagerWidget extends Widget
             $allowPermissions = true;
         }
 
-        // getenv() returns false for an unset variable, which the breadcrumb would print as "false"
-        $title             = empty($this->title) ? (string)getenv('FILEMANAGER_TITLE') : $this->title;
+        // The title is the breadcrumb's link to the root folder. Without one (getenv()
+        // returns false for an unset variable) fall back to "/", so the link stays clickable.
+        $title             = empty($this->title) ? getenv('FILEMANAGER_TITLE') : $this->title;
+        if (empty($title)) {
+            $title = '/';
+        }
         $lang              = \Yii::$app->language;
 
         $this->options = is_array($this->options) ? $this->options : [];

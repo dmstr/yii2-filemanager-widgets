@@ -37,6 +37,8 @@ Use in TWIG templates:
 
 Requirements: the host page must load the Bootstrap 3 CSS including the Glyphicons font (the widget depends on `yii\bootstrap\BootstrapAsset`). Neither jQuery nor Bootstrap JavaScript is needed.
 
+The widget renders the custom element `<hrzg-filemanager>` (`FileManagerWidget::$template`) and the bundle mounts into the first one on the page. A custom `$template` and host CSS that targets the element must use this tag name; the former name `angular-filemanager` is no longer recognised.
+
 #### Options
 
 The widget writes its configuration to `window.fileManagerConfig`, the bundle merges it over its defaults. Pass options with the `options` property, they are merged over the widget defaults:
