@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### 2.0.1 (unreleased)
+
+- the requirement on `dmstr/yii2-filefly-module` is widened from `^1.7.0-rc1` to `^1.7.0-rc1 || ^2.0`, so the file manager can be installed next to filefly 2.0; the widgets use only the HTTP API of filefly (`filefly/api`), no PHP class of it
+
 ### 2.0.0
 
 The frontend of `FileManagerWidget` is rewritten in Vue 3. Look and behaviour are unchanged apart from the fixes below; widget usage and all widget properties stay as they are.
