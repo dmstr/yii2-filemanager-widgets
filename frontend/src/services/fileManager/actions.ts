@@ -95,6 +95,10 @@ export function createDialogActions(ctx: FileManagerContext) {
     if (item && nameInvalid(item.tempModel.name.trim(), item)) {
       return invalidName();
     }
+    // Several items cannot be renamed on the way, so a copy into their own folder would collide with the originals.
+    if (!item && destinationIsItemsFolder()) {
+      return invalidName();
+    }
     settled(api.copy(selection.temps.value, destination.selectedModalPath.value), () => {
       navigator.refresh();
       modal('copy', true);
