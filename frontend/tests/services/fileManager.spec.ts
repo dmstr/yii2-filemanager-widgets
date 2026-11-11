@@ -420,10 +420,31 @@ describe('copy', () => {
     expect(fm.modals.isOpen('copy')).toBe(false);
   });
 
+  it('refuses several items into the folder they are in, without a request', async () => {
+    select('a.txt', 'd.md');
+    fm.modalWithPathSelector('copy');
+    fm.modal('copy');
+    expect(fm.copy()).toBe(false);
+    expect(fm.api.error).toBe(makeI18n().t('error_invalid_filename'));
+    expect(fm.modals.isOpen('copy')).toBe(true);
+    await settle();
+    expect(requests).toEqual([]);
+  });
+
+  it('skips the same-folder check when the selection starts with a hole, like move', async () => {
+    select('a.txt', 'd.md');
+    fm.temps.unshift(undefined);
+    fm.modalWithPathSelector('copy');
+    expect(fm.copy()).toBeUndefined();
+    await settle();
+    expect(actionsSent()).toEqual(['copy', 'list']);
+  });
+
   it('stays open on an error', async () => {
     override = (r) => ((r.body as { action: string }).action === 'copy' ? { status: 500, body: {} } : undefined);
     select('a.txt', 'd.md');
     fm.modal('copy');
+    fm.selectedModalPath = ['t'];
     fm.copy();
     await settle();
     expect(fm.api.error).toBe(makeI18n().t('error_copying'));
