@@ -3,6 +3,7 @@
 import { useConfig } from '../config/injection.ts';
 import { useI18n } from '../i18n/index.ts';
 import { useFileManager } from '../services/fileManager.ts';
+import { PERMISSIONS_COLUMN, permissionsCode } from '../services/fileManager/view.ts';
 import { formatDate, strLimit } from '../utils/format.ts';
 import Spinner from './Spinner.vue';
 import { useFileSize } from './useFileSize.ts';
@@ -37,10 +38,9 @@ const sizeOf = useFileSize();
           </a>
         </th>
         <th v-show="!config.hidePermissions" class="hidden-sm hidden-xs">
-          <!-- Q-06: sorts by `model.permissions`, which no item has -->
-          <a href="" @click.prevent="fm.order('model.permissions')">
+          <a href="" @click.prevent="fm.order(PERMISSIONS_COLUMN)">
             {{ t('permissions') }}
-            <span v-show="fm.predicate[1] === 'model.permissions'" class="sortorder" :class="{ reverse: fm.reverse }"></span>
+            <span v-show="fm.predicate[1] === PERMISSIONS_COLUMN" class="sortorder" :class="{ reverse: fm.reverse }"></span>
           </a>
         </th>
       </tr>
@@ -89,7 +89,7 @@ const sizeOf = useFileSize();
           {{ formatDate(item.model.date) }}
         </td>
         <td v-show="!config.hidePermissions" class="hidden-sm hidden-xs">
-          {{ item.model.perms.toCode(item.model.type === 'dir' ? 'd' : '-') }}
+          {{ permissionsCode(item) }}
         </td>
       </tr>
     </tbody>

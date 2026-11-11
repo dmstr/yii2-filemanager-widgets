@@ -207,6 +207,50 @@ describe('icon content', () => {
     expect(isShown(cell.find('span').element)).toBe(false);
   });
 
+  describe('table: sorting by the permissions column', () => {
+    const items = () => [
+      file('f1', { rights: 'rwxr-xr-x' }),
+      dir('d2', { rights: 'rwxrwxrwx' }),
+      file('f2', { rights: 'rw-r--r--' }),
+      dir('d1', { rights: 'rwxr-x---' }),
+      file('f3', { rights: 'rw-rw-rw-' }),
+    ];
+    const header = () => main().findAll('thead th')[3];
+    const names = () => main().findAll('tr.item-list').map((r) => r.find('td a').text());
+
+    it('orders by the displayed code, folders first, ascending then descending', async () => {
+      app = await open('table', { files: items(), config: { hidePermissions: false } });
+      await header().find('a').trigger('click');
+      expect(names()).toEqual(['d1', 'd2', 'f2', 'f3', 'f1']);
+      expect(main().findAll('tr.item-list').map((r) => r.findAll('td')[3].text())).toEqual([
+        'drwxr-x---', 'drwxrwxrwx', '-rw-r--r--', '-rw-rw-rw-', '-rwxr-xr-x',
+      ]);
+      await header().find('a').trigger('click');
+      expect(names()).toEqual(['f1', 'f3', 'f2', 'd2', 'd1']);
+    });
+
+    it('shows the arrow on the permissions header only, reversed on the second click', async () => {
+      app = await open('table', { files: items(), config: { hidePermissions: false } });
+      const arrows = () => main().findAll('thead .sortorder').map((a) => isShown(a.element));
+      expect(arrows()).toEqual([true, false, false, false]);
+      await header().find('a').trigger('click');
+      expect(arrows()).toEqual([false, false, false, true]);
+      expect(header().find('.sortorder').classes()).not.toContain('reverse');
+      await header().find('a').trigger('click');
+      expect(header().find('.sortorder').classes()).toContain('reverse');
+    });
+
+    it('leaves the other columns sorting on their own fields', async () => {
+      app = await open('table', { files: items(), config: { hidePermissions: false } });
+      expect(names()).toEqual(['d1', 'd2', 'f1', 'f2', 'f3']);
+      // The name column is active at the start, so a click on it reverses.
+      await main().findAll('thead th')[0].find('a').trigger('click');
+      expect(names()).toEqual(['f3', 'f2', 'f1', 'd2', 'd1']);
+      await main().findAll('thead th')[1].find('a').trigger('click');
+      expect(names().slice(0, 2).sort()).toEqual(['d1', 'd2']);
+    });
+  });
+
   it('table: hides date and permission columns by config on header and cells', async () => {
     app = await open('table', { config: { hideDate: true, hidePermissions: true } });
     const headers = main().findAll('thead th');
