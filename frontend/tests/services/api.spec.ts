@@ -167,7 +167,7 @@ describe('URLs match the recorded apiMiddleware', () => {
     vi.useRealTimers();
     expect(open).toHaveBeenCalledTimes(1);
     const mine = open.mock.calls[0][0] as string;
-    expect(mine).toMatch(/^\/dl\/multi\?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa\.txt&items%5B%5D=%2Fdocs%2Fb%20c\.txt&toFilename=\d{5}-angular-filemanager\.zip$/);
+    expect(mine).toMatch(/^\/dl\/multi\?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa\.txt&items%5B%5D=%2Fdocs%2Fb%20c\.txt&toFilename=\d{5}-filemanager\.zip$/);
     // The timestamp prefix depends on the clock; everything else is identical to the recording.
     expect(mine.replace(/toFilename=\d+/, '')).toBe(recorded.urls.downloadMultipleWithoutTimestamp);
   });
@@ -185,7 +185,7 @@ describe('GET URLs by handler URL shape', () => {
       zip: zip.replace(/toFilename=\d+/, 'toFilename=N'),
     };
   };
-  const zipParams = 'action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa.txt&items%5B%5D=%2Fdocs%2Fb%20c.txt&toFilename=N-angular-filemanager.zip';
+  const zipParams = 'action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa.txt&items%5B%5D=%2Fdocs%2Fb%20c.txt&toFilename=N-filemanager.zip';
 
   it('joins with ? for a plain handler URL, as before', () => {
     expect(build('/filefly/api')).toEqual({
@@ -371,7 +371,13 @@ describe('download', () => {
     await (api.downloadMultiple(items()) as Promise<unknown>);
     await flush();
     expect(requests[0]).toMatchObject({ method: 'GET', url: '/api/downloadMultiple' });
-    expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), expect.stringMatching(/^\d{5}-angular-filemanager\.zip$/));
+    expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), expect.stringMatching(/^\d{5}-filemanager\.zip$/));
+  });
+
+  it('downloadMultiple uses a configured file name instead of the default', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    createApi(makeConfig({ downloadMultipleUrl: '/dl/multi', multipleDownloadFileName: 'mine.zip' }), i18n).downloadMultiple(items());
+    expect(open.mock.calls[0][0]).toMatch(/toFilename=\d{5}-mine\.zip$/);
   });
 
   it('downloadMultiple file name has the timestamp slice of Q-35', () => {
@@ -380,7 +386,7 @@ describe('download', () => {
     vi.setSystemTime(1234567890123);
     api.downloadMultiple(items());
     vi.useRealTimers();
-    expect(open.mock.calls[0][0]).toContain('toFilename=' + '1234567890123'.substr(8, 13) + '-angular-filemanager.zip');
+    expect(open.mock.calls[0][0]).toContain('toFilename=' + '1234567890123'.substr(8, 13) + '-filemanager.zip');
   });
 });
 

@@ -8,7 +8,7 @@ const HANDLER = 'bridges/php/handler.php';
  */
 export function createDefaults(): FileManagerConfig {
   return {
-    appName: 'angular-filemanager v1.5',
+    appName: '/',
     defaultLang: 'en',
 
     listUrl: HANDLER,
@@ -51,7 +51,7 @@ export function createDefaults(): FileManagerConfig {
       customDirActions: false,
     },
 
-    multipleDownloadFileName: 'angular-filemanager.zip',
+    multipleDownloadFileName: 'filemanager.zip',
     showExtensionIcons: true,
     showSizeForDirectories: false,
     useBinarySizePrefixes: false,

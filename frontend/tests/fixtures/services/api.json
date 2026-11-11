@@ -94,7 +94,7 @@
     "getUrl": "/filefly/api?scope=x&action=download&path=%2Fa%20b%2Fmy%20file%20%26%20more.txt",
     "getPreviewUrl": "/filefly/api?scope=x&action=download&path=%2Fa%20b%2Fmy%20file%20%26%20more.txt",
     "getPreviewUrlOfPreviewItem": "/previews/p.png",
-    "downloadMultipleWithoutTimestamp": "/dl/multi?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa.txt&items%5B%5D=%2Fdocs%2Fb%20c.txt&-angular-filemanager.zip"
+    "downloadMultipleWithoutTimestamp": "/dl/multi?action=downloadMultiple&items%5B%5D=%2Fdocs%2Fa.txt&items%5B%5D=%2Fdocs%2Fb%20c.txt&-filemanager.zip"
   },
   "upload": {
     "fieldNames": [ "destination", "file-0", "file-1" ],
