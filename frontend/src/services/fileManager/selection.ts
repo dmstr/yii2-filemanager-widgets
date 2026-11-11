@@ -32,10 +32,10 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
   const singleSelection = (): Item | undefined => (temps.value.length === 1 ? temps.value[0] : undefined);
 
   /**
-   * Replaces the selection. The AngularJS `$watch('temps')` compared by
-   * reference, so it fired exactly on replacement and, for a single item,
-   * reverted its `tempModel`: input in a dialog is dropped by selecting the
-   * item again, but not by a Ctrl-click that only adds to the array.
+   * Replaces the selection and, for a single item, reverts its `tempModel`.
+   * Dialogs reset their item when they open, so this no longer matters for
+   * them; it still keeps the permissions request, which sends the whole
+   * `tempModel` and is not reset on open, free of an abandoned name.
    */
   function replace(next: SelectedItems): void {
     temps.value = next;

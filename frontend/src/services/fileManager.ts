@@ -26,11 +26,25 @@ export function createFileManager(config: FileManagerConfig, i18n: I18n) {
   const view = createViewState(config, navigator);
   const selection = createSelection(config, navigator, view.fileList);
 
-  /** AngularJS `modal(id, hide)`: besides opening or closing it clears the dialog's error and async state. */
+  /**
+   * Dialogs that edit the `tempModel` of the selected item (the compress dialog edits the placeholder's).
+   * `move` is included because its path line shows the item's `tempModel.name`.
+   */
+  const TEMP_MODEL_DIALOGS = ['rename', 'copy', 'move', 'extract', 'edit', 'compress'];
+
+  /**
+   * AngularJS `modal(id, hide)`: besides opening or closing it clears the dialog's error and async state.
+   * Opening a dialog that edits an item first resets that item's `tempModel`, so input abandoned in an
+   * earlier dialog never shows up again or gets sent by another action. A dialog that is already open is
+   * left alone, which keeps the input of a dialog that stays open after a failed submit.
+   */
   function modal(id: string, hide?: boolean): true {
     if (hide) {
       modals.close(id);
     } else {
+      if (TEMP_MODEL_DIALOGS.includes(id) && !modals.isOpen(id)) {
+        selection.temp.value.revert();
+      }
       modals.open(id);
     }
     api.error = '';
