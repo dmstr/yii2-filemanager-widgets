@@ -1,0 +1,61 @@
+# Guards against changing the frontend source without rebuilding the committed
+# bundle: Composer installs this package from the git tag without a build step,
+# so src/assets/dist/filemanager.{js,css} must match what `yarn build` produces.
+name: Frontend
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'src/assets/dist/**'
+      - '.github/workflows/frontend.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'frontend/**'
+      - 'src/assets/dist/**'
+      - '.github/workflows/frontend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Only needed by the local parity tool; CI never runs it.
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      # The dependency tree needs Node ^22.22.2 || ^24.15.0 || >=26; 26 is the active LTS line.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      - run: yarn install --frozen-lockfile
+      - run: yarn typecheck
+      - run: yarn test
+      - run: yarn build
+
+      - name: Committed build output is up to date
+        run: |
+          # `git status` also catches untracked and deleted files, which `git diff` ignores or misses.
+          changes=$(git status --porcelain -- ../src/assets/dist)
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            git --no-pager diff --stat -- ../src/assets/dist
+            echo "::error::src/assets/dist is out of date. Run 'yarn build' in frontend/ and commit src/assets/dist/filemanager.js and filemanager.css."
+            exit 1
+          fi
