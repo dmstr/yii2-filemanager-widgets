@@ -67,16 +67,13 @@ describe('context menu entries by selection (default config)', () => {
     expect(folderList.findAll('li').filter((li) => isShown(li.element)).map((li) => li.text())).toEqual(labels('new_folder', 'upload_files'));
   });
 
-  it('survives a selection with a hole (Q-39, Q-29) and shows the multi-selection entries', async () => {
+  it('a Shift-click whose anchor is filtered out selects just the clicked item, without a hole', async () => {
     app = await mountWidget();
     select('other.txt');
     app.fm.query = 'notes';
     await settle();
     app.fm.selectOrUnselect(app.fm.fileList[0], { shiftKey: true });
-    expect(app.fm.temps).toHaveLength(2);
-    expect(app.fm.temps[0]).toBeUndefined();
-    await settle();
-    expect(visibleMenuEntries(app.wrapper)).toEqual(labels('download_as_zip', 'move', 'copy', 'compress', 'remove'));
+    expect(app.fm.temps).toEqual([app.fm.fileList[0]]);
   });
 
   it('survives a selection that is only a hole', async () => {
