@@ -30,7 +30,7 @@ export interface Navigator {
    */
   onRefresh: (keepState: boolean) => void;
   /** `keepState` reloads the list without the `onRefresh` reset of selection and search. */
-  refresh(recycle?: boolean, keepState?: boolean): Promise<void>;
+  refresh(keepState?: boolean): Promise<void>;
   buildTree(path: string): void;
   folderClick(item?: Item): void;
   upDir(): void;
@@ -111,7 +111,7 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
     }
   }
 
-  function refresh(recycle?: boolean, keepState = false): Promise<void> {
+  function refresh(keepState = false): Promise<void> {
     const request = ++latestRequest;
     const path = nav.currentPath.join('/');
     nav.requesting = true;
@@ -119,7 +119,7 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
     // Q-02 fixed: the AngularJS navigator never cleared a failed list's error, so every later refresh failed too.
     nav.error = '';
     const done = api
-      .list(nav.currentPath, handlerFor(request), recycle)
+      .list(nav.currentPath, handlerFor(request))
       .then((data) => {
         if (request !== latestRequest) {
           return;

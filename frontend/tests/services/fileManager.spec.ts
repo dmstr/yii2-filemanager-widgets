@@ -89,10 +89,10 @@ describe('refresh side effects', () => {
     expect(fm.selectedModalPath).toEqual(['b']);
   });
 
-  it('refreshLocation(true) sends recycle (F-03)', async () => {
-    fm.refreshLocation(true);
+  it('refreshLocation is a plain reload of the current folder', async () => {
+    fm.refreshLocation();
     await settle();
-    expect(requests[0].body).toEqual({ action: 'list', path: '/', recycle: true });
+    expect(requests[0].body).toEqual({ action: 'list', path: '/' });
   });
 });
 

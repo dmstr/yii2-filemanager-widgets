@@ -46,10 +46,19 @@ describe('refresh', () => {
     expect(isReactive(nav.fileList[0])).toBe(true);
   });
 
-  it('sends recycle only when given (Q-12)', async () => {
+  it('sends only the action and the path when listing', async () => {
     const { nav, requests } = setup();
+    await nav.refresh();
+    expect(requests[0].body).toEqual({ action: 'list', path: '/' });
+  });
+
+  it('passes keepState on to onRefresh so a reload can leave the selection alone', async () => {
+    const { nav } = setup();
+    const onRefresh = vi.fn();
+    nav.onRefresh = onRefresh;
+    await nav.refresh();
     await nav.refresh(true);
-    expect(requests[0].body).toEqual({ action: 'list', path: '/', recycle: true });
+    expect(onRefresh.mock.calls).toEqual([[false], [true]]);
   });
 
   it('calls onRefresh after the list and tree are built, not on failure', async () => {

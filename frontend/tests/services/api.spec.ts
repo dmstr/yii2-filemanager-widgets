@@ -38,7 +38,6 @@ const postCases: Array<{
   port: (api: Api, make: typeof items) => Promise<unknown>;
 }> = [
   { name: 'list', url: '/api/list', port: (a) => a.list(['docs', 'x']) },
-  { name: 'list with recycle', url: '/api/list', port: (a) => a.list(['docs'], undefined, true) },
   { name: 'copy', url: '/api/copy', port: (a, m) => a.copy(m(), ['t']) },
   {
     name: 'copy of one item',
