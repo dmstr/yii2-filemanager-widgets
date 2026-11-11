@@ -5,7 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import type { Item } from '../../models/Item.ts';
-import type { Navigator } from '../navigator.ts';
+import { isOnPath, type Navigator } from '../navigator.ts';
 import { orderBy } from './collection.ts';
 import { createSortState } from './view.ts';
 import type { createSelection } from './selection.ts';
@@ -73,7 +73,8 @@ export function createDestination({ navigator, selectorNavigator, selection, mod
     return selectedItemsPath === selectedPath;
   }
 
-  const isInThisPath = (path: string): boolean => navigator.currentPath.join('/').indexOf(path) !== -1;
+  /** Is the sidebar node `path` on the current path, by whole segments (the root is on every path)? */
+  const isInThisPath = (path: string): boolean => isOnPath(path, navigator.currentPath.join('/'));
 
   return {
     navigator: selectorNavigator,
