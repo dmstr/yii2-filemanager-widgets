@@ -13,13 +13,13 @@ use yii\web\AssetBundle;
 use yii\web\View;
 
 /**
- * Class AfmAsset
+ * Class FileManagerAsset
  * Publishes the compiled Vue 3 file manager (filemanager.css and filemanager.js).
  * Bootstrap 3 CSS incl. Glyphicons is the only dependency, it comes from the host application.
  * @package hrzg\filemanager\assets
  * @author Christopher Stebe <c.stebe@herzogkommunikation.de>
  */
-class AfmAsset extends AssetBundle
+class FileManagerAsset extends AssetBundle
 {
     /**
      * @var string

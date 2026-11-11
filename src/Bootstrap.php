@@ -22,9 +22,11 @@ class Bootstrap implements BootstrapInterface {
     /** @inheritdoc */
     public function bootstrap($app) {
 
-        
-        if (!isset($app->get('i18n')->translations['afm*'])) {
-            $app->get('i18n')->translations['afm*'] = [
+        // Exact key, no trailing `*`: Yii matches a wildcard key as a prefix, so
+        // `filemanager*` would also claim categories of the host application such
+        // as `filemanager-custom`. All calls in this package use `filemanager`.
+        if (!isset($app->get('i18n')->translations['filemanager'])) {
+            $app->get('i18n')->translations['filemanager'] = [
                 'class' => PhpMessageSource::className(),
                 'basePath' => __DIR__ . '/messages',
                 'sourceLanguage' => 'en-US'

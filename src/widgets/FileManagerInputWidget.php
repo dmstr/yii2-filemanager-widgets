@@ -98,7 +98,7 @@ class FileManagerInputWidget extends InputWidget
 
         $this->select2Options['options'] = [
             'id' => $this->options['id'],
-            'placeholder' => \Yii::t('afm', 'Search for a file ...'),
+            'placeholder' => \Yii::t('filemanager', 'Search for a file ...'),
             'style' => ['width' => '100%']
         ];
 
@@ -114,7 +114,7 @@ class FileManagerInputWidget extends InputWidget
             'allowClear'         => true,
             'minimumInputLength' => $this->minInputLength,
             'language'           => [
-                'errorLoading' => \Yii::t('afm', 'Waiting for results ...'),
+                'errorLoading' => \Yii::t('filemanager', 'Waiting for results ...'),
             ],
             'ajax'               => [
                 'cache'          => true,
@@ -308,9 +308,9 @@ var onSelect = function(elem, initId) {
     }
 
     // button elements
-    var copyBtn = $('#' + elementId + '-afm-copy-btn');
-    var linkBtn = $('#' + elementId + '-afm-link-btn');
-    var downloadBtn = $('#' + elementId + '-afm-download-btn');
+    var copyBtn = $('#' + elementId + '-filemanager-copy-btn');
+    var linkBtn = $('#' + elementId + '-filemanager-link-btn');
+    var downloadBtn = $('#' + elementId + '-filemanager-download-btn');
 
     // enable buttons
     copyBtn.prop('disabled', false);
@@ -334,9 +334,9 @@ var onUnSelect = function(elem) {
     var elementId = elem.currentTarget.id;
 
     // button elements
-    var copyBtn = $('#' + elementId + '-afm-copy-btn');
-    var linkBtn = $('#' + elementId + '-afm-link-btn');
-    var downloadBtn = $('#' + elementId + '-afm-download-btn');
+    var copyBtn = $('#' + elementId + '-filemanager-copy-btn');
+    var linkBtn = $('#' + elementId + '-filemanager-link-btn');
+    var downloadBtn = $('#' + elementId + '-filemanager-download-btn');
 
     // disable buttons
     copyBtn.prop('disabled', true);
@@ -374,27 +374,27 @@ JS;
                         FA::i(FA::_COPY),
                         [
                             'class'    => 'btn btn-default',
-                            'id'       => $this->options['id'] . '-afm-copy-btn',
+                            'id'       => $this->options['id'] . '-filemanager-copy-btn',
                             'disabled' => 'disabled',
-                            'title'    => \Yii::t('afm', 'Copy path to clipboard')
+                            'title'    => \Yii::t('filemanager', 'Copy path to clipboard')
                         ]
                     )
                     . Html::button(
                         FA::i(FA::_LINK),
                         [
                             'class'    => 'btn btn-default',
-                            'id'       => $this->options['id'] . '-afm-link-btn',
+                            'id'       => $this->options['id'] . '-filemanager-link-btn',
                             'disabled' => 'disabled',
-                            'title'    => \Yii::t('afm', 'Copy link to clipboard')
+                            'title'    => \Yii::t('filemanager', 'Copy link to clipboard')
                         ]
                     )
                     . Html::button(
                         FA::i(FA::_DOWNLOAD),
                         [
                             'class'    => 'btn btn-default',
-                            'id'       => $this->options['id'] . '-afm-download-btn',
+                            'id'       => $this->options['id'] . '-filemanager-download-btn',
                             'disabled' => 'disabled',
-                            'title'    => \Yii::t('afm', 'Download file')
+                            'title'    => \Yii::t('filemanager', 'Download file')
                         ]
                     ),
                 'asButton' => true

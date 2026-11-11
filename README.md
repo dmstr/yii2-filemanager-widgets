@@ -14,8 +14,8 @@ Installation
 
 Variable | Value
 ------------- | -------------
-AFM_TITLE | 'My Filemanager'
-AFM_HANDLER_URL | '/filefly/api'
+FILEMANAGER_TITLE | 'My Filemanager'
+FILEMANAGER_HANDLER_URL | '/filefly/api'
 
 
 Filemanager widget

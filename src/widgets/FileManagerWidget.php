@@ -9,7 +9,7 @@
 
 namespace hrzg\filemanager\widgets;
 
-use hrzg\filemanager\assets\AfmAsset;
+use hrzg\filemanager\assets\FileManagerAsset;
 use yii\base\Widget;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Json;
@@ -71,7 +71,7 @@ class FileManagerWidget extends Widget
     public function init()
     {
         // register assets
-        AfmAsset::register(\Yii::$app->view);
+        FileManagerAsset::register(\Yii::$app->view);
 
         // Config filemanager
         $this->setFileManagerConfig();
@@ -92,7 +92,7 @@ class FileManagerWidget extends Widget
     {
         // Set handler Url
         if ($this->handlerUrl === null) {
-            $this->handlerUrl = Url::to([getenv('AFM_HANDLER_URL')]);
+            $this->handlerUrl = Url::to([getenv('FILEMANAGER_HANDLER_URL')]);
         }
 
         // check if user is allowed to change permissions
@@ -102,7 +102,7 @@ class FileManagerWidget extends Widget
         }
 
         // getenv() returns false for an unset variable, which the breadcrumb would print as "false"
-        $title             = empty($this->title) ? (string)getenv('AFM_TITLE') : $this->title;
+        $title             = empty($this->title) ? (string)getenv('FILEMANAGER_TITLE') : $this->title;
         $lang              = \Yii::$app->language;
 
         $this->options = is_array($this->options) ? $this->options : [];
@@ -198,8 +198,8 @@ class FileManagerWidget extends Widget
 })(window, $json);
 JS;
 
-        // POS_HEAD inline code runs before the bundle, which AfmAsset loads at POS_END.
+        // POS_HEAD inline code runs before the bundle, which FileManagerAsset loads at POS_END.
         // The key keeps a second widget on the same page from emitting it again.
-        \Yii::$app->view->registerJs($js, View::POS_HEAD, 'afm-file-manager-config');
+        \Yii::$app->view->registerJs($js, View::POS_HEAD, 'filemanager-config');
     }
 }
