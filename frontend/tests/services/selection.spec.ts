@@ -256,15 +256,38 @@ describe('revert on replacement (the AngularJS $watch)', () => {
 });
 
 describe('prepareNewFolder (Q-26)', () => {
-  it('selects a phantom item that is not in the list and stays selected', async () => {
-    const item = fm.prepareNewFolder();
-    expect(fm.singleSelection()).toBe(item);
-    expect(fm.fileList).not.toContain(item);
-    expect(item.model.type).toBe('file');
-    expect(item.model.name).toBe('');
-    expect(item.model.path).toEqual([]);
+  it('creates a draft outside the list and the selection, and leaves the selection alone', async () => {
+    fm.selectOrUnselect(fm.fileList[0]);
+    fm.selectOrUnselect(fm.fileList[2], { ctrlKey: true });
+    const before = [...fm.temps];
+    const draft = fm.prepareNewFolder();
+    expect(fm.newFolder).toBe(draft);
+    expect(fm.temps).toEqual(before);
+    expect(fm.fileList).not.toContain(draft);
+    expect(draft.model.type).toBe('file');
+    expect(draft.model.name).toBe('');
     fm.modal('newfolder', true);
-    expect(fm.singleSelection()).toBe(item);
+    expect(fm.temps).toEqual(before);
+    await flush();
+  });
+
+  it('keeps an empty selection empty and a single selection unreverted', async () => {
+    fm.prepareNewFolder();
+    expect(fm.temps).toEqual([]);
+    fm.selectOrUnselect(fm.fileList[0]);
+    fm.fileList[0].tempModel.name = 'typed';
+    fm.prepareNewFolder();
+    expect(fm.singleSelection()).toBe(fm.fileList[0]);
+    expect(fm.fileList[0].tempModel.name).toBe('typed');
+    await flush();
+  });
+
+  it('starts a fresh draft on every call', async () => {
+    const first = fm.prepareNewFolder();
+    first.tempModel.name = 'abandoned';
+    const second = fm.prepareNewFolder();
+    expect(second).not.toBe(first);
+    expect(second.tempModel.name).toBe('');
     await flush();
   });
 

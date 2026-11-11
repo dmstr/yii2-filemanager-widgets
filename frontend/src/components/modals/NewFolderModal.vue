@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * New folder dialog (`#newfolder`). The input binds to the phantom
- * item that opening the dialog put into the selection (Q-26).
+ * New folder dialog (`#newfolder`). The input binds to the draft item
+ * `prepareNewFolder()` creates, which is not part of the selection.
  */
 import { useI18n } from '../../i18n/index.ts';
 import { useFileManager } from '../../services/fileManager.ts';
@@ -12,8 +12,7 @@ import ErrorBar from './ErrorBar.vue';
 const fm = useFileManager();
 const { t } = useI18n();
 
-/** `ng-model="singleSelection().tempModel.name"` (Q-29 without a single selection). */
-const name = tempModelField(() => fm.singleSelection(), 'name');
+const name = tempModelField(() => fm.newFolder, 'name');
 </script>
 
 <template>

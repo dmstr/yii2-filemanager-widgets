@@ -87,6 +87,7 @@ export function createFileManager(config: FileManagerConfig, i18n: I18n) {
     singleSelection: selection.singleSelection,
     totalSelecteds: selection.totalSelecteds,
     selectionHas: selection.selectionHas,
+    newFolder: selection.newFolder,
     prepareNewFolder: selection.prepareNewFolder,
 
     // Destination dialog (ModalFileManagerCtrl and the shared root scope values)

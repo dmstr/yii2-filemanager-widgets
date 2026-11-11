@@ -20,7 +20,7 @@ describe('NewFolderModal', () => {
     expect(diffAgainstRecorded(recordedContent('newfolder'), app.wrapper.find('.modal-content').element, app.t, { emptyData: true })).toBeNull();
   });
 
-  it('renders the texts and an empty field on the phantom item the dialog opens with', async () => {
+  it('renders the texts and an empty field on the draft the dialog opens with', async () => {
     app = mountModal(NewFolderModal);
     app.fm.prepareNewFolder();
     await rendered(app);
@@ -32,30 +32,50 @@ describe('NewFolderModal', () => {
     expect(text(submit())).toBe('Create');
   });
 
-  it('renders for several items and for no selection without throwing', async () => {
+  it('renders an empty field whatever is selected', async () => {
     app = mountModal(NewFolderModal);
+    app.fm.prepareNewFolder();
     await select(app.fm, item('a'), item('b'));
     expect((input().element as HTMLInputElement).value).toBe('');
     await select(app.fm);
-    await select(app.fm, undefined);
     expect((input().element as HTMLInputElement).value).toBe('');
   });
 
-  it('writes the trimmed input to the tempModel of the selected item', async () => {
+  it('writes the trimmed input to the draft and not to the selection', async () => {
     app = mountModal(NewFolderModal);
-    const phantom = app.fm.prepareNewFolder();
+    const selected = item('a');
+    await select(app.fm, selected);
+    const draft = app.fm.prepareNewFolder();
     await rendered(app);
     await type('  my folder ');
-    expect(phantom.tempModel.name).toBe('my folder');
+    expect(draft.tempModel.name).toBe('my folder');
+    expect(selected.tempModel.name).toBe('a');
     expect((input().element as HTMLInputElement).value).toBe('  my folder ');
     await type('');
-    expect(phantom.tempModel.name).toBe('');
+    expect(draft.tempModel.name).toBe('');
   });
 
-  it('ignores typing without a single selection', async () => {
+  it('shows an empty field again when the dialog is opened anew', async () => {
     app = mountModal(NewFolderModal);
-    await select(app.fm);
-    await expect(type('x')).resolves.toBeUndefined();
+    app.fm.prepareNewFolder();
+    await rendered(app);
+    await type('abandoned');
+    app.fm.prepareNewFolder();
+    await rendered(app);
+    expect((input().element as HTMLInputElement).value).toBe('');
+  });
+
+  it('keeps the typed name and the selection when the creation fails', async () => {
+    app = mountModal(NewFolderModal);
+    const selected = item('a');
+    await select(app.fm, selected);
+    app.fm.prepareNewFolder();
+    await rendered(app);
+    await type('My Folder');
+    app.fm.api.error = 'nope';
+    await rendered(app);
+    expect((input().element as HTMLInputElement).value).toBe('My Folder');
+    expect(app.fm.temps).toEqual([selected]);
   });
 
   it('cross and Cancel only close, without a refresh', async () => {
