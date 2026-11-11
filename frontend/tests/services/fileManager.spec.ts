@@ -409,13 +409,13 @@ describe('copy', () => {
     expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/', newFilename: 'fresh.txt' });
   });
 
-  it('allows an existing name when the destination is another folder', async () => {
+  it('allows an existing name when the destination is another folder and sends no name for it', async () => {
     select('a.txt');
     fm.modalWithPathSelector('copy');
     fm.selectedModalPath = ['other'];
     expect(fm.copy()).toBeUndefined();
     await settle();
-    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/other', newFilename: 'a.txt' });
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/other' });
   });
 
   it('copies several items without name check, refreshes and closes', async () => {
