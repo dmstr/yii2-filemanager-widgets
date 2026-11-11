@@ -80,7 +80,7 @@ describe.each(Object.keys(VIEWS) as ViewName[])('%s view gestures', (name) => {
     viewUnderTest = name;
     app = await open(name, { files: [file('big.bin', { size: 1536 })] });
     const target = name === 'table' ? app.wrapper.find('td a') : rows()[0];
-    expect(target.attributes('title')).toBe('big.bin (1.5  kB)');
+    expect(target.attributes('title')).toBe('big.bin (1.5 kB)');
   });
 
   it('renders a selection hole without failing', async () => {

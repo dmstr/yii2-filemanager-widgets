@@ -8,7 +8,7 @@ Files are JSON, pretty-printed, in the key order the recording had. Values JSON 
 
 | File | What it pins | Read by |
 | --- | --- | --- |
-| `utils/format.json` | arguments and results of the four AngularJS filters `strLimit`, `fileExtension`, `humanReadableFileSize` and `formatDate`, including the `RangeError` for an Invalid Date | `utils/format.spec.ts` |
+| `utils/format.json` | arguments and results of the AngularJS filters `strLimit`, `fileExtension` and `formatDate` (strings, numbers and the `RangeError` for an Invalid Date); the file size and date output was changed on purpose and is pinned by tables in the spec | `utils/format.spec.ts` |
 | `utils/slug.json` | input and result of the folder-name `slug` function | `utils/slug.spec.ts` |
 | `utils/param.json` | data and query string of jQuery 3 `$.param`, used to build download URLs | `utils/param.spec.ts` |
 | `models/chmod.json` | input and result (or error message) of the `chmod` service | `models/Chmod.spec.ts` |
