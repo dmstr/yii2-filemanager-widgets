@@ -87,7 +87,7 @@ const postCases: Array<{
     port: (a, m) => {
       const item = m()[0];
       item.tempModel.name = '  New Folder!  ';
-      return a.createFolder(item);
+      return a.createFolder(item, 'new-folder');
     },
   },
 ];
@@ -134,11 +134,11 @@ describe('POST requests match the recorded apiMiddleware', () => {
     expect(requests[0].body).toEqual({ action: 'copy', items: ['/docs/a.txt', '/docs/b c.txt'], newPath: '/t' });
   });
 
-  it('createFolder slugs tempModel.name in place (Q-28)', async () => {
+  it('createFolder sends the given name under the item path and leaves the typed name alone', async () => {
     const item = items()[0];
     item.tempModel.name = '  New Folder!  ';
-    await api.createFolder(item);
-    expect(item.tempModel.name).toBe('new-folder');
+    await api.createFolder(item, 'new-folder');
+    expect(item.tempModel.name).toBe('  New Folder!  ');
     expect(requests[0].body).toEqual({ action: 'createFolder', newPath: '/docs/new-folder' });
   });
 });
@@ -272,10 +272,10 @@ describe('response handling', () => {
     expect(api.error).toBe('Unknown error listing, check the response');
   });
 
-  it('shows the raw key where a translation is missing', async () => {
+  it('shows a translated message for a failed move', async () => {
     reply = () => ({ status: 500, body: { foo: 1 } });
     await expect(api.move(items(), [])).rejects.toBeDefined();
-    expect(api.error).toBe('error_moving');
+    expect(api.error).toBe('An error occurred moving the file or folder');
   });
 
   it('does not throw on a network failure and rejects with the bridge error (Q-30)', async () => {
@@ -417,23 +417,33 @@ describe('upload', () => {
     await promise;
   });
 
-  it('reports progress as the percentage minus one and resets it afterwards (Q-34)', async () => {
+  it('reports progress as the rounded-down percentage, reaching 100, and resets it afterwards', async () => {
     const Xhr = stubXhr();
     const promise = api.upload(files(), []);
     const xhr = Xhr.instances[0];
-    xhr.emitProgress(50, 200);
-    expect(api.progress).toBe(24);
-    xhr.emitProgress(199, 200);
-    expect(api.progress).toBe(98);
-    xhr.emitProgress(200, 200);
-    expect(api.progress).toBe(99);
-    xhr.emitProgress(250, 200);
-    expect(api.progress).toBe(99);
     xhr.emitProgress(0, 200);
-    expect(api.progress).toBe(-1);
+    expect(api.progress).toBe(0);
+    xhr.emitProgress(50, 200);
+    expect(api.progress).toBe(25);
+    xhr.emitProgress(199, 200);
+    expect(api.progress).toBe(99);
+    xhr.emitProgress(200, 200);
+    expect(api.progress).toBe(100);
+    xhr.emitProgress(250, 200);
+    expect(api.progress).toBe(100);
     xhr.respond(200, { result: {} });
     await promise;
     expect(api.progress).toBe(0);
+  });
+
+  it('shows 0 instead of NaN when the total is 0', async () => {
+    const Xhr = stubXhr();
+    const promise = api.upload(files(), []);
+    const xhr = Xhr.instances[0];
+    xhr.emitProgress(0, 0);
+    expect(api.progress).toBe(0);
+    xhr.respond(200, { result: {} });
+    await promise;
   });
 
   it('rejects with result.error from a failed upload', async () => {

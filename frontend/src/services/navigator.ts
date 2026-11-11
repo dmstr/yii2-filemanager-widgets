@@ -39,6 +39,14 @@ export interface Navigator {
   listHasFolders(): Item | undefined;
 }
 
+/**
+ * Is the node `name` (full path without leading slash, `''` for the root) on `path`, i.e. are its segments
+ * a prefix of the segments of `path`? Compared by segment, so `doc` is not on `documents/x`.
+ */
+export function isOnPath(name: string, path: string): boolean {
+  return name === '' || path === name || path.startsWith(name + '/');
+}
+
 /** Creates a navigator with its own API client. */
 export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigator {
   const api = createApi(config, i18n);
@@ -64,8 +72,8 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
 
     function recursive(parent: TreeNode, item: Item, currentPath: string): void {
       const absName = currentPath ? currentPath + '/' + item.model.name : item.model.name;
-      // Q-24: a folder counts as "on the path" when its name appears at the start of the path as plain text.
-      if (parent.name.trim() && currentPath.trim().indexOf(parent.name) !== 0) {
+      // Branches off the listed path are pruned; "on the path" is decided by segments, so `doc` is not on `documents`.
+      if (parent.name.trim() && !isOnPath(parent.name, currentPath)) {
         parent.nodes = [];
       }
       if (parent.name !== currentPath) {

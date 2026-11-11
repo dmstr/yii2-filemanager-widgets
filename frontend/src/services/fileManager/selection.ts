@@ -20,22 +20,23 @@ export interface SelectEvent {
 export type MultipleItem = Item & { multiple?: boolean };
 
 /**
- * The array may contain `undefined`: a shift-click whose anchor is not in the
- * displayed list walks from index -1 and the AngularJS code pushed that hole
- * into the selection too.
+ * The `| undefined` is legacy: no gesture puts `undefined` into the selection
+ * any more (Q-39 fixed), so it and the guards of the consumers can go.
  */
 export type SelectedItems = Array<Item | undefined>;
 
 export function createSelection(config: FileManagerConfig, navigator: Navigator, fileList: Ref<Item[]>) {
   const temps = ref<SelectedItems>([]);
+  /** Draft of the open "new folder" dialog; kept apart from the selection so opening or cancelling the dialog leaves that untouched. */
+  const newFolder = ref<Item | null>(null);
 
   const singleSelection = (): Item | undefined => (temps.value.length === 1 ? temps.value[0] : undefined);
 
   /**
-   * Replaces the selection. The AngularJS `$watch('temps')` compared by
-   * reference, so it fired exactly on replacement and, for a single item,
-   * reverted its `tempModel`: input in a dialog is dropped by selecting the
-   * item again, but not by a Ctrl-click that only adds to the array.
+   * Replaces the selection and, for a single item, reverts its `tempModel`.
+   * Dialogs reset their item when they open, so this no longer matters for
+   * them; it still keeps the permissions request, which sends the whole
+   * `tempModel` and is not reset on open, free of an abandoned name.
    */
   function replace(next: SelectedItems): void {
     temps.value = next;
@@ -81,7 +82,14 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
       const lastSelected = temps.value[0];
       let i = list.indexOf(lastSelected);
       const next: SelectedItems = [];
-      if (lastSelected && i < indexInList) {
+      // No usable anchor (nothing selected, or filtered out of the displayed
+      // list) or an unlisted clicked item: there is no range to walk, so act
+      // as a plain click and make the clicked item the new anchor.
+      if (!lastSelected || i === -1 || indexInList === -1) {
+        replace([item]);
+        return;
+      }
+      if (i < indexInList) {
         while (i <= indexInList) {
           const current = list[i];
           !next.includes(current) && next.push(current);
@@ -90,7 +98,7 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
         replace(next);
         return;
       }
-      if (lastSelected && i > indexInList) {
+      if (i > indexInList) {
         while (i >= indexInList) {
           const current = list[i];
           !next.includes(current) && next.push(current);
@@ -112,12 +120,12 @@ export function createSelection(config: FileManagerConfig, navigator: Navigator,
   const selectionHas = (type: string): Item | undefined =>
     temps.value.find((item) => item && item.model.type === type);
 
-  /** Q-26: opening "new folder" selects a phantom item that is not in the list and stays selected after cancel. */
+  /** Starts a fresh draft for the current path, so a name abandoned in an earlier dialog never reappears. */
   function prepareNewFolder(): Item {
     const item = reactive(new Item(null, navigator.currentPath, config)) as Item;
-    replace([item]);
+    newFolder.value = item;
     return item;
   }
 
-  return { temps, temp, isSelected, selectOrUnselect, singleSelection, totalSelecteds, selectionHas, prepareNewFolder, replace };
+  return { temps, newFolder, temp, isSelected, selectOrUnselect, singleSelection, totalSelecteds, selectionHas, prepareNewFolder, replace };
 }

@@ -31,14 +31,13 @@ const sizeOf = useFileSize();
           <div class="item-icon">
             <i v-show="item.model.type === 'dir'" class="glyphicon glyphicon-folder-open"></i>
             <div
-              v-if="item.model.type === 'file' && item.isImage() && config.enableThumbnails && item.model.thumbnail !== ''"
+              v-if="item.model.type === 'file' && item.isImage() && config.enableThumbnails && item.model.thumbnail"
               class="image-preview-thumbnail"
             >
               <img :src="item.model.thumbnail" :alt="item.model.name" loading="lazy" />
             </div>
-            <!-- Q-08: an image with thumbnails on but an empty `thumbnail` gets no icon at all -->
             <i
-              v-if="!config.enableThumbnails && item.model.type === 'file' && item.isImage()"
+              v-if="item.model.type === 'file' && item.isImage() && !(config.enableThumbnails && item.model.thumbnail)"
               class="glyphicon glyphicon-picture"
               :class="{ 'item-extension': config.showExtensionIcons }"
               :data-ext="fileExtension(item.model.name)"

@@ -10,6 +10,8 @@
  * - When the model changes from outside (another item selected, `revert()`,
  *   content loaded) to something else than the field last wrote, the field
  *   shows the model value.
+ * - A model that reports itself as not attached (no owner) is left alone:
+ *   the field keeps the typed text and nothing is written.
  * - While an IME composition runs, `input` events are ignored; its end
  *   counts as one input.
  *
@@ -24,10 +26,16 @@ import { watch, type Directive, type WatchStopHandle } from 'vue';
 export interface TextModel {
   get(): unknown;
   set(value: string): void;
+  /**
+   * `false` when there is nothing to write to. The field then keeps what the
+   * user types and neither writes nor re-renders; once this is `true` again
+   * it shows the model value.
+   */
+  attached?(): boolean;
 }
 
 /** Creates a `TextModel`; declare it once in `<script setup>` so its identity stays stable. */
-export const textModel = (get: () => unknown, set: (value: string) => void): TextModel => ({ get, set });
+export const textModel = (get: () => unknown, set: (value: string) => void, attached?: () => boolean): TextModel => ({ get, set, attached });
 
 interface Owner {
   tempModel: object;
@@ -36,9 +44,9 @@ interface Owner {
 /**
  * `ng-model="<owner>.tempModel.<key>"` for an owner that may be missing,
  * such as `singleSelection()` with no or several items selected. AngularJS
- * read such a path as `undefined` and failed to assign through it (Q-29): the
- * read renders an empty field and the write is dropped; the directive then
- * empties the field again because the model did not take the value.
+ * read such a path as `undefined` and failed to assign through it (Q-29) and
+ * emptied the field on every keystroke. Here the field without an owner keeps
+ * the typed text and writes nowhere; with an owner it shows the model value.
  */
 export function tempModelField(owner: () => Owner | false | null | undefined, key: string): TextModel {
   return textModel(
@@ -52,6 +60,7 @@ export function tempModelField(owner: () => Owner | false | null | undefined, ke
         (current.tempModel as Record<string, unknown>)[key] = value;
       }
     },
+    () => !!owner(),
   );
 }
 
@@ -64,6 +73,8 @@ interface State {
   /** `$viewValue`: the formatted model value or the last trimmed field text. */
   viewValue: unknown;
   composing: boolean;
+  /** The model had nothing to write to when last looked at. */
+  detached: boolean;
   stop: WatchStopHandle;
   listeners: Array<[string, EventListener]>;
 }
@@ -75,6 +86,16 @@ const isEmpty = (value: unknown): boolean =>
 
 /** `ngModelWatch` plus `$render`: shows the model value when it is not what the field last wrote. */
 function syncFromModel(el: Field, state: State): void {
+  if (state.model.attached?.() === false) {
+    state.detached = true;
+    return;
+  }
+  if (state.detached) {
+    // Back with an owner: forget what was typed while detached and render the model.
+    state.detached = false;
+    state.modelValue = NaN;
+    state.viewValue = NaN;
+  }
   const value = state.model.get();
   if (value === state.modelValue) {
     return;
@@ -93,7 +114,7 @@ function syncFromModel(el: Field, state: State): void {
 
 /** The input listener: trims, commits a changed value to the model, then lets the model answer. */
 function onInput(el: Field, state: State): void {
-  if (state.composing) {
+  if (state.composing || state.model.attached?.() === false) {
     return;
   }
   const value = el.value.trim();
@@ -111,7 +132,7 @@ function onInput(el: Field, state: State): void {
 
 function observe(el: Field, state: State): void {
   state.stop = watch(
-    () => state.model.get(),
+    [() => state.model.get(), () => state.model.attached?.() !== false],
     () => syncFromModel(el, state),
   );
 }
@@ -124,6 +145,7 @@ export const vTextModel: Directive<Field, TextModel> = {
       modelValue: NaN,
       viewValue: undefined,
       composing: false,
+      detached: false,
       stop: () => {},
       listeners: [],
     };

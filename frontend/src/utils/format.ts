@@ -26,7 +26,9 @@ export function fileExtension(input: string): string {
 /**
  * Port of the `formatDate` filter.
  *
- * Q-22: dates go through `toISOString`, so the output is shifted to UTC.
+ * The backend sends a zone-less wall-clock time and `Item` parses it as local
+ * time, so the local date parts are printed to show exactly what the server
+ * sent, whatever the time zone of the browser is.
  * The AngularJS filter threw a RangeError for an Invalid Date (which every item
  * without a parsable date has, see `Item`) and for `null`/`undefined`;
  * AngularJS then left the raw `{{ ... }}` text in the cell. A Vue template
@@ -37,7 +39,11 @@ export function formatDate(input: unknown): string {
     if (Number.isNaN(input.getTime())) {
       return '';
     }
-    return input.toISOString().substring(0, 19).replace('T', ' ');
+    const pad = (value: number, length = 2): string => String(value).padStart(length, '0');
+    return (
+      `${pad(input.getFullYear(), 4)}-${pad(input.getMonth() + 1)}-${pad(input.getDate())} ` +
+      `${pad(input.getHours())}:${pad(input.getMinutes())}:${pad(input.getSeconds())}`
+    );
   }
   if (input == null) {
     return '';
@@ -46,24 +52,26 @@ export function formatDate(input: unknown): string {
   return (value.toLocaleString || value.toString).apply(input);
 }
 
-// Q-21: the irregular leading spaces of the decimal units are part of the output.
-const DECIMAL_BYTE_UNITS = [' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB'];
+const DECIMAL_BYTE_UNITS = ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 const BINARY_BYTE_UNITS = ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
 
 /**
  * Port of the `humanReadableFileSize` filter.
  *
- * Q-21: always divides by 1024, even for decimal units, shows at least
- * `0.1`, and an index past the unit table renders as the text `undefined`.
- * Non-finite input is not guarded, as before: `Infinity` never terminates.
+ * Decimal units divide by 1000 and binary units by 1024. The smallest unit is
+ * used below one unit (there is no bytes unit), the next unit starts when the
+ * value reaches the divisor, and the last unit is kept for anything larger.
+ * Input that is not a finite non-negative number counts as 0.
  */
 export function humanReadableFileSize(input: number, useBinaryPrefixes: boolean): string {
-  let i = -1;
-  let size = input;
-  do {
-    size = size / 1024;
+  const divisor = useBinaryPrefixes ? 1024 : 1000;
+  const units = useBinaryPrefixes ? BINARY_BYTE_UNITS : DECIMAL_BYTE_UNITS;
+  let size = Number.isFinite(input) && input > 0 ? input / divisor : 0;
+  let i = 0;
+  // Compare the rounded value, so 999.96 kB does not print as `1000.0 kB`.
+  while (i < units.length - 1 && Number(size.toFixed(1)) >= divisor) {
+    size = size / divisor;
     i++;
-  } while (size > 1024);
-  const unit = useBinaryPrefixes ? BINARY_BYTE_UNITS[i] : DECIMAL_BYTE_UNITS[i];
-  return Math.max(size, 0.1).toFixed(1) + ' ' + unit;
+  }
+  return size.toFixed(1) + ' ' + units[i];
 }

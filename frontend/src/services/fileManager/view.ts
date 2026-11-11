@@ -32,16 +32,14 @@ export function createViewState(config: FileManagerConfig, navigator: Navigator)
   }
 
   /**
-   * AngularJS `$scope.fileList`, which the active view template assigned:
-   * filtered by name in every view, sorted only in the table (Q-23). Sorting
-   * by `model.permissions` finds nothing to compare (Q-06).
+   * The list every view displays: filtered by name and sorted by type and the
+   * chosen column, so switching views never reorders it and a shift-click
+   * range means the same in all of them. Sorting by `model.permissions` finds
+   * nothing to compare (Q-06).
    */
-  const fileList = computed<Item[]>(() => {
-    const filtered = filterByName(navigator.fileList, query.value);
-    return viewTemplate.value === 'main-table.html'
-      ? orderBy(filtered, sort.predicate.value, sort.reverse.value)
-      : filtered;
-  });
+  const fileList = computed<Item[]>(() =>
+    orderBy(filterByName(navigator.fileList, query.value), sort.predicate.value, sort.reverse.value),
+  );
 
   return { query, ...sort, viewTemplate, setTemplate, fileList };
 }

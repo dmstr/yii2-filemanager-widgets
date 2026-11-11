@@ -4,18 +4,33 @@
  * controller. On an empty or multiple selection where AngularJS code threw and
  * AngularJS swallowed it (Q-29: expressions on an empty selection; Q-03: permissions need exactly one item) they return without doing anything.
  */
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import type { Item, RoleSelection } from '../../models/Item.ts';
+import { slug } from '../../utils/slug.ts';
 import { settled, type FileManagerContext } from './types.ts';
 
 export function createDialogActions(ctx: FileManagerContext) {
-  const { config, i18n, api, navigator, selection, destination, modal } = ctx;
+  const { config, i18n, api, navigator, selection, destination, modal, modals } = ctx;
   const invalidName = (): false => {
     api.error = i18n.t('error_invalid_filename');
     return false;
   };
 
   const uploadFileList = ref<File[]>([]);
+
+  // Cancel, the cross, Escape and the backdrop all end up closing the dialog in the modal manager, so
+  // this is the one place that sees every way out. A completed upload has emptied the list already; a
+  // failed one leaves the dialog open, so the list stays for a retry. The watcher is synchronous so
+  // that a drop right after closing (`addForUpload` adds, then opens) keeps its fresh files.
+  watch(
+    () => modals.isOpen('uploadfile'),
+    (open) => {
+      if (!open) {
+        uploadFileList.value = [];
+      }
+    },
+    { flush: 'sync' },
+  );
 
   /**
    * A failed write may still have changed the backend (a folder deleted with a
@@ -54,6 +69,8 @@ export function createDialogActions(ctx: FileManagerContext) {
     // `auth` is falsy for a failed request and for a response without roles.
     const show = (auth: Partial<Record<'read' | 'update' | 'delete', unknown>> | undefined): void => {
       const roles = (section: unknown) => (Array.isArray(section) ? (section as RoleSelection[]) : null);
+      // The save sends the whole editable copy: drop a name another dialog left behind in it.
+      item.revert();
       item.model.authRead = roles(auth?.read);
       item.model.authUpdate = roles(auth?.update);
       item.model.authDelete = roles(auth?.delete);
@@ -207,17 +224,17 @@ export function createDialogActions(ctx: FileManagerContext) {
   }
 
   function createFolder(): false | undefined {
-    const item = selection.singleSelection();
+    const item = selection.newFolder.value;
     if (!item) {
       return;
     }
-    const name = item.tempModel.name;
-    // Q-28: the slug is applied inside `api.createFolder`, after this check.
+    // The slug is what the request carries, so the checks run on it; the typed name stays in the field.
+    const name = slug(item.tempModel.name);
     if (!name || navigator.fileNameExists(name)) {
       return invalidName();
     }
     settled(
-      api.createFolder(item),
+      api.createFolder(item, name),
       () => {
         navigator.refresh();
         modal('newfolder', true);

@@ -13,16 +13,15 @@ function mountSelector() {
   const config = makeConfig();
   const i18n = makeI18n();
   const fm = createFileManager(config, i18n);
-  const closes: number[] = [];
   const Host = defineComponent({
     setup() {
       provideConfig(config);
       provideI18n(i18n);
       provideFileManager(fm);
-      return () => h(PathSelector, { onClose: () => closes.push(1) });
+      return () => h(PathSelector);
     },
   });
-  return { wrapper: mount(Host), fm, closes, requests };
+  return { wrapper: mount(Host), fm, requests };
 }
 
 const item = (name: string, path: string[] = []): Item => reactive(makeItem(file(name), path)) as Item;
@@ -38,21 +37,19 @@ function visibleText(node: Node): string {
 }
 
 describe('PathSelector', () => {
-  it('renders the include wrapper and the AngularJS panel with its nested footer (Q-10)', () => {
+  it('renders the include wrapper and the panel without a footer or button', () => {
     const { wrapper } = mountSelector();
     const root = wrapper.element as HTMLElement;
     expect(root.className).toBe('clearfix');
     const panel = root.firstElementChild as HTMLElement;
     expect(panel.className).toBe('panel panel-primary mt10 mb0');
-    expect([...panel.children].map((c) => c.className)).toEqual(['panel-body', 'modal-footer']);
+    expect([...panel.children].map((c) => c.className)).toEqual(['panel-body']);
     expect(panel.querySelectorAll('.detail-sources')).toHaveLength(2);
     expect(panel.querySelector('.detail-sources .like-code.mr5 > span')).not.toBeNull();
     const link = panel.querySelector('a.label.label-primary:not(.selected-file-details a)')!;
     expect(link.getAttribute('href')).toBe('');
-    const button = panel.querySelector('.modal-footer > button')!;
-    expect(button.className).toBe('btn btn-default');
-    expect(button.getAttribute('type')).toBe('button');
-    expect(squash(button.textContent!)).toBe('Close');
+    expect(panel.querySelector('.modal-footer')).toBeNull();
+    expect(panel.querySelector('button')).toBeNull();
   });
 
   it('shows the selection and the destination of a single file', async () => {
@@ -83,15 +80,5 @@ describe('PathSelector', () => {
     expect(fm.modals.isOpen('selector')).toBe(true);
     expect(fm.selector.navigator.currentPath).toEqual(['docs']);
     expect(requests[0].body).toMatchObject({ action: 'list', path: '/docs' });
-  });
-
-  it('emits close from the nested close button and disables it while a request runs', async () => {
-    const { wrapper, fm, closes } = mountSelector();
-    const button = wrapper.find('.modal-footer button');
-    await button.trigger('click');
-    expect(closes).toEqual([1]);
-    fm.api.inprocess = true;
-    await nextTick();
-    expect((button.element as HTMLButtonElement).disabled).toBe(true);
   });
 });

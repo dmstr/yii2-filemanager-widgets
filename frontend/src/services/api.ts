@@ -9,7 +9,6 @@ import type { FileManagerConfig } from '../config/types.ts';
 import type { I18n } from '../i18n/index.ts';
 import type { Item, ItemModel } from '../models/Item.ts';
 import { param } from '../utils/param.ts';
-import { slug } from '../utils/slug.ts';
 import { withQuery } from '../utils/withQuery.ts';
 import { REQUEST_HEADERS, isSuccess, parseBody, request, type HttpResult } from './http.ts';
 
@@ -88,7 +87,8 @@ export interface Api {
   compress(files: Selection, compressedFilename: string, path: string[]): Promise<ApiData>;
   extract(item: Item, folderName: string, path: string[]): Promise<ApiData>;
   changePermissions(item: ItemModel): Promise<ApiData>;
-  createFolder(item: Item): Promise<ApiData>;
+  /** `name` is the already slugged folder name; `item` supplies the parent path. */
+  createFolder(item: Item, name: string): Promise<ApiData>;
   /** The AngularJS controller called `$http` directly for this one: no `inprocess`, no `error`, no handler. */
   resolvePermissions(path: string): Promise<ApiData>;
 }
@@ -206,9 +206,9 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
       for (const [name, value] of Object.entries(REQUEST_HEADERS)) {
         xhr.setRequestHeader(name, value);
       }
-      // Q-34: the percentage minus one, so it never shows more than 99.
       const onProgress = (event: ProgressEvent): void => {
-        api.progress = Math.min(100, parseInt(String((100.0 * event.loaded) / event.total))) - 1;
+        // An unknown or zero total would give NaN, which the template would print.
+        api.progress = event.total > 0 ? Math.min(100, Math.floor((100 * event.loaded) / event.total)) : 0;
       };
       xhr.upload.addEventListener('progress', onProgress);
       xhr.upload.addEventListener('load', (event) => event.lengthComputable && onProgress(event));
@@ -358,10 +358,9 @@ export function createApi(config: FileManagerConfig, i18n: I18n): Api {
       );
     },
 
-    createFolder(item) {
-      // Q-28: the controller checks the typed name first, the slug is applied only now.
-      item.tempModel.name = slug(item.tempModel.name);
-      return post(config.createFolderUrl, { action: 'createFolder', newPath: item.tempModel.fullPath() }, () =>
+    createFolder(item, name) {
+      const newPath = item.tempModel.fullPath.call({ ...item.tempModel, name });
+      return post(config.createFolderUrl, { action: 'createFolder', newPath }, () =>
         i18n.t('error_creating_folder'),
       );
     },

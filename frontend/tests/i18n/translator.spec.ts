@@ -11,11 +11,34 @@ describe('translator', () => {
   it('returns the key for unknown keys and unknown locales', () => {
     expect(createI18n('en').t('no_such_key')).toBe('no_such_key');
     expect(createI18n('en').t('constructor')).toBe('constructor');
-    expect(createI18n('de-DE').t('new_folder')).toBe('new_folder');
   });
 
-  it('returns the key where a language lacks it', () => {
-    expect(createI18n('he').t('these_elements', { total: 3 })).toBe('these_elements');
+  it('resolves a code with a region or script suffix to its base language, ignoring case and separator', () => {
+    const german = createI18n('de').t('new_folder');
+    expect(german).not.toBe('New folder');
+    for (const code of ['de-DE', 'de_DE', 'DE-de', 'de-Latn-DE']) {
+      expect(createI18n(code).t('new_folder'), code).toBe(german);
+    }
+  });
+
+  it('falls back to en for a language without a table', () => {
+    expect(createI18n('xx').t('new_folder')).toBe('New folder');
+    expect(createI18n('xx-YY').t('new_folder')).toBe('New folder');
+    expect(createI18n('').t('new_folder')).toBe('New folder');
+  });
+
+  it('shows the English text where a language lacks a key', () => {
+    expect(createI18n('fr').t('copy_links')).toBe('Copy links');
+    expect(createI18n('fr-CA').t('copy_links')).toBe('Copy links');
+  });
+
+  it('returns the key where no table has it', () => {
+    expect(createI18n('de-DE').t('no_such_key')).toBe('no_such_key');
+    expect(createI18n('xx').t('constructor')).toBe('constructor');
+  });
+
+  it('interpolates a fallback text', () => {
+    expect(createI18n('he').t('these_elements', { total: 3 })).toBe('these 3 elements');
   });
 
   it('interpolates, with optional whitespace, and renders a missing param as empty', () => {
@@ -37,7 +60,9 @@ describe('translator', () => {
     i18n.use('de');
     expect(label.value).not.toBe(before);
     i18n.use('xx');
-    expect(label.value).toBe('new_folder');
+    expect(label.value).toBe('New folder');
+    i18n.use('de_DE');
+    expect(label.value).toBe(createI18n('de').t('new_folder'));
   });
 
   it('useI18n throws without provider and works with one', () => {

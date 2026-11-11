@@ -97,16 +97,22 @@ describe('refresh side effects', () => {
 });
 
 describe('view state', () => {
-  it('shows the navigator list filtered by name in every view and sorted only in the table (Q-23)', () => {
+  it('shows the same list in every view: filtered by name, folders first, then by the table sort state (Q-23)', () => {
+    const byName = ['b', 'a.txt', 'c.png', 'd.md', 'e.zip', 'p.jpg'];
     expect(fm.viewTemplate).toBe('main-icons.html');
-    expect(fm.fileList.map((i) => i.model.name)).toEqual(files.map((f) => f.name));
+    expect(fm.fileList.map((i) => i.model.name)).toEqual(byName);
     fm.query = 'A.TXT';
     expect(fm.fileList.map((i) => i.model.name)).toEqual(['a.txt']);
     fm.query = '';
     fm.setTemplate('main-table.html');
-    expect(fm.fileList.map((i) => i.model.name)).toEqual(['b', 'a.txt', 'c.png', 'd.md', 'e.zip', 'p.jpg']);
+    expect(fm.fileList.map((i) => i.model.name)).toEqual(byName);
     fm.setTemplate('main-icons-preview.html');
-    expect(fm.fileList.map((i) => i.model.name)).toEqual(files.map((f) => f.name));
+    expect(fm.fileList.map((i) => i.model.name)).toEqual(byName);
+    // The column and direction last chosen in the table apply to the icon views too (descending flips the type order as well).
+    fm.setTemplate('main-table.html');
+    fm.order('model.name');
+    fm.setTemplate('main-icons.html');
+    expect(fm.fileList.map((i) => i.model.name)).toEqual(['p.jpg', 'e.zip', 'd.md', 'c.png', 'a.txt', 'b']);
   });
 
   it('order() toggles the direction on the same column and resets it on a new one', () => {
@@ -163,11 +169,25 @@ describe('modal()', () => {
     expect(fm.modals.top).toBe('move');
   });
 
-  it('isInThisPath is a substring test on the joined current path (Q-24)', () => {
-    fm.navigator.currentPath = ['data', 'x'];
-    expect(fm.isInThisPath('data/x')).toBe(true);
-    expect(fm.isInThisPath('a')).toBe(true);
-    expect(fm.isInThisPath('zzz')).toBe(false);
+  it.each([
+    ['root, deep path', ['data', 'x'], '', true],
+    ['root, empty path', [], '', true],
+    ['the current folder', ['data', 'x'], 'data/x', true],
+    ['an ancestor', ['data', 'x'], 'data', true],
+    ['a sibling that is a substring of an ancestor', ['data', 'x'], 'a', false],
+    ['a sibling that is a prefix of an ancestor', ['documents'], 'doc', false],
+    ['a sibling that is a suffix of an ancestor', ['data', 'x'], 'ta', false],
+    ['a sibling named like the last segment', ['data', 'y'], 'x', false],
+    ['a sibling with the last segment as prefix', ['data', 'x'], 'data/xy', false],
+    ['a deeper node below the current folder', ['data'], 'data/x', false],
+    ['a node with spaces', ['my docs', 'b c'], 'my docs/b c', true],
+    ['a node with spaces, shorter name', ['my docs', 'b c'], 'my', false],
+    ['a non-ASCII node', ['Übung', 'größe'], 'Übung', true],
+    ['a non-ASCII prefix sibling', ['Übungen'], 'Übung', false],
+    ['a node on an empty current path', [], 'a', false],
+  ] as Array<[string, string[], string, boolean]>)('isInThisPath compares by segment: %s', (_label, current, node, expected) => {
+    fm.navigator.currentPath = current;
+    expect(fm.isInThisPath(node)).toBe(expected);
   });
 });
 
@@ -263,8 +283,8 @@ describe('image preview', () => {
 describe('edit', () => {
   it('posts the edited content and closes the dialog', async () => {
     select('d.md');
-    fm.singleSelection()!.tempModel.content = 'new';
     fm.modal('edit');
+    fm.singleSelection()!.tempModel.content = 'new';
     fm.edit();
     await settle();
     expect(requests[0]).toMatchObject({ url: '/api/edit', body: { action: 'edit', item: '/d.md', content: 'new' } });
@@ -303,6 +323,18 @@ describe('permissions', () => {
     expect(item('a.txt').model.authUpdate).toBeNull();
     expect(item('a.txt').model.authDelete).toEqual([]);
     expect(fm.modals.isOpen('changepermissions')).toBe(true);
+  });
+
+  it('updatePermissions drops a name left behind by an abandoned rename', async () => {
+    select('a.txt');
+    item('a.txt').tempModel.name = 'abandoned.txt';
+    fm.updatePermissions();
+    await settle();
+    expect(item('a.txt').tempModel.name).toBe('a.txt');
+    requests.length = 0;
+    fm.changePermissions();
+    await settle();
+    expect(requests[0]).toMatchObject({ body: { action: 'changePermissions', path: '/a.txt', item: { name: 'a.txt' } } });
   });
 
   it('a failed load opens the dialog with its error, no roles and the submit blocked', async () => {
@@ -620,7 +652,7 @@ describe('remove and move', () => {
     select('a.txt');
     fm.modalWithPathSelector('move');
     expect(fm.move()).toBe(false);
-    expect(fm.api.error).toBe('error_cannot_move_same_path');
+    expect(fm.api.error).toBe('Cannot move to the same path');
     await settle();
     expect(requests).toEqual([]);
   });
@@ -644,10 +676,10 @@ describe('remove and move', () => {
 });
 
 describe('createFolder', () => {
-  it('checks the typed name before slugging (Q-28), posts the slug and closes', async () => {
+  it('posts the slug of the typed name and closes', async () => {
     fm.modal('newfolder');
-    const phantom = fm.prepareNewFolder();
-    phantom.tempModel.name = 'New Folder';
+    const draft = fm.prepareNewFolder();
+    draft.tempModel.name = 'New Folder';
     fm.createFolder();
     await settle();
     expect(requests[0]).toMatchObject({ url: '/api/createFolder', body: { action: 'createFolder', newPath: '/new-folder' } });
@@ -655,27 +687,46 @@ describe('createFolder', () => {
     expect(fm.modals.isOpen('newfolder')).toBe(false);
   });
 
-  it('an exact existing name is refused, a name that only slugs to an existing one is not (Q-28)', async () => {
-    const phantom = fm.prepareNewFolder();
-    phantom.tempModel.name = 'b';
-    expect(fm.createFolder()).toBe(false);
-    expect(fm.api.error).toBe(makeI18n().t('error_invalid_filename'));
+  it('refuses a name whose slug is an existing entry, before any request (Q-28)', async () => {
+    const draft = fm.prepareNewFolder();
+    for (const typed of ['b', 'B ', ' B!']) {
+      fm.api.error = '';
+      draft.tempModel.name = typed;
+      expect(fm.createFolder()).toBe(false);
+      expect(fm.api.error).toBe(makeI18n().t('error_invalid_filename'));
+    }
     expect(requests).toEqual([]);
-    phantom.tempModel.name = 'B ';
+    await settle();
+  });
+
+  it('refuses a name whose slug is empty or that is empty', async () => {
+    const draft = fm.prepareNewFolder();
+    for (const typed of ['', '   ', '!!!', '--']) {
+      draft.tempModel.name = typed;
+      expect(fm.createFolder()).toBe(false);
+    }
+    expect(requests).toEqual([]);
+    await settle();
+  });
+
+  it('keeps the typed name in the draft after the slug went out', async () => {
+    const draft = fm.prepareNewFolder();
+    draft.tempModel.name = 'My Folder';
     fm.createFolder();
     await settle();
-    expect(requests[0].body).toEqual({ action: 'createFolder', newPath: '/b' });
+    expect(requests[0].body).toEqual({ action: 'createFolder', newPath: '/my-folder' });
+    expect(draft.tempModel.name).toBe('My Folder');
   });
 
-  it('an empty name is refused', () => {
-    fm.prepareNewFolder();
-    expect(fm.createFolder()).toBe(false);
-    expect(requests).toEqual([]);
+  it('sends the path of the current folder', async () => {
+    fm.navigator.currentPath = ['b'];
+    fm.prepareNewFolder().tempModel.name = 'Sub Dir';
+    fm.createFolder();
+    await settle();
+    expect(requests[0].body).toEqual({ action: 'createFolder', newPath: '/b/sub-dir' });
   });
 
-  it('does nothing when the selection was reset meanwhile (Q-29)', async () => {
-    fm.prepareNewFolder();
-    fm.selectOrUnselect(null, { target: { hasAttribute: () => true } as unknown as EventTarget });
+  it('does nothing without a draft', async () => {
     expect(fm.createFolder()).toBeUndefined();
     await settle();
     expect(requests).toEqual([]);
@@ -694,10 +745,20 @@ describe('upload', () => {
     expect(fm.uploadFileList.map((f) => f.name)).toEqual(['two.txt']);
   });
 
-  it('cancelling the dialog keeps the list (Q-11)', () => {
+  it('closing the dialog without an upload empties the list', () => {
     fm.addForUpload(picked());
     fm.modal('uploadfile', true);
-    expect(fm.uploadFileList).toHaveLength(2);
+    expect(fm.uploadFileList).toEqual([]);
+  });
+
+  it('a drop while the dialog is closed keeps the fresh files, a drop while it is open appends', () => {
+    fm.addForUpload(picked());
+    fm.modal('uploadfile', true);
+    fm.addForUpload([new File(['3'], 'three.txt')]);
+    expect(fm.uploadFileList.map((f) => f.name)).toEqual(['three.txt']);
+    expect(fm.modals.isOpen('uploadfile')).toBe(true);
+    fm.addForUpload([new File(['4'], 'four.txt')]);
+    expect(fm.uploadFileList.map((f) => f.name)).toEqual(['three.txt', 'four.txt']);
   });
 
   it('uploads to the current path, then refreshes, clears the list and closes', async () => {
@@ -950,7 +1011,7 @@ describe('reload after a failed action', () => {
     ['copy', 'copy', () => { fm.selectedModalPath = ['elsewhere']; fm.copy(); }, 'copy'],
     ['move', 'move', () => { fm.selectedModalPath = ['elsewhere']; fm.move(); }, 'move'],
     ['remove', 'remove', () => fm.remove(), 'remove'],
-    ['createFolder', 'createFolder', () => { item('a.txt').tempModel.name = 'fresh'; fm.createFolder(); }, 'newfolder'],
+    ['createFolder', 'createFolder', () => { fm.prepareNewFolder().tempModel.name = 'fresh'; fm.createFolder(); }, 'newfolder'],
     ['compress', 'compress', () => { fm.temp.tempModel.name = 'pack'; fm.compress(); }, 'compress'],
     ['extract', 'extract', () => { fm.temp.tempModel.name = 'out'; fm.extract(); }, 'extract'],
   ];
@@ -1227,7 +1288,7 @@ describe('destination chosen by row or by the current-folder button', () => {
       await inRoot();
       await pickCurrent([]);
       expect(fm.move()).toBe(false);
-      expect(fm.api.error).toBe('error_cannot_move_same_path');
+      expect(fm.api.error).toBe('Cannot move to the same path');
       expect(movesSent()).toEqual([]);
     });
 
@@ -1265,5 +1326,140 @@ describe('destination chosen by row or by the current-folder button', () => {
       await settle();
       expect(movesSent()).toHaveLength(1);
     });
+  });
+});
+
+describe('dialog input is reset when a dialog opens', () => {
+  const nameDialogs = [
+    ['rename', () => fm.modal('rename'), 'a.txt'],
+    ['copy', () => fm.modalWithPathSelector('copy'), 'a.txt'],
+    ['extract', () => fm.modal('extract'), 'e.zip'],
+  ] as const;
+
+  it.each(nameDialogs)('%s: abandoned input never reappears, and another item shows its own state', (id, open, name) => {
+    select(name);
+    open();
+    item(name).tempModel.name = 'typed';
+    fm.modal(id, true);
+    open();
+    expect(item(name).tempModel.name).toBe(name);
+    item(name).tempModel.name = 'typed again';
+    fm.modal(id, true);
+    select('d.md');
+    open();
+    expect(item('d.md').tempModel.name).toBe('d.md');
+    fm.modal(id, true);
+    select(name);
+    open();
+    expect(item(name).tempModel.name).toBe(name);
+  });
+
+  it('a right click on the selected item does not bring abandoned input back', () => {
+    select('a.txt');
+    fm.modal('rename');
+    item('a.txt').tempModel.name = 'typed';
+    fm.modal('rename', true);
+    fm.selectOrUnselect(item('a.txt'), { which: 3 });
+    fm.modal('rename');
+    expect(item('a.txt').tempModel.name).toBe('a.txt');
+  });
+
+  it('compress: the placeholder name is reset on open', () => {
+    select('a.txt', 'd.md');
+    fm.modalWithPathSelector('compress');
+    fm.temp.tempModel.name = 'typed';
+    fm.modal('compress', true);
+    fm.modalWithPathSelector('compress');
+    expect(fm.temp.tempModel.name).toBe('');
+  });
+
+  it('edit: abandoned content is replaced by the loaded server content', async () => {
+    select('d.md');
+    fm.openEditItem();
+    await settle();
+    item('d.md').tempModel.content = 'typed';
+    fm.modal('edit', true);
+    fm.openEditItem();
+    expect(item('d.md').tempModel.content).toBe('file text');
+    await settle();
+    expect(item('d.md').tempModel.content).toBe('file text');
+  });
+
+  it('a failed rename keeps the typed name, also after the reload that follows', async () => {
+    override = (r) => ((r.body as { action: string }).action === 'rename' ? { body: { result: { error: 'exists' } } } : undefined);
+    select('a.txt');
+    fm.modal('rename');
+    item('a.txt').tempModel.name = 'z.txt';
+    fm.rename();
+    await settle();
+    expect(actionsSent()).toEqual(['rename', 'list']);
+    expect(fm.modals.isOpen('rename')).toBe(true);
+    expect(fm.singleSelection()?.tempModel.name).toBe('z.txt');
+  });
+
+  it('a failed copy keeps the typed name', async () => {
+    override = (r) => ((r.body as { action: string }).action === 'copy' ? { body: { result: { error: 'no' } } } : undefined);
+    select('a.txt');
+    fm.modalWithPathSelector('copy');
+    item('a.txt').tempModel.name = 'fresh.txt';
+    fm.copy();
+    await settle();
+    expect(fm.modals.isOpen('copy')).toBe(true);
+    expect(fm.singleSelection()?.tempModel.name).toBe('fresh.txt');
+  });
+
+  it('a failed extract and a failed compress keep the typed name', async () => {
+    override = (r) => ((r.body as { action: string }).action !== 'list' ? { body: { result: { error: 'no' } } } : undefined);
+    select('e.zip');
+    fm.modalWithPathSelector('extract');
+    item('e.zip').tempModel.name = 'out';
+    fm.extract();
+    await settle();
+    expect(fm.modals.isOpen('extract')).toBe(true);
+    expect(fm.singleSelection()?.tempModel.name).toBe('out');
+    fm.modal('extract', true);
+    select('a.txt', 'd.md');
+    fm.modalWithPathSelector('compress');
+    fm.temp.tempModel.name = 'pack';
+    fm.compress();
+    await settle();
+    expect(fm.modals.isOpen('compress')).toBe(true);
+    expect(fm.temp.tempModel.name).toBe('pack');
+  });
+
+  it('a failed edit keeps the typed content', async () => {
+    select('d.md');
+    fm.openEditItem();
+    await settle();
+    override = (r) => ((r.body as { action: string }).action === 'edit' ? { body: { result: { error: 'no' } } } : undefined);
+    item('d.md').tempModel.content = 'typed';
+    fm.edit();
+    await settle();
+    expect(fm.modals.isOpen('edit')).toBe(true);
+    expect(fm.singleSelection()?.tempModel.content).toBe('typed');
+  });
+
+  it('a copy after an abandoned rename sends the real name', async () => {
+    select('a.txt');
+    fm.modal('rename');
+    item('a.txt').tempModel.name = 'abandoned.txt';
+    fm.modal('rename', true);
+    fm.modalWithPathSelector('copy');
+    fm.selectedModalPath = [];
+    // Same folder: the real name exists there, so the copy is refused instead of sending the abandoned name.
+    expect(fm.copy()).toBe(false);
+    fm.selectedModalPath = ['other'];
+    fm.copy();
+    await settle();
+    expect(requests[0].body).toEqual({ action: 'copy', items: ['/a.txt'], newPath: '/other' });
+  });
+
+  it('the move dialog path line shows the real name after an abandoned rename', () => {
+    select('a.txt');
+    fm.modal('rename');
+    item('a.txt').tempModel.name = 'abandoned.txt';
+    fm.modal('rename', true);
+    fm.modalWithPathSelector('move');
+    expect(fm.getSelectedPath()).toBe('/a.txt');
   });
 });

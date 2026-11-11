@@ -30,8 +30,7 @@ const name = tempModelField(() => fm.singleSelection(), 'name');
           <input class="form-control" v-text-model="name" autofocus>
         </div>
 
-        <!-- Q-10: the selector's own close button only hides the dialog -->
-        <PathSelector @close="close()" />
+        <PathSelector />
         <ErrorBar />
       </div>
       <div class="modal-footer">

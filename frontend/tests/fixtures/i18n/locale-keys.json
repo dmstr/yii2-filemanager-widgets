@@ -99,7 +99,20 @@
     "new_folder",
     "download_as_zip",
     "roles",
-    "domain"
+    "domain",
+    "refresh",
+    "selection",
+    "switch_to_icons_view",
+    "switch_to_table_view",
+    "switch_to_preview_view",
+    "error_moving",
+    "error_downloading",
+    "error_cannot_move_same_path",
+    "select_all",
+    "select_none",
+    "reset",
+    "search_placeholder",
+    "none_selected"
   ],
   "en": [
     "filemanager",
@@ -201,7 +214,20 @@
     "new_folder",
     "download_as_zip",
     "roles",
-    "domain"
+    "domain",
+    "refresh",
+    "selection",
+    "switch_to_icons_view",
+    "switch_to_table_view",
+    "switch_to_preview_view",
+    "error_moving",
+    "error_downloading",
+    "error_cannot_move_same_path",
+    "select_all",
+    "select_none",
+    "reset",
+    "search_placeholder",
+    "none_selected"
   ],
   "es": [
     "filemanager",

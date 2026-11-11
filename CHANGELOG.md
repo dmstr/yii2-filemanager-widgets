@@ -1,5 +1,25 @@
 # CHANGELOG
 
+### 2.0.2
+
+Fixes:
+
+- the file table shows the modification time exactly as the server reports it, regardless of the browser's time zone; before, it was shifted by the browser's offset to UTC
+- file sizes use correct units (kB = 1000 bytes, or KiB = 1024 bytes with `useBinarySizePrefixes`), have a single space before the unit, switch units at the right boundary and show `0.0 kB` for empty files
+- texts fall back to the base language (`de-DE` uses German) and then to English instead of showing raw keys. Missing texts are defined in English and German: the error messages for moving and downloading, the view-switch tooltips, the labels of the role selector; the refresh button's tooltip reads "Refresh" instead of "Icons"
+- the icon views list folders first and sort by the column and direction last chosen in the table, so the order no longer differs between views
+- in the icon view with previews, an image without a thumbnail shows the picture icon instead of an empty tile
+- the sidebar tree marks only the folders that really lie on the current path as open, and no longer keeps stale subfolders of a folder whose name is the beginning of another folder's name (for example `doc` and `documents`)
+- Escape closes the topmost open dialog wherever the keyboard focus is, also in dialogs without an input field and when the folder selector is open on top of another dialog; an open role list in the permissions dialog still closes first
+- with two dialogs open, the page behind no longer starts scrolling when the upper one closes, and the scrollbar padding on the page is removed reliably instead of staying and growing
+- the rename, copy, extract, compress and edit dialogs always open with the item's current state; text typed and then cancelled no longer reappears or gets sent by a later action
+- opening or cancelling the "New folder" dialog no longer changes the current selection, and a folder name is checked for duplicates and emptiness in the form that is actually created (`My Folder` is recognised as `my-folder`)
+- closing the upload dialog without uploading empties the list of waiting files, so they are not uploaded to a different folder the next time the dialog opens; the upload progress reaches 100 %
+- shift-clicking a file after the previously selected file was filtered out by the search field selects just the clicked file instead of producing a selection that counted one item too many
+- the search field of the role selector in the permissions dialog filters by role name only
+- the redundant "Close" button in the middle of the move and copy dialogs is removed
+- dialog fields no longer empty themselves on every keystroke when no single item is selected, and the rename dialog no longer shows the word "false" as the item name
+
 ### 2.0.1
 
 Changed defaults:
