@@ -41,9 +41,19 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
   // Assigned right below; the functions only run after that.
   let nav: Navigator;
 
-  /** The navigator's own variant of `deferredHandler`: it writes to `nav.error` and keeps an error that is already set. */
-  const deferredHandler: DeferredHandler = (data, deferred, code, defaultMsg) =>
-    settleDeferred(nav, data, deferred, code, defaultMsg, false);
+  // Counts the refresh calls; only the answer to the latest one may touch the navigator.
+  let latestRequest = 0;
+
+  /**
+   * The navigator's own variant of `deferredHandler`: it writes to `nav.error` and keeps an error that is already set.
+   * The answer to a superseded request settles quietly, so it neither sets an error nor rejects its caller.
+   */
+  const handlerFor =
+    (request: number): DeferredHandler =>
+    (data, deferred, code, defaultMsg) =>
+      request === latestRequest
+        ? settleDeferred(nav, data, deferred, code, defaultMsg, false)
+        : deferred.resolve({});
 
   function buildTree(path: string): void {
     const flatNodes: TreeNode[] = [];
@@ -90,20 +100,26 @@ export function createNavigator(config: FileManagerConfig, i18n: I18n): Navigato
   }
 
   function refresh(recycle?: boolean): Promise<void> {
+    const request = ++latestRequest;
     const path = nav.currentPath.join('/');
     nav.requesting = true;
     nav.fileList = [];
     // Q-02 fixed: the AngularJS navigator never cleared a failed list's error, so every later refresh failed too.
     nav.error = '';
     const done = api
-      .list(nav.currentPath, deferredHandler, recycle)
+      .list(nav.currentPath, handlerFor(request), recycle)
       .then((data) => {
+        if (request !== latestRequest) {
+          return;
+        }
         nav.fileList = (data.result || []).map((file: object) => new Item(file, nav.currentPath, config));
         buildTree(path);
         nav.onRefresh();
       })
       .finally(() => {
-        nav.requesting = false;
+        if (request === latestRequest) {
+          nav.requesting = false;
+        }
       });
     // Callers may ignore the outcome, as the AngularJS ones all did.
     done.catch(noop);
