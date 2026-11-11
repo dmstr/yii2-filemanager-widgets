@@ -26,9 +26,9 @@ export function createDestination({ navigator, selectorNavigator, selection, mod
   /** The folder list of the dialog, sorted by its own state. The template shows the folders among them. */
   const fileList = computed<Item[]>(() => orderBy(selectorNavigator.fileList, sort.predicate.value, sort.reverse.value));
 
-  /** Picks a folder row. The leading empty element of `split('/')` stays, so the request path starts with `//`. */
+  /** Picks a folder row. The empty segments of `split('/')` are dropped so a row stores the same segments as the current-folder button. */
   function select(item: Item): void {
-    selectedModalPath.value = item.model.fullPath().split('/');
+    selectedModalPath.value = item.model.fullPath().split('/').filter(Boolean);
     modal('selector', true);
   }
 
@@ -52,12 +52,12 @@ export function createDestination({ navigator, selectorNavigator, selection, mod
 
   /** The target as shown in the path selector; a single file gets its (edited) name appended. */
   function getSelectedPath(): string {
-    const path = selectedModalPath.value.filter(Boolean);
-    let result = '/' + path.join('/');
+    let result = '/' + selectedModalPath.value.join('/');
     const single = selection.singleSelection();
     if (single && !single.isFolder()) {
       result += '/' + single.tempModel.name;
     }
+    // The root plus a file name gives `//name`.
     return result.replace(/\/\//, '/');
   }
 
