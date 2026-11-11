@@ -1,6 +1,6 @@
 # CHANGELOG
 
-### 2.0.4 (unreleased)
+### 2.0.4
 
 Fixes:
 
